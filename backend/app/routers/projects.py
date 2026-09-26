@@ -356,6 +356,7 @@ def create_showcase(payload: ShowcaseCreate, db: Session = Depends(get_db), _: U
         status="pending",
         reject_reason="",
         awarded_coins=0,
+        category=payload.category,
     )
     db.add(item)
     db.commit()
@@ -388,6 +389,8 @@ def update_showcase(
         item.cover_image = payload.coverImage
     if payload.description is not None:
         item.description = payload.description
+    if payload.category is not None:
+        item.category = payload.category
     if not is_teacher:
         # 任何修改都要重新送审：置回待审批并清掉上一次的驳回理由
         item.status = "pending"

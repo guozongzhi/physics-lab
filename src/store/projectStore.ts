@@ -62,7 +62,7 @@ interface ProjectState {
    */
   updateShowcaseItem: (
     id: string,
-    patch: Partial<Pick<ShowcaseItem, 'title' | 'coverImage' | 'description'>>,
+    patch: Partial<Pick<ShowcaseItem, 'title' | 'coverImage' | 'description' | 'category'>>,
     keepStatus?: boolean
   ) => void;
   /** 教师/管理员下架作品；已奖励的能量币不回滚 */
@@ -382,6 +382,7 @@ export const useProjectStore = create<ProjectState>((set, get) => {
         status: 'pending',
         rejectReason: '',
         awardedCoins: 0,
+        category: partial.category || 'photo',
       };
       const next = [...showcaseItems, item];
       persist(projects, recruitments, next);
@@ -393,6 +394,7 @@ export const useProjectStore = create<ProjectState>((set, get) => {
           coverImage: item.coverImage,
           groupId: item.groupId,
           description: item.description,
+          category: item.category,
         });
         const fresh = await showcaseApi.list();
         set({ showcaseItems: reviveShowcaseDates(fresh) });

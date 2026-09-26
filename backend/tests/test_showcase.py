@@ -8,12 +8,11 @@ from app.models import Group
 teacher = lambda auth: auth("teacher", "teacher123")  # noqa: E731
 
 
-def _create(client, auth, group_id="g-1", title="作品A"):
-    resp = client.post(
-        "/api/showcase",
-        json={"title": title, "coverImage": "", "groupId": group_id, "description": "说明"},
-        headers=auth("u-1"),
-    )
+def _create(client, auth, group_id="g-1", title="作品A", category=None):
+    payload = {"title": title, "coverImage": "", "groupId": group_id, "description": "说明"}
+    if category is not None:
+        payload["category"] = category
+    resp = client.post("/api/showcase", json=payload, headers=auth("u-1"))
     assert resp.status_code == 200, resp.text
     return resp.json()["id"]
 
@@ -103,3 +102,43 @@ def test_delete_does_not_claw_back_awarded_coins(client, auth, db):
 def test_delete_pending_item(client, auth):
     sid = _create(client, auth)
     assert client.delete(f"/api/showcase/{sid}", headers=teacher(auth)).status_code == 200
+
+
+# ---------- 作品分类（展览馆顶部筛选 tab 的依据） ----------
+
+def test_category_is_persisted(client, auth):
+    """上传表单一直让学生选分类，但从前端到模型都没有这个字段——选了等于白选。"""
+    sid = _create(client, auth, category="video")
+    item = [s for s in client.get("/api/showcase", headers=auth("u-1")).json() if s["id"] == sid][0]
+    assert item["category"] == "video"
+
+
+def test_category_defaults_to_photo(client, auth):
+    sid = _create(client, auth)  # 不传 category
+    item = [s for s in client.get("/api/showcase", headers=auth("u-1")).json() if s["id"] == sid][0]
+    assert item["category"] == "photo"
+
+
+def test_invalid_category_rejected(client, auth):
+    resp = client.post(
+        "/api/showcase",
+        json={"title": "x", "coverImage": "", "groupId": "g-1", "description": "", "category": "nope"},
+        headers=auth("u-1"),
+    )
+    assert resp.status_code == 422
+
+
+def test_teacher_can_change_category(client, auth):
+    sid = _create(client, auth, category="photo")
+    resp = client.put(f"/api/showcase/{sid}", json={"category": "paper"}, headers=teacher(auth))
+    assert resp.status_code == 200, resp.text
+    assert resp.json()["category"] == "paper"
+
+
+def test_student_edit_can_change_category_and_resets_status(client, auth):
+    sid = _create(client, auth, category="photo")
+    _approve(client, auth, sid)
+    resp = client.put(f"/api/showcase/{sid}", json={"category": "model"}, headers=auth("u-1"))
+    assert resp.status_code == 200
+    assert resp.json()["category"] == "model"
+    assert resp.json()["status"] == "pending"  # 学生改仍需重新审批

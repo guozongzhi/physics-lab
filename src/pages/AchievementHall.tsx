@@ -3,7 +3,6 @@ import { motion } from 'framer-motion';
 import {
   Trophy,
   Heart,
-  Eye,
   Image as ImageIcon,
   Video,
   FileText,
@@ -38,10 +37,10 @@ import { useGroupStore } from '@/store/groupStore';
 import { useProjectStore } from '@/store/projectStore';
 import { useAuthStore } from '@/store/authStore';
 import { useUIStore } from '@/store/uiStore';
-import { User } from '@/data/mockData';
+import { User, ShowcaseCategory } from '@/data/mockData';
 import { cn } from '@/lib/utils';
 
-type GalleryTab = 'photo' | 'video' | 'paper' | 'model' | 'award';
+type GalleryTab = ShowcaseCategory;
 
 const GALLERY_TABS: Array<{ key: GalleryTab; label: string; icon: any }> = [
   { key: 'photo', label: '照片展', icon: ImageIcon },
@@ -50,6 +49,10 @@ const GALLERY_TABS: Array<{ key: GalleryTab; label: string; icon: any }> = [
   { key: 'model', label: '模型', icon: Box },
   { key: 'award', label: '获奖作品', icon: Medal },
 ];
+
+const CATEGORY_LABEL: Record<ShowcaseCategory, string> = Object.fromEntries(
+  GALLERY_TABS.map((t) => [t.key, t.label])
+) as Record<ShowcaseCategory, string>;
 
 function useTicker(target: number, duration = 800) {
   const [val, setVal] = useState(0);
@@ -73,11 +76,10 @@ interface ShowcaseCard {
   imageUrl: string;
   title: string;
   groupId: string;
+  description: string;
   loves: number;
-  views: number;
-  spanRows: number;
-  spanCols: number;
-  authorId: string;
+  /** 作品分类，决定它出现在顶部哪个 tab 下 */
+  category: ShowcaseCategory;
   /** 教师审批状态；只有本组作品会在卡片上显示徽章 */
   status: 'pending' | 'approved' | 'rejected';
   rejectReason: string;
@@ -108,7 +110,7 @@ const PHYSICS_IMAGES = [
 export default function AchievementHall() {
   const { groups, users } = useGroupStore();
   const { showcaseItems, projects, addShowcaseItem, updateShowcaseItem } = useProjectStore();
-  const { groupId, userId } = useAuthStore();
+  const { groupId } = useAuthStore();
 
   // 名人堂 = 真实 showcaseItems 点赞最高的前 3
   const hallOfFame = useMemo(
@@ -148,6 +150,8 @@ export default function AchievementHall() {
   const pushToast = useUIStore((s) => s.pushToast);
   
   const [tab, setTab] = useState<GalleryTab>('photo');
+  // 点卡片放大看图（原先卡片上根本没有 onClick，整个文件也没有预览状态）
+  const [lightbox, setLightbox] = useState<ShowcaseCard | null>(null);
   const [lovedCards, setLovedCards] = useState<Set<string>>(new Set());
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const [uploadForm, setUploadForm] = useState({
@@ -164,13 +168,22 @@ export default function AchievementHall() {
     const item = showcaseItems.find((s) => s.id === card.id);
     setEditingId(card.id);
     setUploadForm({
-      type: 'photo',
+      type: (item?.category || 'photo') as GalleryTab,
       title: item?.title || card.title,
       description: item?.description || '',
       imageUrl: item?.coverImage || card.imageUrl || '',
     });
     setUploadDialogOpen(true);
   };
+
+  useEffect(() => {
+    if (!lightbox) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setLightbox(null);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [lightbox]);
 
   const toggleLove = (id: string) => {
     setLovedCards((prev) => {
@@ -202,6 +215,7 @@ export default function AchievementHall() {
         title: uploadForm.title.trim(),
         coverImage: uploadForm.imageUrl,
         description: uploadForm.description.trim(),
+        category: uploadForm.type,
       });
       pushToast('已保存，需等待教师重新审批', 'success');
     } else {
@@ -210,6 +224,7 @@ export default function AchievementHall() {
         coverImage: uploadForm.imageUrl,
         groupId,
         description: uploadForm.description.trim(),
+        category: uploadForm.type,
       });
       pushToast('作品已提交，等待教师审批', 'success');
     }
@@ -225,7 +240,7 @@ export default function AchievementHall() {
     list.forEach((card) => {
       const minIdx = colHeights.indexOf(Math.min(...colHeights));
       colCards[minIdx].push(card);
-      colHeights[minIdx] += card.spanRows;
+      colHeights[minIdx] += 1;
     });
     return colCards;
   };
@@ -238,18 +253,18 @@ export default function AchievementHall() {
       title: item.title,
       groupId: item.groupId,
       loves: item.loves,
-      views: item.loves * 2 + 60,
-      spanRows: 1,
-      spanCols: 1,
-      authorId: userId || '',
+      description: item.description,
+      category: item.category,
       // 审批状态：只有本组的作品才在卡片上显示徽章
       status: item.status,
       rejectReason: item.rejectReason,
       awardedCoins: item.awardedCoins,
     }));
-  }, [showcaseItems, userId]);
+  }, [showcaseItems]);
 
-  const columns3 = distributeByWaterfall(cards, 3);
+  const visibleCards = useMemo(() => cards.filter((c) => c.category === tab), [cards, tab]);
+  const countOf = (k: GalleryTab) => cards.filter((c) => c.category === k).length;
+  const columns3 = distributeByWaterfall(visibleCards, 3);
 
   return (
     <MissionShell>
@@ -305,6 +320,9 @@ export default function AchievementHall() {
                     >
                       <Icon size={14} />
                       {t.label}
+                      <span className={cn('text-[11px] font-bold tabular-nums', active ? 'text-white/80' : 'text-ink-400')}>
+                        {countOf(t.key)}
+                      </span>
                     </button>
                   );
                 })}
@@ -331,11 +349,16 @@ export default function AchievementHall() {
                 精选展廊
               </h2>
               <div className="flex items-center gap-3 text-[12px] text-ink-500">
-                <span className="chip-mission">{cards.length} 项</span>
-                <span className="chip-growth">大成果卡 ×5</span>
+                <span className="chip-mission">{CATEGORY_LABEL[tab]} · {visibleCards.length} 项</span>
+                <span className="chip-ink">全部 {cards.length} 项</span>
               </div>
             </div>
 
+            {visibleCards.length === 0 ? (
+              <div className="glass-card p-10 rounded-[22px] text-center text-ink-400 text-[13px]">
+                「{CATEGORY_LABEL[tab]}」下还没有作品
+              </div>
+            ) : (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
               {columns3.map((col, ci) => (
                 <div key={ci} className="waterfall-col">
@@ -352,23 +375,10 @@ export default function AchievementHall() {
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.4, delay: (ci * 6 + i) * 0.04 }}
-                        className={cn(
-                          'glass-card glass-card-hover rounded-[22px] overflow-hidden relative group',
-                          card.spanRows === 2 && 'row-span-2'
-                        )}
-                        style={{
-                          gridColumn: card.spanCols === 2 && ci === 0 ? 'span 2' : undefined,
-                        }}
+                        onClick={() => setLightbox(card)}
+                        className="glass-card glass-card-hover rounded-[22px] overflow-hidden relative group cursor-pointer"
                       >
-                        <div
-                          className={cn(
-                            'relative w-full overflow-hidden',
-                            card.spanRows === 2 ? 'h-64' : 'h-44'
-                          )}
-                          style={{
-                            aspectRatio: card.spanCols === 2 ? '16/9' : undefined,
-                          }}
-                        >
+                        <div className="relative w-full overflow-hidden h-44">
                           {/* 图片兜底：coverImage 为空、或加载失败（种子里的 Unsplash 地址在
                               国内常加载不出来）时露出底层占位图标，避免出现裂图 */}
                           <ImageIcon size={34} className="absolute inset-0 m-auto text-white/45" />
@@ -395,14 +405,6 @@ export default function AchievementHall() {
                               </span>
                             )}
                           </div>
-                          {card.spanCols === 2 && (
-                            <div className="absolute top-3 right-3">
-                              <span className="chip-alert !py-0.5 !px-2 !text-[10px] backdrop-blur-md">
-                                <Sparkles size={10} />
-                                重磅成果
-                              </span>
-                            </div>
-                          )}
                           <div className="absolute inset-x-0 bottom-0 p-4 pt-10">
                             <h3 className="font-bold text-[14px] md:text-[15px] text-white leading-snug drop-shadow-md mb-2">
                               {card.title}
@@ -433,13 +435,12 @@ export default function AchievementHall() {
                               </span>
                             </button>
                             <div className="flex items-center gap-1 text-[12px] text-ink-500 font-semibold">
-                              <Eye size={14} />
-                              <span className="ticker tabular-nums">{card.views}</span>
+                              <span className="text-[11px]">{CATEGORY_LABEL[card.category]}</span>
                             </div>
                           </div>
                           <div className="flex items-center gap-2">
                             <div className="text-[11px] text-ink-400 font-mono">
-                              #{card.id.split('-')[1]}
+                              #{String(visibleCards.findIndex((c) => c.id === card.id) + 1).padStart(2, '0')}
                             </div>
                             {isMine && (
                               <button
@@ -459,6 +460,7 @@ export default function AchievementHall() {
                 </div>
               ))}
             </div>
+            )}
           </div>
 
           <div className="col-span-12 lg:col-span-3 space-y-5">
@@ -474,7 +476,7 @@ export default function AchievementHall() {
                 </div>
                 <div>
                   <h3 className="font-bold text-ink-800 text-[15px]">Hall of Fame</h3>
-                  <p className="text-[11px] text-ink-400">本月 Top3 杰作</p>
+                  <p className="text-[11px] text-ink-400">点赞 Top3 · 全时段</p>
                 </div>
               </div>
               <div className="space-y-4">
@@ -759,6 +761,76 @@ export default function AchievementHall() {
             </div>
           </motion.div>
         </motion.div>
+      )}
+      {/* 点作品放大：大图 + 作者小组 + 说明（原先点卡片没有任何反应） */}
+      {lightbox && (
+        <div
+          className="fixed inset-0 z-[200] flex items-center justify-center bg-ink-900/80 backdrop-blur-sm p-4"
+          onClick={() => setLightbox(null)}
+        >
+          <div
+            className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-[24px] bg-white shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setLightbox(null)}
+              className="absolute top-3 right-3 z-10 w-9 h-9 rounded-xl bg-ink-900/60 text-white flex items-center justify-center hover:bg-ink-900/80 transition-colors"
+              aria-label="关闭"
+            >
+              <X size={18} />
+            </button>
+            <div className="relative w-full min-h-[240px] bg-ink-100 flex items-center justify-center">
+              {/* 图片兜底：加载失败时（种子里的 Unsplash 地址在国内常加载不出来）
+                  露出底层占位图标，不要留一块空白 */}
+              <ImageIcon size={48} className="absolute inset-0 m-auto text-ink-300" />
+              {lightbox.imageUrl && (
+                <img
+                  src={lightbox.imageUrl}
+                  alt={lightbox.title}
+                  className="relative w-full max-h-[62vh] object-contain"
+                  onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                />
+              )}
+            </div>
+            <div className="p-6">
+              <div className="flex items-center gap-2 flex-wrap mb-2">
+                <span className="chip-mission !py-0.5 !px-2 !text-[10px]">
+                  {CATEGORY_LABEL[lightbox.category]}
+                </span>
+                <span className="chip-ink !py-0.5 !px-2 !text-[10px]">
+                  {groups.find((g) => g.id === lightbox.groupId)?.name || '未知小组'}
+                </span>
+                {lightbox.status !== 'approved' && (
+                  <span className={cn(
+                    lightbox.status === 'pending' ? 'chip-energy' : 'chip-danger',
+                    '!py-0.5 !px-2 !text-[10px]'
+                  )}>
+                    {lightbox.status === 'pending' ? '待审批' : '已驳回'}
+                  </span>
+                )}
+              </div>
+              <h2 className="text-[20px] font-extrabold text-ink-900">{lightbox.title}</h2>
+              {lightbox.description && (
+                <p className="text-[13.5px] text-ink-600 leading-relaxed mt-3">{lightbox.description}</p>
+              )}
+              <div className="flex items-center gap-4 mt-5 pt-4 border-t border-ink-100">
+                <button
+                  onClick={() => toggleLove(lightbox.id)}
+                  className={cn(
+                    'flex items-center gap-1.5 text-[13px] font-semibold transition-colors',
+                    lovedCards.has(lightbox.id) ? 'text-danger-600' : 'text-ink-500 hover:text-danger-600'
+                  )}
+                >
+                  <Heart
+                    size={16}
+                    fill={lovedCards.has(lightbox.id) ? 'currentColor' : 'none'}
+                  />
+                  {lightbox.loves + (lovedCards.has(lightbox.id) ? 1 : 0)} 人点赞
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </MissionShell>
   );

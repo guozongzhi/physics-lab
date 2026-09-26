@@ -42,7 +42,7 @@
 - SQLAlchemy ORM + SQLite（`backend/physics_lab.db`）
 - 鉴权：python-jose（JWT，HS256，有效期 12h）+ bcrypt 密码哈希
 - 配置：pydantic-settings（`backend/.env` 或环境变量覆盖）
-- 测试：pytest（`backend/tests/`，129 个用例，9 个文件）
+- 测试：pytest（`backend/tests/`，134 个用例，9 个文件）
 
 ---
 
@@ -282,6 +282,7 @@ cd backend
 - `GET/POST /challenges`、`GET /challenges/{id}/questions`、`POST /challenges/{id}/submit`
 - ⚠️ `POST /challenges` **不收 reward**：奖励由服务端按 `questionIds` 各自难度 × `class_meta` 三档单价算出（`services.challenge_reward_for`）。前端不可自定价——否则改个请求体就能把奖励改成任意值
 - `GET/POST /showcase`、`POST /showcase/{id}/love`
+- `POST /showcase` 带 `category`（`photo`/`video`/`paper`/`model`/`award`）——展览馆顶部 tab 据此筛选。上传表单一直让学生选分类，但从前端到模型都没有这个字段，选了等于白选、tab 也永远筛不出东西（2026-09-26 补上）
 - `PUT /showcase/{id}`（学生改本组作品置回待审批；**教师/管理员改保留原状态**）、`DELETE /showcase/{id}`（教师/管理员下架，**已奖励的能量币不回滚**）、`POST /showcase/{id}/review`（教师审批，通过可带 coins 奖励）
 
 **安全**：
@@ -302,7 +303,7 @@ cd backend
 ## 9. 后端测试
 
 ```bash
-cd backend && .venv/bin/python -m pytest tests/ -q     # 129 个用例，约 5 秒
+cd backend && .venv/bin/python -m pytest tests/ -q     # 134 个用例，约 6 秒
 ```
 - `tests/test_auth.py`：注册/登录/鉴权
 - `tests/test_groups.py`：建组/加入/改名/分配
@@ -398,7 +399,8 @@ HarmonyOS Sans、Inter、PingFang SC（font-family 栈见 index.css）。
 - **KnowledgeGalaxy**：「已掌握 N」由 `(sIdx+cIdx+pIdx)%3!==2` 编造；「N 道关联题」编造；「9 大知识星系」实际只有 8 个；难度下拉是死控件。
 - **学习页 `LearningHub`**：`TOPIC_META` 的章数（12/15/10/9/11/10/8/7）与难度星级是写死的；参考答案/解析写死成库仑定律那套，点任何知识点都一样。
 - **项目/市场**：`ProjectCenter` 看板任务的负责人（张伟/李娜/…）、奖励、截止日全编，且预设 3 个任务为已完成；「6 颗项目行星」实际 10 个。`ResearchMarketplace` 投标进度 10/60/100 编造。
-- **成果馆/联赛**：`AchievementHall` 浏览量 = 点赞×2+60；「本月 Top3」其实是全时段排序；「本学期优秀作品 · N 人点赞」是拼出来的假教师署名；「大成果卡 ×5」但所有卡都被强制 1×1。`ResearchLeague`「赛季剩余 42 天」写死。
+- **成果馆/联赛**：`AchievementHall` 的「本学期优秀作品 · N 人点赞」是拼出来的假教师署名（**仍未修**）。`ResearchLeague`「赛季剩余 42 天」写死（**仍未修**）。
+  *（浏览量 `点赞×2+60`、「本月 Top3」标错时段、「大成果卡 ×5」三处 2026-09-26 已修）*
 - **教师端**：`TeacherOverview`「超过 3 天未解冻将自动扣除押金」功能不存在；「已向组长发送解冻提醒」只弹 toast；写死班名「闽西职业技术学院特色班」；「导出 CSV」只弹「即将上线」；「Top 20 流水」其实是「最新 20 条」。`StudentRoster` 写「默认密码 student123」，而生产实际是 `123456`（**会误导老师发错密码**）。
 - **种子数据**：`backend/app/seed.py` 的 `build_showcase` 写死 `loves = 8 + i*3`，生产库那两件作品的点赞数（8、11）就是这么来的，`loved_by` 是空的（没人点过）。
 

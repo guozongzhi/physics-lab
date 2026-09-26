@@ -177,7 +177,12 @@ export interface ShowcaseItem {
   rejectReason: string;
   /** 审批通过时奖给该小组的能量币 */
   awardedCoins: number;
+  /** 作品分类。展览馆顶部的筛选 tab 据此过滤；上传时由学生选择，从前端到后端都必须带上 */
+  category: ShowcaseCategory;
 }
+
+/** 展览馆的作品分类（与后端 ShowcaseCategory 对齐） */
+export type ShowcaseCategory = 'photo' | 'video' | 'paper' | 'model' | 'award';
 
 export interface ClassMeta {
   initialCoinsPerGroup: number;
@@ -595,10 +600,11 @@ function buildShowcase(projects: Project[], groups: Group[]): ShowcaseItem[] {
     loves: 8 + i * 3,
     lovedBy: [],
     createdAt: new Date(Date.now() - (i + 1) * 86400000),
-    // 离线演示数据视为已通过审批
+    // 离线演示数据视为已通过审批；分类错开，好让顶部 tab 在离线模式下也能试出效果
     status: 'approved' as const,
     rejectReason: '',
     awardedCoins: 0,
+    category: (['photo', 'video', 'paper', 'model'] as const)[i % 4],
   }));
 }
 

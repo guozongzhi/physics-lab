@@ -198,6 +198,9 @@ class ShowcaseItem(Base):
     reject_reason: Mapped[str] = mapped_column(Text, default="")
     # 审批通过时奖给该小组的能量币（同时已通过 add_tx 计入小组总能量与流水）
     awarded_coins: Mapped[int] = mapped_column(Integer, default=0)
+    # 作品分类（展览馆顶部的筛选 tab）。上传表单一直让学生选，但从前端到模型都没有这个字段，
+    # 选了等于白选、tab 也永远筛不出东西。存量作品回填为 photo。
+    category: Mapped[str] = mapped_column(String, default="photo", index=True)
 
 
 class ClassMeta(Base):

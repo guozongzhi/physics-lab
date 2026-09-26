@@ -5,7 +5,7 @@
 """
 
 from datetime import datetime
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, model_validator
 from pydantic.alias_generators import to_camel
@@ -441,12 +441,17 @@ class RecruitmentOut(CamelModel):
 
 
 # ---------- Showcase ----------
+# 展览馆顶部的筛选分类。上传时必须选一个，tab 据此过滤。
+ShowcaseCategory = Literal["photo", "video", "paper", "model", "award"]
+
+
 class ShowcaseCreate(BaseModel):
     projectId: str | None = ""
     title: str
     coverImage: str
     groupId: str
     description: str | None = ""
+    category: ShowcaseCategory = "photo"
 
 
 class ShowcaseOut(CamelModel):
@@ -462,6 +467,7 @@ class ShowcaseOut(CamelModel):
     status: str
     reject_reason: str
     awarded_coins: int
+    category: str
 
 
 class ShowcaseUpdate(BaseModel):
@@ -473,6 +479,7 @@ class ShowcaseUpdate(BaseModel):
     title: str | None = None
     coverImage: str | None = None
     description: str | None = None
+    category: ShowcaseCategory | None = None
 
 
 class ShowcaseReview(BaseModel):
