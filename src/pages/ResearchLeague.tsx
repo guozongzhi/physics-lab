@@ -43,7 +43,7 @@ const GROUP_COLORS = [
 ];
 
 export default function ResearchLeague() {
-  const { groups, users } = useGroupStore();
+  const { groups, users, classMeta } = useGroupStore();
   const { coinTxs } = useCoinStore();
   const { classId: myClassId, role } = useAuthStore();
   const [tab, setTab] = useState<TabKey>('total');
@@ -112,29 +112,64 @@ export default function ResearchLeague() {
       .sort((a, b) => a.className.localeCompare(b.className));
   }, [users, classesById, myClassId, isStaff]);
 
-  // 30 天能量趋势：每日各小组累计增量
+  // 近 30 天各小组「真实余额」走势。
+  // 流水只记录增减，不能从 0 累加——那算出的是净增减，会出现负值，也和排行榜余额对不上。
+  // 改为以各组当前真实余额为锚点向过去反推：balance(d) = 当前余额 − (d 之后全部流水之和)。
+  // 教师端「批量重置能量币」是直接改余额、不写流水的，重置之前的日子会反推出负数；
+  // 余额不可能为负，所以负数段说明那段历史已被重置抹掉，这条线就从最后一个负数之后起画。
   const trend = useMemo(() => {
     const groupNames = memberedGroups.map((g) => g.name);
-    const byDay: Record<string, Record<string, number>> = {};
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    const windowStart = todayStart - 29 * DAY;
+
+    const txByGroup: Record<string, Array<{ t: number; delta: number }>> = {};
     for (const tx of coinTxs) {
-      const t = tx.createdAt instanceof Date ? tx.createdAt : new Date(tx.createdAt);
-      const key = `${t.getFullYear()}-${t.getMonth() + 1}-${t.getDate()}`;
-      (byDay[key] ||= {})[tx.groupId] = (byDay[key][tx.groupId] || 0) + tx.delta;
+      const t = (tx.createdAt instanceof Date ? tx.createdAt : new Date(tx.createdAt)).getTime();
+      (txByGroup[tx.groupId] ||= []).push({ t, delta: tx.delta });
     }
-    const running: Record<string, number> = {};
+
+    const series: Record<string, Array<number | null>> = {};
+    for (const g of memberedGroups) {
+      const mine = txByGroup[g.id] || [];
+      const curve: number[] = [];
+      for (let i = 0; i < 30; i++) {
+        const dayEnd = windowStart + (i + 1) * DAY - 1;
+        const after = mine.reduce((s, x) => (x.t > dayEnd ? s + x.delta : s), 0);
+        curve.push(g.totalCoins - after);
+      }
+      let cut = 0;
+      for (let i = curve.length - 1; i >= 0; i--) {
+        if (curve[i] < 0) {
+          cut = i + 1;
+          break;
+        }
+      }
+      series[g.name] = curve.map((v, i) => (i < cut ? null : v));
+    }
+
     const days: Record<string, any>[] = [];
-    const start = new Date(); start.setDate(start.getDate() - 29);
     for (let i = 0; i < 30; i++) {
-      const d = new Date(start.getTime() + i * DAY);
-      const key = `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
-      const dayTxs = byDay[key];
-      if (dayTxs) for (const gid in dayTxs) running[gid] = (running[gid] || 0) + dayTxs[gid];
+      const d = new Date(windowStart + i * DAY);
       const row: Record<string, any> = { date: `${d.getMonth() + 1}/${d.getDate()}` };
-      for (const g of memberedGroups) row[g.name] = running[g.id] || 0;
+      for (const n of groupNames) row[n] = series[n][i];
       days.push(row);
     }
     return { days, groupNames };
   }, [coinTxs, memberedGroups]);
+
+  // 流水实际覆盖的时间范围（用真实记录替代原先写死的「赛季剩余 N 天」）
+  const ledgerSpan = useMemo(() => {
+    if (!coinTxs.length) return null;
+    const ts = coinTxs.map((t) =>
+      (t.createdAt instanceof Date ? t.createdAt : new Date(t.createdAt)).getTime()
+    );
+    const md = (n: number) => {
+      const d = new Date(n);
+      return `${d.getMonth() + 1}/${d.getDate()}`;
+    };
+    return `${md(Math.min(...ts))} – ${md(Math.max(...ts))}`;
+  }, [coinTxs]);
 
   // 本周 MVP：本周能量累计前 3 小组
   const mvp = useMemo(() => {
@@ -161,12 +196,14 @@ export default function ResearchLeague() {
             <div className="flex flex-wrap items-center gap-3 mb-3">
               <span className="mission-label">
                 <Star size={12} />
-                LEADERBOARD · SEASON 2026 SPRING
+                LEADERBOARD · {classMeta.termName}
               </span>
-              <span className="chip-energy">
-                <Flame size={11} />
-                赛季剩余 42 天
-              </span>
+              {ledgerSpan && (
+                <span className="chip-energy">
+                  <Flame size={11} />
+                  流水 {ledgerSpan}
+                </span>
+              )}
             </div>
             <div className="flex flex-wrap items-end justify-between gap-6">
               <div>
@@ -175,7 +212,7 @@ export default function ResearchLeague() {
                   <span className="block text-gradient-mission mt-1">科研联赛榜</span>
                 </h1>
                 <p className="mt-2 text-[14px] text-ink-500 max-w-lg">
-                  能量币、项目交付、挑战胜率共同决定的赛季排名。前三甲将获得年度学术晚宴邀请函 🏆
+                  按小组能量币排定的赛季排名。前三甲将获得年度学术晚宴邀请函 🏆
                 </p>
               </div>
               <div className="glass-card !shadow-none p-1.5 rounded-2xl border-mission-100/70 flex flex-wrap gap-1">
@@ -279,7 +316,7 @@ export default function ResearchLeague() {
                   <TrendingUp size={18} className="text-mission-500" />
                   Season Trends
                 </h3>
-                <span className="text-[10px] font-mono text-ink-400">30D</span>
+                <span className="text-[10px] font-mono text-ink-400">近 30 天余额</span>
               </div>
               <div className="h-[260px] -mx-3">
                 <ResponsiveContainer width="100%" height="100%">
