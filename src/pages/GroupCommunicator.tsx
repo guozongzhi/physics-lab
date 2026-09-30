@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { challengeRewardFor } from '@/lib/challengePricing';
+import { windowState, windowClosedMessage } from '@/lib/activityWindow';
 
 type TabKey = 'challenges' | 'recruitments' | 'transfers';
 
@@ -293,8 +294,12 @@ export default function GroupCommunicator() {
     [allQuestions, challengeForm.questionIds, classMeta]
   );
   
+  // 教师可控的开放窗口。关闭时只挡"新开局"，已开的照常作答与结算。
+  const win = windowState(classMeta);
+
   const handleCreateChallenge = () => {
     if (!groupId) return;
+    if (!win.challenge) return pushToast(windowClosedMessage('challenge'), 'warning');
     if (!challengeForm.title.trim()) return pushToast('请填写挑战标题', 'warning');
     if (!challengeForm.topicId) return pushToast('请选择主题', 'warning');
     if (challengeForm.questionIds.length !== 10) return pushToast('请选择10道题目', 'warning');
@@ -320,6 +325,7 @@ export default function GroupCommunicator() {
   
   const handleTransfer = () => {
     if (!groupId) return;
+    if (!win.transfer) return pushToast(windowClosedMessage('transfer'), 'warning');
     if (!transferForm.targetGroupId) return pushToast('请选择目标小组', 'warning');
     if (transferForm.targetGroupId === groupId) return pushToast('不能转账给自己', 'warning');
     if (transferForm.amount <= 0) return pushToast('转账金额必须大于0', 'warning');
@@ -341,6 +347,7 @@ export default function GroupCommunicator() {
   const handlePlaceBid = () => {
     if (!groupId || !userId) return;
     if (!bidForm.recruitmentId) return;
+    if (!win.recruit) return pushToast(windowClosedMessage('recruit'), 'warning');
     
     placeBid(bidForm.recruitmentId, {
       userId,

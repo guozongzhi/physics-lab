@@ -179,6 +179,9 @@ class Recruitment(Base):
     assignee_user_id: Mapped[str | None] = mapped_column(String, nullable=True)
     result: Mapped[str | None] = mapped_column(String, nullable=True)  # success/partial/fail
     actual_pay: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    # 发布招募时从发包组预扣的押金（余额不足则不允许发布，因此正常等于 reward）。
+    # 历史数据（本次改动之前发布的）为 0，结算时会补扣，见 services.settle_recruitment。
+    escrow_paid: Mapped[int] = mapped_column(Integer, default=0)
 
 
 class ShowcaseItem(Base):
@@ -214,6 +217,17 @@ class ClassMeta(Base):
     coin_easy: Mapped[int] = mapped_column(Integer, default=1)
     coin_medium: Mapped[int] = mapped_column(Integer, default=2)
     coin_hard: Mapped[int] = mapped_column(Integer, default=3)
+
+    # 教师可控的开放窗口。关闭后学生不能"新开局"（建挑战/发招募/投标/组间转账），
+    # 但已经开着的挑战与招募照常作答、结算——否则押金会卡在中间谁也拿不回。
+    # minutes 是老师选的时长（空＝不限时），closes_at 是按下开关那一刻算出的到期点；
+    # 两个都存：minutes 供界面回显选项（不会随时间衰减），closes_at 供判定是否到点。
+    challenge_window_open: Mapped[bool] = mapped_column(Boolean, default=True)
+    challenge_window_minutes: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    challenge_window_closes_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    recruit_window_open: Mapped[bool] = mapped_column(Boolean, default=True)
+    recruit_window_minutes: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    recruit_window_closes_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
 
 class SafetyRecord(Base):

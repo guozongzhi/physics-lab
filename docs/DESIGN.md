@@ -149,8 +149,16 @@ cd backend
 2. **状态恢复**：仅 `initAuth()` 不够；页面刷新/再次进入时必须调用 `bootstrapFromApi()`（教师总览等用 `bootstrapFromApi(true)` 强制拉最新）拉取后端数据填充 `groupStore` 等，否则分组/学生数据为空。
 3. **乐观更新**：写操作先改 store（UI 即时响应）+ 写 localStorage，再异步同步后端；同步任务进 `syncQueue`。
 4. **金币结算归属后端**：项目完成、挑战结算、招募结算、转账均由后端业务端点记账，前端不直接拼装金币流水。
-5. **日期反序列化**：后端返回 ISO 字符串，前端统一经 `reviveDates(txs, ['createdAt'])` 按字段名转 `Date`。
-6. **流水顺序**：后端交易记录最新在前，bootstrap 时归一化为**时间正序**；展示"最近 N 条"时先 reverse 再 slice。
+5. **对赌/委托一律先押后结，不凭空发币**：凡是"一组付钱给另一组"的业务，都在**发起时**把金额从出钱方扣下作押金，结算时再按结果分配、剩余退回。已成对实现的是**挑战**（`theory.py` 创建时预扣 → `services.settle_challenge` 按正确率分账，仅 ≥95% 的 20% 加成是增发）和**招募**（`projects.py` 创建时预扣 `escrow_paid` → `services.settle_recruitment` 按 success/partial/fail 分账）。
+   **不变式：`escrowed = 付给承接方的 + 退回发包方的`**——任何一支只增不减都会变成印钞机。招募原先漏了"预扣"这一半，导致三个分支都在增发，其中 `fail` 会让发包组白得一笔自己从未付过的钱（`reward` 还由客户端随意填，实测 450 → 100450）。2026-09-30 已按上述模型修好：发布时余额不足直接 400、`reward` 必须 > 0、存量招募（`escrow_paid=0`）在结算时补扣。
+6. **日期反序列化**：后端返回 ISO 字符串，前端统一经 `reviveDates(txs, ['createdAt'])` 按字段名转 `Date`。
+7. **流水顺序**：后端交易记录最新在前，bootstrap 时归一化为**时间正序**；展示"最近 N 条"时先 reverse 再 slice。
+8. **教师可控的开放窗口（2026-09-30 新增）**：`class_meta` 存 `*_window_open` / `*_window_minutes` / `*_window_closes_at`，教师端「分组管理」页有一张「开放窗口」卡，开关与时长**改完立刻生效（无草稿、无保存按钮）**。
+   - **只挡"新开局"**：`POST /challenges`、`POST /recruitments`、`POST /recruitments/{id}/bid`、`POST /coins/transfer` 四道闸（`deps.window_guard`）；**作答与结算一律不挡**——挡了押金会卡在中间谁也拿不回。教师/管理员不受限。
+   - **组间转账不单设开关**：任一窗口开着即视为"课上有监督"，两个都关才封。
+   - **到点自动关闭是惰性判定**（`services.window_state` 每次请求现算），没有定时任务；教师端页面 30 秒 tick 一次跟着刷新。
+   - **存量库迁移回填成"开着、不限时"**：上线不能把现有功能突然锁上，老师应当是主动去关。
+   - ⚠️ **时区坑**：列的 datetime 是**无时区的 UTC 字面值**，`isoformat()` 不带 `Z`，而 JS 的 `new Date('2026-09-30T05:50:32')` 会按**本地时间**解析——东八区整体偏 8 小时，窗口的开/关会判错（实测踩过：16:50 关闭的窗口在 16:21 就显示"已关闭"）。前端一律走 `lib/activityWindow.ts` 的 `parseUtc`（无时区后缀就补 `Z`）。**同类隐患存在于所有直接 `new Date(后端时间串)` 的地方**（如 `createdAt` 的按天分桶），尚未统一处理。
 
 ---
 
@@ -235,7 +243,7 @@ cd backend
 - `ReviewStatus = 'pending' | 'approved' | 'rejected'`
 - `Project`：id/title/topic/techPoints/difficulties/equipmentList(EquipmentItem[])/safetyCategory/status/ownerGroupId/rewardCoins/depositCoins/startDate/dueDate/progress{total,done}/results/photos
 - `CoinTransaction`：id/groupId/userId?/source/refId/delta/balanceAfter/createdAt(Date)/note
-- `Recruitment`：id/projectId/title/description/skills/reward/deadline/status('open'|'assigned'|'done'|'failed')/bids/assigneeUserId?/result?/actualPay?
+- `Recruitment`：id/projectId/title/description/skills/reward/deadline/status('open'|'assigned'|'done'|'failed')/bids/assigneeUserId?/result?/actualPay?/**escrowPaid**（发布时从发包组预扣的押金；改动前发布的存量为 0，结算时补扣——见 §5 第 5 条）
 - `ReviewableQuestion extends Question`：submittedBy(string|null，null=教师上传)、submittedByName、submittedAt(ISO)、reviewStatus、teacherFeedback?、edited?
 
 ---
@@ -275,6 +283,7 @@ cd backend
 **金币**：
 - `GET /coin-transactions`（最新在前）、`POST /coins/transfer`（组间转账，原子记账，收支共享 refId）
 - `GET /rankings`、`GET /class-meta`、`PUT /class-meta`（`require_teacher`）——挑战奖励单价（简单/中等/困难，各 0~100）
+- `PUT /activity-window`（`require_teacher`）——教师开关挑战/招募窗口，见 §5 第 5 条
 
 **理论/挑战/展示**：
 - `GET /topics`、`GET /questions`、`POST /quiz/start`、`POST /quiz/{id}/answer`、`POST /quiz/{id}/grade`、**`GET /quiz/sessions`（只返回当前用户自己的会话，按创建时间倒序；前端 bootstrap 拉取后转正序存）**
@@ -385,7 +394,6 @@ HarmonyOS Sans、Inter、PingFang SC（font-family 栈见 index.css）。
 | 题目示意图 | 学生/教师提交题无 image 字段 | ReviewableQuestion 增加可选 imageUrl |
 | 冻结项目原因/冻结天数 | 后端 Project 无 freezeReason/frozenAt | 加字段与教师冻结操作端点 |
 | 超时招募自动结算 | 前端仅预警展示 | 加定时/管理员触发的自动 resolve 逻辑 |
-| 导出 CSV | 能量币趋势/招募状态/班级规模已实现（`downloadCSV`）；流水导出仍是 toast 占位（TeacherOverview.tsx:620） | 补齐流水 CSV 导出 |
 | 小组头像/学生头像 | 仅本地 avatar 字段 | 头像上传后端存储 |
 | `components/ui/Dialog.tsx` 是死代码 | 全仓库无人引用，且用的是**不存在的 token**（`physics-50`/`physics-800`/`card-base` 都没定义），谁想复用都会得到一个没样式的弹窗。新建弹窗请照 `ChangePasswordModal.tsx` 或各页内的既有写法 | 直接删掉，或改成用语义色 token 重写后再用 |
 | 挑战要求恰好 10 道题，但多数主题凑不够 | 表单硬性要求选满 10 题，而题库各主题题量为 `topic-1` 17、`topic-2` 13、其余 6 个主题只有 4~7 题——**实际只有前两个主题能发起挑战** | 把「恰好 10 题」放宽为「3~10 题」，奖励按实际题数累加（计价逻辑已经支持任意题数） |
@@ -399,9 +407,11 @@ HarmonyOS Sans、Inter、PingFang SC（font-family 栈见 index.css）。
 - **KnowledgeGalaxy**：「已掌握 N」由 `(sIdx+cIdx+pIdx)%3!==2` 编造；「N 道关联题」编造；「9 大知识星系」实际只有 8 个；难度下拉是死控件。
 - **学习页 `LearningHub`**：`TOPIC_META` 的章数（12/15/10/9/11/10/8/7）与难度星级是写死的；参考答案/解析写死成库仑定律那套，点任何知识点都一样。
 - **项目/市场**：`ProjectCenter` 看板任务的负责人（张伟/李娜/…）、奖励、截止日全编，且预设 3 个任务为已完成；「6 颗项目行星」实际 10 个。`ResearchMarketplace` 投标进度 10/60/100 编造。
-- **成果馆/联赛**：`AchievementHall` 的「本学期优秀作品 · N 人点赞」是拼出来的假教师署名（**仍未修**）。`ResearchLeague`「赛季剩余 42 天」写死（**仍未修**）。
-  *（浏览量 `点赞×2+60`、「本月 Top3」标错时段、「大成果卡 ×5」三处 2026-09-26 已修）*
-- **教师端**：`TeacherOverview`「超过 3 天未解冻将自动扣除押金」功能不存在；「已向组长发送解冻提醒」只弹 toast；写死班名「闽西职业技术学院特色班」；「导出 CSV」只弹「即将上线」；「Top 20 流水」其实是「最新 20 条」。`StudentRoster` 写「默认密码 student123」，而生产实际是 `123456`（**会误导老师发错密码**）。
+- **成果馆/联赛**：`AchievementHall` 的「本学期优秀作品 · N 人点赞」是拼出来的假教师署名（**仍未修**）。
+  *（浏览量 `点赞×2+60`、「本月 Top3」标错时段、「大成果卡 ×5」三处 2026-09-26 已修；`ResearchLeague`「赛季剩余 42 天」与 `SEASON 2026 SPRING`、以及「Season Trends」曲线 2026-09-29 已修——详见下条）*
+- **`ResearchLeague` 的「Season Trends」图（2026-09-29 已修）**：原先是把各组**近 30 天的流水 delta 从 0 累加**，既不用真实余额、也不算 30 天前的记录。实测生产数据：牛顿先锋队图上 −121 而真实余额 71（差 192），爱因斯坦脑洞组 157 对 67，且**出现负数**——而 `add_tx` 把余额扣到 0 为止，余额不可能为负。另有 15 笔（合计 +7500，含每组 500 初始币）落在窗口外被整个丢掉。现改为**以各组当前真实余额为锚点向过去反推**（`balance(d) = 当前余额 − d 之后全部流水之和`），末值恒等于排行榜余额、永不为负；因为教师端「批量重置能量币」（`POST /groups/reset-coins`）是直接改余额、**不写流水**，重置前的日子会反推出负数，那条线就从最后一个负数之后起画（即只显示重置后的部分）。图注并由 `30D` 改为「近 30 天余额」以免再被读成净增减。
+- **教师端**：`TeacherOverview`「超过 3 天未解冻将自动扣除押金」功能不存在；「已向组长发送解冻提醒」只弹 toast；写死班名「闽西职业技术学院特色班」。`StudentRoster` 写「默认密码 student123」，而生产实际是 `123456`（**会误导老师发错密码**）。
+  *（流水「导出 CSV」原本只弹「即将上线」、标题「Top 20」实为「最新 20 条」、`downloadCSV` 字段值未转义——均 2026-09-28 已修）*
 - **种子数据**：`backend/app/seed.py` 的 `build_showcase` 写死 `loves = 8 + i*3`，生产库那两件作品的点赞数（8、11）就是这么来的，`loved_by` 是空的（没人点过）。
 
 ---

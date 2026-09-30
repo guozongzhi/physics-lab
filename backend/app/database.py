@@ -106,4 +106,25 @@ def _run_lightweight_migrations() -> None:
                 conn.execute(text("ALTER TABLE class_meta ADD COLUMN coin_medium INTEGER DEFAULT 2"))
             if "coin_hard" not in cm_columns:
                 conn.execute(text("ALTER TABLE class_meta ADD COLUMN coin_hard INTEGER DEFAULT 3"))
+            # 开放窗口。存量库回填成「开着、不限时」：这次上线不能突然改变现有行为，
+            # 老师应当是主动去关，而不是发现功能已经被锁上。
+            if "challenge_window_open" not in cm_columns:
+                conn.execute(text("ALTER TABLE class_meta ADD COLUMN challenge_window_open BOOLEAN DEFAULT 1"))
+            if "challenge_window_minutes" not in cm_columns:
+                conn.execute(text("ALTER TABLE class_meta ADD COLUMN challenge_window_minutes INTEGER"))
+            if "challenge_window_closes_at" not in cm_columns:
+                conn.execute(text("ALTER TABLE class_meta ADD COLUMN challenge_window_closes_at DATETIME"))
+            if "recruit_window_open" not in cm_columns:
+                conn.execute(text("ALTER TABLE class_meta ADD COLUMN recruit_window_open BOOLEAN DEFAULT 1"))
+            if "recruit_window_minutes" not in cm_columns:
+                conn.execute(text("ALTER TABLE class_meta ADD COLUMN recruit_window_minutes INTEGER"))
+            if "recruit_window_closes_at" not in cm_columns:
+                conn.execute(text("ALTER TABLE class_meta ADD COLUMN recruit_window_closes_at DATETIME"))
+
+    # 招募押金。存量招募发布时没预扣过，置 0，结算时会补扣（见 services.settle_recruitment）。
+    if "recruitments" in inspector.get_table_names():
+        rec_columns = {col["name"] for col in inspector.get_columns("recruitments")}
+        if "escrow_paid" not in rec_columns:
+            with engine.begin() as conn:
+                conn.execute(text("ALTER TABLE recruitments ADD COLUMN escrow_paid INTEGER DEFAULT 0"))
 

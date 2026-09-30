@@ -1,6 +1,6 @@
 """金币结算链路测试：教师调整、组间转账、挑战结算、项目完成结算、招募结算。"""
 
-from app.models import CoinTransaction, User
+from app.models import CoinTransaction, Group, Project, Recruitment, User
 
 DEADLINE = "2030-01-01T00:00:00Z"
 
@@ -283,29 +283,176 @@ def _project_for(client, auth) -> str:
     return resp.json()["id"]
 
 
+def _recruit_total(client, auth) -> int:
+    """全部小组的能量币总和。招募是组间转移，结算前后这个数必须不变。"""
+    return sum(_balances(client, auth).values())
+
+
+def test_recruitment_create_escrows_reward(client, auth):
+    """发布招募即从发包组预扣酬劳作押金。"""
+    before = _balances(client, auth)["g-1"]
+    _create_recruitment(client, auth, _project_for(client, auth), reward=50)
+    assert _balances(client, auth)["g-1"] == before - 50
+
+
 def test_recruitment_settle_success(client, auth):
+    before_total = _recruit_total(client, auth)
     rec_id = _create_recruitment(client, auth, _project_for(client, auth), reward=50)
     resp = client.put(f"/api/recruitments/{rec_id}/assign", json={"userId": "u-3"}, headers=auth("u-1"))
     assert resp.status_code == 200
 
     resp = client.put(f"/api/recruitments/{rec_id}/resolve", json={"result": "success"}, headers=auth("u-1"))
     assert resp.status_code == 200
+    assert resp.json()["actualPay"] == 50
 
-    # 承接方 u-3 所在组 g-2 得到全额报酬
+    # 押金 g-1 500-50=450 转给承接方 g-2 300+50=350；总量不变（不增发）
+    assert _balances(client, auth)["g-1"] == 450
     assert _balances(client, auth)["g-2"] == 350
-    assert _balances(client, auth)["g-1"] == 500
+    assert _recruit_total(client, auth) == before_total
 
 
 def test_recruitment_settle_fail_refund_owner(client, auth):
+    before_total = _recruit_total(client, auth)
     rec_id = _create_recruitment(client, auth, _project_for(client, auth), reward=50)
     client.put(f"/api/recruitments/{rec_id}/assign", json={"userId": "u-3"}, headers=auth("u-1"))
 
     resp = client.put(f"/api/recruitments/{rec_id}/resolve", json={"result": "fail"}, headers=auth("u-1"))
     assert resp.status_code == 200
+    assert resp.json()["actualPay"] == 0
 
-    # 失败：报酬退回项目归属组 g-1
-    assert _balances(client, auth)["g-1"] == 550
+    # 失败：押金原样退回 g-1，g-2 分文不得。发包组**不能**因为失败而赚钱。
+    assert _balances(client, auth)["g-1"] == 500
     assert _balances(client, auth)["g-2"] == 300
+    assert _recruit_total(client, auth) == before_total
+
+
+def test_recruitment_settle_partial_splits_escrow(client, auth):
+    before_total = _recruit_total(client, auth)
+    rec_id = _create_recruitment(client, auth, _project_for(client, auth), reward=50)
+    client.put(f"/api/recruitments/{rec_id}/assign", json={"userId": "u-3"}, headers=auth("u-1"))
+
+    resp = client.put(f"/api/recruitments/{rec_id}/resolve", json={"result": "partial"}, headers=auth("u-1"))
+    assert resp.status_code == 200
+    assert resp.json()["actualPay"] == 25
+
+    # 各拿一半：g-1 500-25=475，g-2 300+25=325
+    assert _balances(client, auth)["g-1"] == 475
+    assert _balances(client, auth)["g-2"] == 325
+    assert _recruit_total(client, auth) == before_total
+
+
+def test_recruitment_rejects_reward_above_balance(client, auth):
+    """余额不够就不许发布——否则结算时押金扣不满，账会不平。"""
+    resp = client.post(
+        "/api/recruitments",
+        json={
+            "projectId": _project_for(client, auth),
+            "title": "天价招募",
+            "description": "",
+            "skills": [],
+            "reward": 10_000,
+            "deadline": DEADLINE,
+        },
+        headers=auth("u-1"),
+    )
+    assert resp.status_code == 400
+    assert "不足" in resp.json()["detail"]
+
+
+def test_recruitment_rejects_non_positive_reward(client, auth):
+    """负数酬劳会把「扣押金」变成「发布就加钱」，必须挡在入口。"""
+    for bad in (0, -50):
+        resp = client.post(
+            "/api/recruitments",
+            json={
+                "projectId": _project_for(client, auth),
+                "title": "非法酬劳",
+                "description": "",
+                "skills": [],
+                "reward": bad,
+                "deadline": DEADLINE,
+            },
+            headers=auth("u-1"),
+        )
+        assert resp.status_code == 422, f"reward={bad} 应当被拒绝"
+
+
+def test_recruitment_legacy_without_escrow_settles_zero_sum(client, auth, db):
+    """改动前发布的招募（escrow_paid=0）结算时补扣押金，同样不增发。"""
+    project = Project(id="p-legacy", title="历史项目", owner_group_id="g-1")
+    db.add(project)
+    db.add(
+        Recruitment(
+            id="rec-legacy",
+            project_id="p-legacy",
+            title="历史招募",
+            description="",
+            skills=[],
+            reward=50,
+            status="assigned",
+            bids=[],
+            assignee_user_id="u-3",
+            escrow_paid=0,
+        )
+    )
+    db.commit()
+
+    before_total = _recruit_total(client, auth)
+    resp = client.put("/api/recruitments/rec-legacy/resolve", json={"result": "success"}, headers=auth("u-1"))
+    assert resp.status_code == 200
+
+    # 发布时没扣，这里是结算时补扣的：g-1 500-50=450，g-2 300+50=350
+    assert _balances(client, auth)["g-1"] == 450
+    assert _balances(client, auth)["g-2"] == 350
+    assert _recruit_total(client, auth) == before_total
+
+
+def test_recruitment_legacy_short_balance_does_not_mint(client, auth, db):
+    """历史招募 + 发包组余额不足：只能抠出多少付多少，缺口不许凭空补。"""
+    group = db.get(Group, "g-1")
+    group.total_coins = 10
+    project = Project(id="p-poor", title="穷项目", owner_group_id="g-1")
+    db.add(project)
+    db.add(
+        Recruitment(
+            id="rec-poor",
+            project_id="p-poor",
+            title="付不起的招募",
+            description="",
+            skills=[],
+            reward=50,
+            status="assigned",
+            bids=[],
+            assignee_user_id="u-3",
+            escrow_paid=0,
+        )
+    )
+    db.commit()
+
+    before_total = _recruit_total(client, auth)
+    resp = client.put("/api/recruitments/rec-poor/resolve", json={"result": "success"}, headers=auth("u-1"))
+    assert resp.status_code == 200
+    assert resp.json()["actualPay"] == 10
+
+    assert _balances(client, auth)["g-1"] == 0
+    assert _balances(client, auth)["g-2"] == 310
+    assert _recruit_total(client, auth) == before_total
+
+
+def test_recruitment_unpayable_assignee_refunds_owner(client, auth, db):
+    """中标学生没有小组（钱无处可付）：押金退回发包组，而不是消失。"""
+    before_total = _recruit_total(client, auth)
+    rec_id = _create_recruitment(client, auth, _project_for(client, auth), reward=50)
+    # u-4 不属于任何小组
+    client.put(f"/api/recruitments/{rec_id}/assign", json={"userId": "u-4"}, headers=auth("u-1"))
+
+    resp = client.put(f"/api/recruitments/{rec_id}/resolve", json={"result": "success"}, headers=auth("u-1"))
+    assert resp.status_code == 200
+    assert resp.json()["actualPay"] == 0
+
+    # 押金原路退回，总量不变
+    assert _balances(client, auth)["g-1"] == 500
+    assert _recruit_total(client, auth) == before_total
 
 
 def test_challenge_cannot_resubmit(client, auth):

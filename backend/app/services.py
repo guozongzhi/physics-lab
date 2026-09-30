@@ -20,6 +20,39 @@ def _now() -> datetime:
     return datetime.now(timezone.utc)
 
 
+# ---------- 教师可控的开放窗口 ----------
+def _utcnow_naive() -> datetime:
+    """SQLite 的时间列没有时区（存的是 UTC 字面值），比较前要去掉 tzinfo，
+    否则 aware 与 naive 相减会抛 TypeError。"""
+    return datetime.now(timezone.utc).replace(tzinfo=None)
+
+
+def _window_open(flag: bool | None, closes_at: datetime | None) -> bool:
+    if not flag:
+        return False
+    if closes_at is None:
+        return True
+    if closes_at.tzinfo is not None:
+        closes_at = closes_at.astimezone(timezone.utc).replace(tzinfo=None)
+    return _utcnow_naive() < closes_at
+
+
+def window_state(meta: models.ClassMeta | None) -> dict:
+    """三个窗口此刻是否开着。
+
+    到点自动关闭是**惰性判定**——每次请求现算即可，不需要定时任务；
+    老师端界面用同一套规则渲染，所以到点会自己显示"已关闭"。
+
+    `meta` 为 None（尚未播种）时按全开处理，与旧行为一致。
+    """
+    if meta is None:
+        return {"challenge": True, "recruit": True, "transfer": True}
+    challenge = _window_open(meta.challenge_window_open, meta.challenge_window_closes_at)
+    recruit = _window_open(meta.recruit_window_open, meta.recruit_window_closes_at)
+    # 组间转账不单设开关：任一窗口开着就算"课上有监督"
+    return {"challenge": challenge, "recruit": recruit, "transfer": challenge or recruit}
+
+
 # ---------- 能量币 ----------
 def add_tx(
     db: Session,
@@ -91,20 +124,65 @@ def settle_challenge(db: Session, challenge: models.Challenge, solver_group_id: 
     return {"solverReward": solver_reward, "creatorRefund": creator_refund}
 
 
+def escrow_recruitment(
+    db: Session,
+    recruitment: models.Recruitment,
+    owner_group_id: str | None,
+    *,
+    note: str,
+) -> int:
+    """从发包组扣押招募押金，返回实际扣到的数额。
+
+    发布路径会先校验余额充足；押金扣不满时（余额不足）add_tx 会把扣减封顶，
+    这里据实返回，避免出现"账上写了扣、实际没扣"的差额。
+    """
+    if owner_group_id is None or recruitment.reward <= 0:
+        return 0
+    tx = add_tx(
+        db,
+        owner_group_id,
+        source="recruit",
+        ref_id=recruitment.id,
+        delta=-recruitment.reward,
+        note=note,
+    )
+    recruitment.escrow_paid = -tx.delta
+    return recruitment.escrow_paid
+
+
 def settle_recruitment(db: Session, recruitment: models.Recruitment, result: str) -> dict:
+    """按押金结算招募：酬劳从中标组该得的份额里出，剩下的退回发包组。
+
+    押金是发布招募时就从发包组扣下的（见 routers/projects.create_recruitment），
+    所以这里**不增发**能量币。原实现既没扣押金又照发不误，等于凭空印币——
+    「失败」一档尤其离谱：发包组会白得一笔自己从未付过的钱。
+
+    不变式：escrowed = 付给中标组的 + 退回发包组的。
+    """
+    project = db.get(models.Project, recruitment.project_id)
+    owner_group_id = project.owner_group_id if project else None
+
+    # 押金：新招募在发布时已扣；改动前发布的存量招募没扣过，这里补扣。
+    escrowed = recruitment.escrow_paid
+    if escrowed <= 0:
+        escrowed = escrow_recruitment(
+            db,
+            recruitment,
+            owner_group_id,
+            note=f"招募「{recruitment.title}」补扣押金",
+        )
+
     assignee = db.get(models.User, recruitment.assignee_user_id) if recruitment.assignee_user_id else None
     assignee_group_id = assignee.group_id if assignee else None
 
-    assignee_pay = 0
-    owner_refund = 0
     if result == "success":
-        assignee_pay = recruitment.reward
+        assignee_pay = escrowed
     elif result == "partial":
-        assignee_pay = int(recruitment.reward * 0.5)
-        owner_refund = recruitment.reward - assignee_pay
+        assignee_pay = escrowed // 2
     else:
-        owner_refund = recruitment.reward
+        assignee_pay = 0
 
+    paid = 0
     if assignee_pay > 0 and assignee_group_id:
         add_tx(
             db,
@@ -115,20 +193,21 @@ def settle_recruitment(db: Session, recruitment: models.Recruitment, result: str
             note=f"招募「{recruitment.title}」{'全额' if result == 'success' else '部分'}酬劳",
             user_id=recruitment.assignee_user_id,
         )
+        paid = assignee_pay
 
-    if owner_refund > 0:
-        project = db.get(models.Project, recruitment.project_id)
-        owner_group_id = project.owner_group_id if project else None
-        if owner_group_id:
-            add_tx(
-                db,
-                owner_group_id,
-                source="recruit",
-                ref_id=recruitment.id,
-                delta=owner_refund,
-                note=f"招募「{recruitment.title}」{'失败' if result == 'fail' else '部分完成'}回收",
-            )
-    return {"assigneePay": assignee_pay, "ownerRefund": owner_refund}
+    # 没付出去的一律退回发包组：包括失败、部分完成，以及中标学生没有小组、
+    # 钱无处可付的情况——不能让能量币在账上凭空消失。
+    owner_refund = escrowed - paid
+    if owner_refund > 0 and owner_group_id:
+        add_tx(
+            db,
+            owner_group_id,
+            source="recruit",
+            ref_id=recruitment.id,
+            delta=owner_refund,
+            note=f"招募「{recruitment.title}」{'失败' if result == 'fail' else '剩余'}押金退回",
+        )
+    return {"assigneePay": paid, "ownerRefund": owner_refund, "escrowed": escrowed}
 
 
 def settle_project_done(db: Session, project: models.Project) -> dict:

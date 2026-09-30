@@ -12,6 +12,7 @@ import {
 import { useGroupStore } from './groupStore';
 import { syncToApi } from '../lib/syncQueue';
 import { coinsApi } from '../lib/apiService';
+import { windowState, windowClosedMessage } from '../lib/activityWindow';
 
 /**
  * 能量币 store。
@@ -93,6 +94,10 @@ export const useCoinStore = create<CoinState>((set, get) => {
 
     transferCoins: (fromGroupId, toGroupId, amount, note, userId) => {
       const { adjustGroupCoinsLocal, getGroupById } = useGroupStore.getState();
+      // 组间转账不单设开关：任一窗口开着即视为"课上有监督"，两个都关才封
+      if (!windowState(useGroupStore.getState().classMeta).transfer) {
+        throw new Error(windowClosedMessage('transfer'));
+      }
       if (!Number.isInteger(amount) || amount <= 0) return;
       const fromGroup = getGroupById(fromGroupId);
       if (!fromGroup || fromGroup.totalCoins < amount) return;
@@ -177,18 +182,24 @@ export const useCoinStore = create<CoinState>((set, get) => {
         : undefined;
       const assigneeGroupId = assigneeUser?.groupId;
 
-      let assigneePay = 0;
-      let ownerRefund = 0;
-
-      if (result === 'success') {
-        assigneePay = recruitment.reward;
-      } else if (result === 'partial') {
-        assigneePay = Math.floor(recruitment.reward * 0.5);
-        ownerRefund = recruitment.reward - assigneePay;
-      } else {
-        ownerRefund = recruitment.reward;
+      // 押金在发布招募时就已从发包组扣下，这里只按结果分账，不再增发能量币。
+      // 改动前发布的存量招募没有 escrowPaid，在此补扣（扣不满就按实际扣到的算）。
+      let escrowed = recruitment.escrowPaid ?? 0;
+      if (escrowed <= 0 && ownerGroupId && recruitment.reward > 0) {
+        const before = useGroupStore.getState().getGroupById(ownerGroupId)?.totalCoins ?? 0;
+        const tx = addTx(ownerGroupId, {
+          source: 'recruit',
+          refId: recruitment.id,
+          delta: -recruitment.reward,
+          note: `招募「${recruitment.title}」补扣押金`,
+        });
+        escrowed = before - tx.balanceAfter;
       }
 
+      const assigneePay =
+        result === 'success' ? escrowed : result === 'partial' ? Math.floor(escrowed / 2) : 0;
+
+      let paid = 0;
       if (assigneePay > 0 && assigneeGroupId) {
         addTx(
           assigneeGroupId,
@@ -200,18 +211,21 @@ export const useCoinStore = create<CoinState>((set, get) => {
           },
           recruitment.assigneeUserId
         );
+        paid = assigneePay;
       }
 
+      // 没付出去的一律退回发包组（含中标学生没有小组的情况），不让能量币消失
+      const ownerRefund = escrowed - paid;
       if (ownerRefund > 0 && ownerGroupId) {
         addTx(ownerGroupId, {
           source: 'recruit',
           refId: recruitment.id,
           delta: ownerRefund,
-          note: `招募「${recruitment.title}」${result === 'fail' ? '失败' : '部分完成'}回收`,
+          note: `招募「${recruitment.title}」${result === 'fail' ? '失败' : '剩余'}押金退回`,
         });
       }
 
-      return { assigneePay, ownerRefund };
+      return { assigneePay: paid, ownerRefund };
     },
 
     settleProjectDone: (project) => {

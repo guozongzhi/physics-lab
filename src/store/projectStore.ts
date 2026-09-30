@@ -16,6 +16,7 @@ import { useGroupStore } from './groupStore';
 import { projectsApi, recruitmentsApi, showcaseApi, groupsApi, usersApi, coinsApi } from '../lib/apiService';
 import { syncToApi } from '../lib/syncQueue';
 import { reviveDates } from '../lib/reviveDates';
+import { windowState, windowClosedMessage } from '../lib/activityWindow';
 
 type PartialProject = Partial<Project> & {
   title: string;
@@ -257,7 +258,12 @@ export const useProjectStore = create<ProjectState>((set, get) => {
     },
 
     createRecruitment: (partial) => {
+      // 窗口关闭时不能发布新招募（但已发的照常投标、分配、结算）
+      if (!windowState(useGroupStore.getState().classMeta).recruit) {
+        throw new Error(windowClosedMessage('recruit'));
+      }
       const { projects, recruitments, showcaseItems } = get();
+      const ownerGroupId = projects.find((p) => p.id === partial.projectId)?.ownerGroupId;
       const recruitment: Recruitment = {
         id: `rec_${uid()}`,
         projectId: partial.projectId,
@@ -268,7 +274,18 @@ export const useProjectStore = create<ProjectState>((set, get) => {
         deadline: partial.deadline,
         status: 'open',
         bids: [],
+        escrowPaid: partial.reward,
       };
+      // 酬劳即押金：发布时就扣下。本地乐观更新；在线时后端还会独立扣一次权威记账。
+      // 不扣的话结算就成了凭空发币，「失败」一档更会让发包组白得一笔没付过的钱。
+      if (ownerGroupId) {
+        useCoinStore.getState().addTx(ownerGroupId, {
+          source: 'recruit',
+          refId: recruitment.id,
+          delta: -partial.reward,
+          note: `招募「${partial.title}」预扣押金`,
+        });
+      }
       const next = [...recruitments, recruitment];
       persist(projects, next, showcaseItems);
       set({ recruitments: next });
@@ -291,6 +308,10 @@ export const useProjectStore = create<ProjectState>((set, get) => {
     },
 
     placeBid: (recruitmentId, bid) => {
+      // 投标也算"新开局"：窗口关闭时不许接新活
+      if (!windowState(useGroupStore.getState().classMeta).recruit) {
+        throw new Error(windowClosedMessage('recruit'));
+      }
       const { projects, recruitments, showcaseItems } = get();
       const next = recruitments.map((r) => {
         if (r.id !== recruitmentId) return r;
@@ -325,24 +346,20 @@ export const useProjectStore = create<ProjectState>((set, get) => {
     resolveRecruitment: (recruitmentId, result) => {
       const { projects, recruitments, showcaseItems } = get();
       const target = recruitments.find((r) => r.id === recruitmentId);
+      let paid = 0;
       if (target) {
         // 本地乐观结算；后端 resolve 端点内部完成正式记账。
         const proj = get().projects.find((p) => p.id === target.projectId);
-        useCoinStore.getState().settleRecruitment(target, result, proj?.ownerGroupId);
+        paid = useCoinStore.getState().settleRecruitment(target, result, proj?.ownerGroupId).assigneePay;
       }
       const next: Recruitment[] = recruitments.map((r) => {
         if (r.id !== recruitmentId) return r;
-        const actualPay =
-          result === 'success'
-            ? r.reward
-            : result === 'partial'
-              ? Math.floor(r.reward * 0.5)
-              : 0;
         const updated: Recruitment = {
           ...r,
           status: (result === 'fail' ? 'failed' : 'done') as Recruitment['status'],
           result,
-          actualPay,
+          // 记实际付出去的钱：押金不足或中标学生没有小组时会少于理论值
+          actualPay: paid,
         };
         return updated;
       });

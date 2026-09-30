@@ -27,6 +27,7 @@ import {
 import MissionShell from '@/components/layout/MissionShell';
 import { useGroupStore } from '@/store/groupStore';
 import { useCoinStore } from '@/store/coinStore';
+import { windowState, formatCloseTime } from '@/lib/activityWindow';
 import { classesApi, usersApi } from '@/lib/apiService';
 import { syncToApi } from '@/lib/syncQueue';
 import { cn } from '@/lib/utils';
@@ -113,6 +114,14 @@ function useTicker(target: number, duration = 900) {
   return val;
 }
 
+/** 开放窗口的"自动关闭"选项。value 为空＝不限时。 */
+const WINDOW_MINUTE_OPTIONS: Array<{ label: string; value: number | null }> = [
+  { label: '30 分钟', value: 30 },
+  { label: '1 小时', value: 60 },
+  { label: '2 小时', value: 120 },
+  { label: '不限', value: null },
+];
+
 export default function TeacherGroups() {
   const groups = useGroupStore((s) => s.groups);
   const users = useGroupStore((s) => s.users);
@@ -126,6 +135,7 @@ export default function TeacherGroups() {
   const adjustUserCoins = useGroupStore((s) => s.adjustUserCoins);
   const resetAllGroupCoins = useGroupStore((s) => s.resetAllGroupCoins);
   const updateChallengeRates = useGroupStore((s) => s.updateChallengeRates);
+  const updateActivityWindow = useGroupStore((s) => s.updateActivityWindow);
   const addTx = useCoinStore((s) => s.addTx);
 
   const [dialog, setDialog] = useState<DialogKind>(null);
@@ -135,6 +145,41 @@ export default function TeacherGroups() {
   const [rateEasy, setRateEasy] = useState(classMeta.coinEasy);
   const [rateMedium, setRateMedium] = useState(classMeta.coinMedium);
   const [rateHard, setRateHard] = useState(classMeta.coinHard);
+
+  // 开放窗口。控件直接读 classMeta、改动立刻落库，**不做草稿**：
+  // 草稿会在后端回填前用 localStorage 的旧值初始化，一按保存就把旧状态写回去
+  // （实测踩过）；直接读就不会，也顺带避免了"没动过的那行被一起改掉"。
+  // 到点自动关闭是惰性判定，页面得跟着走，否则老师开着页面会一直看到"开放中"。
+  const [nowTick, setNowTick] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNowTick(Date.now()), 30_000);
+    return () => clearInterval(id);
+  }, []);
+  const win = windowState(classMeta, nowTick);
+
+  /** 立刻落库某一行的设置，另一行原样回传——否则顺手会改到它。 */
+  const applyWindow = (
+    changed: 'challenge' | 'recruit',
+    open: boolean,
+    minutes: number | null
+  ) => {
+    const keepChallenge = classMeta.challengeWindowOpen !== false;
+    const keepRecruit = classMeta.recruitWindowOpen !== false;
+    const payload = {
+      challengeOpen: keepChallenge,
+      challengeMinutes: keepChallenge ? classMeta.challengeWindowMinutes ?? null : null,
+      recruitOpen: keepRecruit,
+      recruitMinutes: keepRecruit ? classMeta.recruitWindowMinutes ?? null : null,
+    };
+    if (changed === 'challenge') {
+      payload.challengeOpen = open;
+      payload.challengeMinutes = open ? minutes : null;
+    } else {
+      payload.recruitOpen = open;
+      payload.recruitMinutes = open ? minutes : null;
+    }
+    updateActivityWindow(payload);
+  };
   const [resetConfirmStep, setResetConfirmStep] = useState(0);
   const [renameInput, setRenameInput] = useState('');
   const [newGroupName, setNewGroupName] = useState('');
@@ -283,6 +328,9 @@ export default function TeacherGroups() {
     setRateHard(rates.coinHard);
     flashToast('挑战奖励单价已保存');
   };
+
+  /** 把到期时间显示成本地 HH:MM（后端给的是无时区 UTC 串，交给 lib 统一解析）。 */
+  const fmtClose = formatCloseTime;
 
   const confirmResetAll = () => {
     resetAllGroupCoins(globalCoins);
@@ -458,6 +506,98 @@ export default function TeacherGroups() {
               <b className="text-energy-600 tabular-nums">{rateHard * 10}</b> ⚡ 之间
             </span>
           </div>
+        </motion.section>
+
+        {/* 开放窗口 —— 防学生在无人监督时反复刷币 */}
+        <motion.section
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.45, delay: 0.05 }}
+          className="glass-card p-5 md:p-6 rounded-[22px]"
+        >
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-mission-400 to-nova-500 flex items-center justify-center text-white shadow-md shrink-0">
+              <Shield size={17} />
+            </div>
+            <div>
+              <h2 className="text-[15px] font-extrabold text-ink-800">开放窗口</h2>
+              <p className="text-[12px] text-ink-500">
+                关闭后学生不能新建挑战、发布招募、投标或发起组间转账。
+                <b className="text-ink-600">已经开着的挑战与招募照常作答、结算</b>，不会把押金卡住。
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-4 space-y-3">
+            {([
+              { kind: 'challenge' as const, label: '挑战窗口', hint: '学生创建新挑战', flag: classMeta.challengeWindowOpen !== false, minutes: classMeta.challengeWindowMinutes ?? null, closesAt: classMeta.challengeWindowClosesAt },
+              { kind: 'recruit' as const, label: '招募窗口', hint: '学生发布招募、投标', flag: classMeta.recruitWindowOpen !== false, minutes: classMeta.recruitWindowMinutes ?? null, closesAt: classMeta.recruitWindowClosesAt },
+            ]).map((w) => {
+              const live = win[w.kind];
+              const at = fmtClose(w.closesAt);
+              // 开关是开的却已不生效，只可能是到点自己关的——跟老师手动关掉要分开说
+              const expired = w.flag && !live;
+              return (
+                <div key={w.kind} className="flex flex-wrap items-center gap-3 p-3 rounded-xl bg-white/60 border border-ink-100">
+                  <button
+                    type="button"
+                    onClick={() => applyWindow(w.kind, !live, w.minutes)}
+                    aria-label={`${w.label}${live ? '已开放' : '已关闭'}`}
+                    className={cn(
+                      'relative w-12 h-6 rounded-full transition-colors shrink-0',
+                      live ? 'bg-growth-500' : 'bg-ink-300'
+                    )}
+                  >
+                    <span
+                      className={cn(
+                        'absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-all',
+                        live ? 'left-6' : 'left-0.5'
+                      )}
+                    />
+                  </button>
+                  <div className="min-w-[128px]">
+                    <div className="text-[13px] font-bold text-ink-800">{w.label}</div>
+                    <div className="text-[11px] text-ink-400">{w.hint}</div>
+                  </div>
+                  <label className="flex items-center gap-1.5">
+                    <span className="text-[12px] text-ink-500">自动关闭</span>
+                    <select
+                      className="input !w-28 !py-1.5 text-[12px]"
+                      value={String(w.minutes)}
+                      onChange={(e) =>
+                        applyWindow(w.kind, true, e.target.value === 'null' ? null : Number(e.target.value))
+                      }
+                      disabled={!live}
+                    >
+                      {WINDOW_MINUTE_OPTIONS.map((o) => (
+                        <option key={o.label} value={String(o.value)}>
+                          {o.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <span
+                    className={cn(
+                      'text-[12px] font-semibold ml-auto',
+                      live ? 'text-growth-600' : 'text-danger-600'
+                    )}
+                  >
+                    {live
+                      ? at
+                        ? `开放中 · ${at} 自动关闭`
+                        : '开放中 · 不限时'
+                      : expired
+                        ? '已到期 · 打开开关即可重新计时'
+                        : '当前：已关闭'}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+
+          <p className="mt-4 text-[12px] text-ink-500">
+            开关和时长改完立刻生效，不需要保存。组间转账不单设开关：任一窗口开着时学生即可转账。
+          </p>
         </motion.section>
 
         {/* 未分组学生 */}
@@ -983,18 +1123,33 @@ export default function TeacherGroups() {
                   </div>
 
                   <div className="mb-5">
-                    <label className="text-[12px] font-bold text-ink-600 mb-1.5 flex items-center justify-between">
+                    <div className="text-[12px] font-bold text-ink-600 mb-1.5 flex items-center justify-between">
                       <span>{coinMode === 'add' ? '增加' : '扣除'}数量 (⚡)</span>
-                      <span className={cn('font-extrabold tabular-nums', coinMode === 'add' ? 'text-growth-700' : 'text-danger-700')}>
-                        {coinMode === 'add' ? '+' : '-'}
-                        {coinAmount}
+                      {/* 可直接输入具体数字。滑杆是 1~500 的连续区间，一个像素约 2.6 个币，
+                          拖不出精确的 1、7、35，精确值只能靠这里 */}
+                      <span className="flex items-center gap-1">
+                        <span className={cn('font-extrabold', coinMode === 'add' ? 'text-growth-700' : 'text-danger-700')}>
+                          {coinMode === 'add' ? '+' : '-'}
+                        </span>
+                        <input
+                          type="number"
+                          min={1}
+                          step={1}
+                          value={coinAmount}
+                          aria-label={coinMode === 'add' ? '增加数量' : '扣除数量'}
+                          onChange={(e) =>
+                            setCoinAmount(Math.max(1, Math.floor(Number(e.target.value)) || 1))
+                          }
+                          className="input !w-24 !py-1 text-right font-extrabold tabular-nums"
+                        />
                       </span>
-                    </label>
+                    </div>
                     <input
                       type="range"
-                      min={10}
-                      max={500}
-                      step={10}
+                      min={1}
+                      // 输入框允许超过 500，滑杆上限跟着放开，免得被夹到 500 和输入值对不上
+                      max={Math.max(500, coinAmount)}
+                      step={1}
                       value={coinAmount}
                       onChange={(e) => setCoinAmount(Number(e.target.value))}
                       className="w-full accent-mission-500 mb-2"
@@ -1285,7 +1440,16 @@ export default function TeacherGroups() {
               <span>{memberCoinMode === 'add' ? '增加' : '扣除'}数量 (⚡)</span>
               <span className={cn('font-extrabold tabular-nums', memberCoinMode === 'add' ? 'text-growth-700' : 'text-danger-700')}>{memberCoinMode === 'add' ? '+' : '-'}{memberCoinAmount}</span>
             </label>
-            <input type="number" min={1} className="input w-full mb-5" value={memberCoinAmount} onChange={(e) => setMemberCoinAmount(Math.max(1, Number(e.target.value) || 1))} />
+            <input
+              type="number"
+              min={1}
+              step={1}
+              className="input w-full mb-5"
+              value={memberCoinAmount}
+              aria-label={memberCoinMode === 'add' ? '增加数量' : '扣除数量'}
+              // 必须取整：输入 3.5 而 delta 是整数字段，原样发出去会被后端 422 拒掉
+              onChange={(e) => setMemberCoinAmount(Math.max(1, Math.floor(Number(e.target.value)) || 1))}
+            />
 
             <ReasonPicker mode={memberCoinMode} value={memberCoinReason} onChange={setMemberCoinReason} />
 

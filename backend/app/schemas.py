@@ -407,7 +407,8 @@ class RecruitmentCreate(BaseModel):
     title: str
     description: str
     skills: list[str] = []
-    reward: int
+    # 必须为正：它在发布时按此数从发包组扣押金，负数会变成"发布就加钱"
+    reward: int = Field(gt=0)
     deadline: datetime
 
 
@@ -438,6 +439,8 @@ class RecruitmentOut(CamelModel):
     assignee_user_id: str | None = None
     result: str | None = None
     actual_pay: int | None = None
+    # 发布时从发包组预扣的押金，结算时按它分账
+    escrow_paid: int = 0
 
 
 # ---------- Showcase ----------
@@ -517,6 +520,25 @@ class ClassMetaOut(CamelModel):
     coin_easy: int
     coin_medium: int
     coin_hard: int
+    # 开放窗口：minutes 是老师选的时长（空＝不限时），closesAt 是按它算出的到期点
+    challenge_window_open: bool
+    challenge_window_minutes: int | None
+    challenge_window_closes_at: datetime | None
+    recruit_window_open: bool
+    recruit_window_minutes: int | None
+    recruit_window_closes_at: datetime | None
+
+
+class ActivityWindowUpdate(BaseModel):
+    """教师开/关挑战与招募窗口（字段用字面 camelCase，与其它请求模型一致）。
+
+    minutes 为空＝不限时。上限 24 小时（1440）是防手滑——真要长时间开放就选"不限"。
+    """
+
+    challengeOpen: bool
+    challengeMinutes: int | None = Field(default=None, ge=1, le=1440)
+    recruitOpen: bool
+    recruitMinutes: int | None = Field(default=None, ge=1, le=1440)
 
 
 class ClassMetaUpdate(BaseModel):

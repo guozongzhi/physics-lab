@@ -33,6 +33,13 @@ interface GroupState {
   resetAllGroupCoins: (targetCoins: number) => void;
   /** 教师调整挑战奖励单价（简单/中等/困难） */
   updateChallengeRates: (rates: { coinEasy: number; coinMedium: number; coinHard: number }) => void;
+  /** 教师开关挑战/招募窗口。minutes 为空＝不限时；学生窗口外不能"新开局"。 */
+  updateActivityWindow: (payload: {
+    challengeOpen: boolean;
+    challengeMinutes: number | null;
+    recruitOpen: boolean;
+    recruitMinutes: number | null;
+  }) => void;
   updateUserPersonalCoins: (userId: string, delta: number) => void;
   /** 教师调整某学生个人能量币：乐观更新 + 同步后端（后端同时记录团队流水）。 */
   adjustUserCoins: (userId: string, delta: number, note?: string) => void;
@@ -60,6 +67,13 @@ export const useGroupStore = create<GroupState>((set, get) => {
     coinEasy: 1,
     coinMedium: 2,
     coinHard: 3,
+    // 默认全开：老师是"主动去关"，不是"发现功能已经被锁上"
+    challengeWindowOpen: true,
+    challengeWindowMinutes: null,
+    challengeWindowClosesAt: null,
+    recruitWindowOpen: true,
+    recruitWindowMinutes: null,
+    recruitWindowClosesAt: null,
   });
 
   const persistAll = (groups: Group[], users: User[], classMeta: ClassMeta) => {
@@ -217,6 +231,33 @@ export const useGroupStore = create<GroupState>((set, get) => {
       persistAll(groups, users, nextMeta);
       set({ classMeta: nextMeta });
       syncToApi(() => coinsApi.updateClassMeta(rates), 'classMeta.update');
+    },
+
+    /**
+     * 教师开关挑战/招募窗口。本地存"开关 + 时长 + 到期时间"，到不到点由
+     * `lib/activityWindow` 按当前时间现算——惰性判定，不需要定时器。
+     * minutes 存下来是给界面回显选项用的：closesAt 会随时间衰减，分钟数不会。
+     */
+    updateActivityWindow: (payload) => {
+      const { groups, users, classMeta } = get();
+      const closesAt = (isOpen: boolean, minutes: number | null) =>
+        isOpen && minutes ? new Date(Date.now() + minutes * 60000) : null;
+      const nextMeta: ClassMeta = {
+        ...classMeta,
+        challengeWindowOpen: payload.challengeOpen,
+        challengeWindowMinutes: payload.challengeOpen ? payload.challengeMinutes : null,
+        challengeWindowClosesAt: closesAt(payload.challengeOpen, payload.challengeMinutes),
+        recruitWindowOpen: payload.recruitOpen,
+        recruitWindowMinutes: payload.recruitOpen ? payload.recruitMinutes : null,
+        recruitWindowClosesAt: closesAt(payload.recruitOpen, payload.recruitMinutes),
+      };
+      persistAll(groups, users, nextMeta);
+      set({ classMeta: nextMeta });
+      syncToApi(async () => {
+        const fresh = await coinsApi.updateActivityWindow(payload);
+        // 后端算出的到期时间是权威值，回填对齐
+        set({ classMeta: { ...get().classMeta, ...fresh } });
+      }, 'classMeta.window');
     },
 
     updateUserPersonalCoins: (userId, delta) => {

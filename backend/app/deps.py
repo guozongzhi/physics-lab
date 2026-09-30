@@ -2,8 +2,9 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 
+from . import services
 from .database import get_db
-from .models import User
+from .models import ClassMeta, User
 from .security import decode_access_token
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/auth/login", auto_error=False)
@@ -40,3 +41,36 @@ def require_admin(current: User = Depends(get_current_user)) -> User:
     if current.account_role != "admin":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="需要管理员权限")
     return current
+
+
+#: 窗口关闭时给学生看的话术
+_WINDOW_LABELS = {
+    "challenge": "挑战窗口",
+    "recruit": "招募窗口",
+    "transfer": "组间转账",
+}
+
+
+def window_guard(kind: str):
+    """挡在学生"新开局"前面的一道闸：建挑战 / 发招募 / 投标 / 发起转账。
+
+    **只挡新开局**——已经开着的挑战与招募照常作答、结算，否则交过押金的一方
+    会卡在中间谁也拿不回能量币。
+
+    教师/管理员不受限（他们是监督者，关了窗口自己也得能发招募）。
+    用法：`Depends(window_guard("challenge"))`
+    """
+
+    def _guard(
+        db: Session = Depends(get_db),
+        current: User = Depends(get_current_user),
+    ) -> None:
+        if current.account_role in ("teacher", "admin"):
+            return
+        if not services.window_state(db.get(ClassMeta, 1))[kind]:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"{_WINDOW_LABELS[kind]}已关闭，请联系老师开放",
+            )
+
+    return _guard

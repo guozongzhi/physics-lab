@@ -27,6 +27,7 @@ import { useUIStore } from '@/store/uiStore';
 import type { Challenge } from '@/types';
 import { cn } from '@/lib/utils';
 import { challengeRewardFor } from '@/lib/challengePricing';
+import { windowState, windowClosedMessage } from '@/lib/activityWindow';
 
 const CoinBadge = ({ amount, size = 'md', showSymbol = true, className = '' }: { amount: number; size?: 'sm' | 'md' | 'lg'; showSymbol?: boolean; className?: string }) => {
   const sizeMap = { sm: 'h-5 text-xs px-1.5 gap-0.5', md: 'h-7 text-sm px-2 gap-1', lg: 'h-10 text-base px-3 gap-1.5' };
@@ -208,6 +209,7 @@ export default function TheoryChallenge() {
 
   const submitCreate = () => {
     if (!myGid) { setFormErr('请先登录后发起挑战'); return; }
+    if (!windowState(classMeta).challenge) { setFormErr(windowClosedMessage('challenge')); return; }
     if (!formTitle.trim()) { setFormErr('请填写挑战标题'); return; }
     if (!formTopicId) { setFormErr('请选择关联主题'); return; }
     if (formQuestionIds.length !== 10) { setFormErr(`请精确选择 10 道题，当前 ${formQuestionIds.length} 道`); return; }

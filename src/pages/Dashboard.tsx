@@ -363,6 +363,12 @@ export default function Dashboard() {
   const canPublish = (gid: string) =>
     isStaff || (groupId === gid && users.find((u) => u.id === userId)?.role === 'leader');
 
+  // 招募酬劳即押金，发布时就从项目归属组扣下，所以先算出余额用来拦人
+  const recBalance = recProject
+    ? groups.find((g) => g.id === recProject.ownerGroupId)?.totalCoins ?? 0
+    : 0;
+  const recInsufficient = Number(recForm.reward) > recBalance;
+
   const openRecruit = (p: Project) => {
     setRecProject(p);
     setRecForm({ title: '', description: '', skills: '', reward: 50, daysLeft: 7 });
@@ -374,6 +380,11 @@ export default function Dashboard() {
     if (!recForm.title.trim()) { pushToast('请填写招募标题', 'warning'); return; }
     if (!recForm.description.trim()) { pushToast('请填写任务描述', 'warning'); return; }
     if (!recForm.skills.trim()) { pushToast('请填写技能要求', 'warning'); return; }
+    if (Number(recForm.reward) <= 0) { pushToast('酬劳需大于 0 能量币', 'warning'); return; }
+    if (recInsufficient) {
+      pushToast(`本组只有 ${recBalance} ⚡，付不起 ${recForm.reward} ⚡ 的酬劳`, 'warning');
+      return;
+    }
     setRecSaving(true);
     try {
       createRecruitment({
@@ -1539,17 +1550,23 @@ export default function Dashboard() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="label">酬劳（能量币）</label>
-                  <input type="number" min={0} className="input" value={recForm.reward} onChange={(e) => setRecForm({ ...recForm, reward: Number(e.target.value) || 0 })} />
+                  <input type="number" min={1} className="input" value={recForm.reward} onChange={(e) => setRecForm({ ...recForm, reward: Number(e.target.value) || 0 })} />
                 </div>
                 <div>
                   <label className="label">截止天数</label>
                   <input type="number" min={1} className="input" value={recForm.daysLeft} onChange={(e) => setRecForm({ ...recForm, daysLeft: Math.max(1, Number(e.target.value) || 1) })} />
                 </div>
               </div>
+              <p className={`text-[12px] ${recInsufficient ? 'text-danger-600' : 'text-ink-500'}`}>
+                本组余额 {recBalance} ⚡。酬劳作为押金在发布时立即扣除，
+                {recInsufficient
+                  ? `当前差额 ${Number(recForm.reward) - recBalance} ⚡，请先调低酬劳或让老师发放能量币。`
+                  : `发布后余额 ${recBalance - Number(recForm.reward)} ⚡；任务失败或未完成的部分会退回本组。`}
+              </p>
             </div>
             <div className="flex gap-2 mt-6">
               <button className="btn-ghost flex-1" onClick={() => setRecOpen(false)}>取消</button>
-              <button className="btn-energy flex-1" onClick={submitRecruit} disabled={recSaving}>
+              <button className="btn-energy flex-1" onClick={submitRecruit} disabled={recSaving || recInsufficient}>
                 {recSaving ? '发布中…' : '发布招募'}
               </button>
             </div>

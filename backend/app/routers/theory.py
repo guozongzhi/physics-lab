@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from .. import services
 from ..database import get_db
-from ..deps import get_current_user, require_teacher
+from ..deps import get_current_user, require_teacher, window_guard
 from ..models import (
     Challenge,
     Class,
@@ -324,7 +324,12 @@ def list_challenges(db: Session = Depends(get_db), _: User = Depends(get_current
 
 
 @router.post("/challenges", response_model=ChallengeOut)
-def create_challenge(payload: ChallengeCreate, db: Session = Depends(get_db), current: User = Depends(get_current_user)):
+def create_challenge(
+    payload: ChallengeCreate,
+    db: Session = Depends(get_db),
+    current: User = Depends(get_current_user),
+    _window: None = Depends(window_guard("challenge")),
+):
     group_id = _require_group(current)
 
     # 奖励由服务端按题目难度算，**不采信客户端传来的 reward**——否则学生改个请求体

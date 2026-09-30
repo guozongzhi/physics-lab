@@ -1,11 +1,14 @@
+from datetime import datetime, timedelta, timezone
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from .. import services
 from ..database import get_db
-from ..deps import get_current_user, require_teacher
+from ..deps import get_current_user, require_teacher, window_guard
 from ..models import ClassMeta, CoinTransaction, Group, User
 from ..schemas import (
+    ActivityWindowUpdate,
     ClassMetaOut,
     ClassMetaUpdate,
     CoinDelta,
@@ -95,6 +98,7 @@ def transfer_coins(
     payload: CoinTransfer,
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
+    _window: None = Depends(window_guard("transfer")),
 ):
     """组间能量币转账（学生发起，后端原子记账，收支两笔共享同一 refId）。"""
     if payload.source_group_id == payload.target_group_id:
@@ -158,6 +162,39 @@ def update_class_meta(
     meta.coin_easy = payload.coinEasy
     meta.coin_medium = payload.coinMedium
     meta.coin_hard = payload.coinHard
+    db.commit()
+    db.refresh(meta)
+    return meta
+
+
+@router.put("/activity-window", response_model=ClassMetaOut)
+def update_activity_window(
+    payload: ActivityWindowUpdate,
+    db: Session = Depends(get_db),
+    _: User = Depends(require_teacher),
+):
+    """教师开关挑战/招募窗口，学生在这个窗口外不能"新开局"。
+
+    只挡新开局：已经开着的挑战与招募照常作答、结算，否则交过押金的一方
+    会被卡住拿不回能量币。组间转账不单独设开关，任一窗口开着即视为可转。
+    """
+    meta = db.get(ClassMeta, 1)
+    if not meta:
+        meta = ClassMeta(id=1)
+        db.add(meta)
+
+    def _closes_at(is_open: bool, minutes: int | None):
+        # 关闭时不保留旧的到期时间；开放且选了时长才算到期点
+        if not is_open or minutes is None:
+            return None
+        return datetime.now(timezone.utc) + timedelta(minutes=minutes)
+
+    meta.challenge_window_open = payload.challengeOpen
+    meta.challenge_window_minutes = payload.challengeMinutes if payload.challengeOpen else None
+    meta.challenge_window_closes_at = _closes_at(payload.challengeOpen, payload.challengeMinutes)
+    meta.recruit_window_open = payload.recruitOpen
+    meta.recruit_window_minutes = payload.recruitMinutes if payload.recruitOpen else None
+    meta.recruit_window_closes_at = _closes_at(payload.recruitOpen, payload.recruitMinutes)
     db.commit()
     db.refresh(meta)
     return meta

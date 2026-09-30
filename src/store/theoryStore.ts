@@ -15,6 +15,7 @@ import { useUIStore } from './uiStore';
 import { theoryApi, groupsApi, usersApi, coinsApi } from '../lib/apiService';
 import { syncToApi } from '../lib/syncQueue';
 import { reviveDates } from '../lib/reviveDates';
+import { windowState, windowClosedMessage } from '../lib/activityWindow';
 import { apiEnabled } from '../lib/apiClient';
 import { challengeRewardFor } from '../lib/challengePricing';
 
@@ -219,6 +220,12 @@ export const useTheoryStore = create<TheoryState>((set, get) => {
 
     createChallenge: ({ title, creatorGroupId, topicId, questionIds, deadline }) => {
       const { topics, questions, quizSessions, challenges } = get();
+
+      // 窗口关闭时不能"新开局"。前端先拦一道（离线模式也需要），后端才是权威。
+      // 注意只拦新建——已开的挑战照常作答，否则押金会卡住。
+      if (!windowState(useGroupStore.getState().classMeta).challenge) {
+        throw new Error(windowClosedMessage('challenge'));
+      }
 
       // 奖励由题目难度算出来，定价权在教师。在线时后端会独立再算一遍（权威值）。
       const pickedQuestions = questions.filter((q) => questionIds.includes(q.id));

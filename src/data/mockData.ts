@@ -159,6 +159,8 @@ export interface Recruitment {
   assigneeUserId?: string;
   result?: 'success' | 'partial' | 'fail';
   actualPay?: number;
+  /** 发布招募时从发包组预扣的押金。结算按它分账；改动前发布的存量招募为 0。 */
+  escrowPaid?: number;
 }
 
 export interface ShowcaseItem {
@@ -191,6 +193,19 @@ export interface ClassMeta {
   coinMedium: number;
   coinHard: number;
   termName: string;
+  /**
+   * 教师可控的开放窗口。关闭后学生不能"新开局"（建挑战/发招募/投标/组间转账），
+   * 但已开的挑战与招募照常作答、结算。
+   * 字段可缺省——旧的 localStorage 里没有，此时按"开着"处理，见 lib/activityWindow.ts。
+   * closesAt 为空表示不限时；到点后按惰性判定当作已关闭。
+   */
+  challengeWindowOpen?: boolean;
+  /** 老师选的时长（空＝不限时）。界面回显用——closesAt 会随时间衰减，分钟数不会。 */
+  challengeWindowMinutes?: number | null;
+  challengeWindowClosesAt?: string | Date | null;
+  recruitWindowOpen?: boolean;
+  recruitWindowMinutes?: number | null;
+  recruitWindowClosesAt?: string | Date | null;
 }
 
 export interface CurrentUser {

@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from .. import services
 from ..database import get_db
-from ..deps import get_current_user, require_teacher
+from ..deps import get_current_user, require_teacher, window_guard
 from ..models import Group, Project, Recruitment, ShowcaseItem, User
 from ..schemas import (
     AssignRequest,
@@ -248,12 +248,27 @@ def list_recruitments(
 
 
 @router.post("/recruitments", response_model=RecruitmentOut)
-def create_recruitment(payload: RecruitmentCreate, db: Session = Depends(get_db), current: User = Depends(get_current_user)):
+def create_recruitment(
+    payload: RecruitmentCreate,
+    db: Session = Depends(get_db),
+    current: User = Depends(get_current_user),
+    _window: None = Depends(window_guard("recruit")),
+):
     project = db.get(Project, payload.projectId)
     if not project:
         raise HTTPException(status_code=404, detail="项目不存在")
     if current.account_role not in ("teacher", "admin") and current.group_id != project.owner_group_id:
         raise HTTPException(status_code=403, detail="只能为本小组项目发布招募")
+    # 酬劳从项目归属组的能量币里预扣作押金。不扣的话结算时就是凭空发币，
+    # 而且「失败」那一档会让发包组白得一笔自己从未付过的钱。
+    owner = db.get(Group, project.owner_group_id) if project.owner_group_id else None
+    if owner is None:
+        raise HTTPException(status_code=400, detail="该项目没有归属小组，无法发布招募")
+    if owner.total_coins < payload.reward:
+        raise HTTPException(
+            status_code=400,
+            detail=f"能量币不足：本次招募酬劳 {payload.reward} ⚡，本组只有 {owner.total_coins} ⚡",
+        )
     rec = Recruitment(
         id=services.gen_id("rec_"),
         project_id=payload.projectId,
@@ -266,13 +281,20 @@ def create_recruitment(payload: RecruitmentCreate, db: Session = Depends(get_db)
         bids=[],
     )
     db.add(rec)
+    services.escrow_recruitment(db, rec, owner.id, note=f"招募「{rec.title}」预扣押金")
     db.commit()
     db.refresh(rec)
     return rec
 
 
 @router.post("/recruitments/{rec_id}/bid", response_model=RecruitmentOut)
-def place_bid(rec_id: str, payload: BidCreate, db: Session = Depends(get_db), _: User = Depends(get_current_user)):
+def place_bid(
+    rec_id: str,
+    payload: BidCreate,
+    db: Session = Depends(get_db),
+    _: User = Depends(get_current_user),
+    _window: None = Depends(window_guard("recruit")),
+):
     rec = db.get(Recruitment, rec_id)
     if not rec:
         raise HTTPException(status_code=404, detail="招募不存在")
@@ -323,12 +345,11 @@ def resolve(rec_id: str, payload: ResolveRequest, db: Session = Depends(get_db),
         project is None or current.group_id != project.owner_group_id
     ):
         raise HTTPException(status_code=403, detail="只能结算本项目招募")
-    services.settle_recruitment(db, rec, payload.result)
+    settled = services.settle_recruitment(db, rec, payload.result)
     rec.result = payload.result
     rec.status = "failed" if payload.result == "fail" else "done"
-    rec.actual_pay = (
-        rec.reward if payload.result == "success" else int(rec.reward * 0.5) if payload.result == "partial" else 0
-    )
+    # 记实际付出去的钱，而不是理论值——押金不足或中标学生没有小组时会少于理论值
+    rec.actual_pay = settled["assigneePay"]
     db.commit()
     db.refresh(rec)
     return rec

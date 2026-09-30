@@ -296,6 +296,13 @@ export const coinsApi = {
   /** 教师调整挑战奖励单价（按题目难度） */
   updateClassMeta: (rates: { coinEasy: number; coinMedium: number; coinHard: number }) =>
     api.put<ClassMeta>('/api/class-meta', rates),
+  /** 教师开关挑战/招募窗口。minutes 为空＝不限时（不自动关闭） */
+  updateActivityWindow: (payload: {
+    challengeOpen: boolean;
+    challengeMinutes: number | null;
+    recruitOpen: boolean;
+    recruitMinutes: number | null;
+  }) => api.put<ClassMeta>('/api/activity-window', payload),
   transfer: (payload: { sourceGroupId: string; targetGroupId: string; amount: number; note?: string }) =>
     api.post<{ refId: string; sourceBalanceAfter: number; targetBalanceAfter: number }>(
       '/api/coins/transfer',

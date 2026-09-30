@@ -27,6 +27,7 @@ import { useProjectStore } from '@/store/projectStore';
 import { useUIStore } from '@/store/uiStore';
 import { User, Recruitment } from '@/data/mockData';
 import { cn } from '@/lib/utils';
+import { windowState, windowClosedMessage } from '@/lib/activityWindow';
 
 type SortKey = 'reward' | 'deadline';
 
@@ -523,6 +524,8 @@ function RecCard({ r, idx, groups, usersByIdMap, groupUsersById, pushToast, user
     .filter(Boolean) as User[];
   const deadlineTs = +new Date(rec.deadline);
   const urgent = deadlineIsUrgent(deadlineTs);
+  // 招募窗口关闭时不能接新活（已中标的那条仍可在通讯页结算）
+  const recruitOpen = useGroupStore((s) => windowState(s.classMeta).recruit);
 
   return (
     <motion.article
@@ -572,11 +575,16 @@ function RecCard({ r, idx, groups, usersByIdMap, groupUsersById, pushToast, user
           </div>
         </div>
         <button
-          className="btn-mission w-full !py-2.5 !px-3 text-[13px]"
+          className="btn-mission w-full !py-2.5 !px-3 text-[13px] disabled:opacity-50 disabled:cursor-not-allowed"
+          disabled={!recruitOpen}
           onClick={() => {
             const bidUserId = userId;
             if (!bidUserId) {
               pushToast('请先登录后再投标', 'warning');
+              return;
+            }
+            if (!windowState(useGroupStore.getState().classMeta).recruit) {
+              pushToast(windowClosedMessage('recruit'), 'warning');
               return;
             }
             placeBid(rec.id, { userId: bidUserId, skillDesc: '', hours: 1 });
@@ -584,7 +592,7 @@ function RecCard({ r, idx, groups, usersByIdMap, groupUsersById, pushToast, user
           }}
         >
           <Send size={14} />
-          立即投标
+          {recruitOpen ? '立即投标' : '招募窗口已关闭'}
         </button>
       </div>
     </motion.article>
