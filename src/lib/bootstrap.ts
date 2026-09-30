@@ -69,7 +69,12 @@ export async function bootstrapFromApi(force = false): Promise<void> {
 
     const groups = pick(rGroups);
     const users = pick(rUsers);
-    const classMeta = pick(rClassMeta);
+    const rawClassMeta = pick(rClassMeta);
+    // 窗口到期时间也走 reviveDates：后端给的是无时区 UTC 串，不补 Z 会被当成本地时间，
+    // 东八区整体早 8 小时——窗口的"开/关"会因此判错。
+    const classMeta = rawClassMeta
+      ? reviveDates([rawClassMeta], ['challengeWindowClosesAt', 'recruitWindowClosesAt'])[0]
+      : null;
     if (groups != null || users != null || classMeta != null) {
       useGroupStore.setState({
         ...(groups != null ? { groups } : {}),

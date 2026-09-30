@@ -158,7 +158,13 @@ cd backend
    - **组间转账不单设开关**：任一窗口开着即视为"课上有监督"，两个都关才封。
    - **到点自动关闭是惰性判定**（`services.window_state` 每次请求现算），没有定时任务；教师端页面 30 秒 tick 一次跟着刷新。
    - **存量库迁移回填成"开着、不限时"**：上线不能把现有功能突然锁上，老师应当是主动去关。
-   - ⚠️ **时区坑**：列的 datetime 是**无时区的 UTC 字面值**，`isoformat()` 不带 `Z`，而 JS 的 `new Date('2026-09-30T05:50:32')` 会按**本地时间**解析——东八区整体偏 8 小时，窗口的开/关会判错（实测踩过：16:50 关闭的窗口在 16:21 就显示"已关闭"）。前端一律走 `lib/activityWindow.ts` 的 `parseUtc`（无时区后缀就补 `Z`）。**同类隐患存在于所有直接 `new Date(后端时间串)` 的地方**（如 `createdAt` 的按天分桶），尚未统一处理。
+   - ⚠️ **时区坑（务必遵守）**：datetime 列存的是**无时区的 UTC 字面值**，`isoformat()` 出来的串不带 `Z`，而 JS 的 `new Date('2026-09-30T05:50:32')` 会按**本地时间**解析——东八区整体早 8 小时。这条踩过两次：窗口的"开/关"判错（16:50 到期的窗口在 16:21 就显示"已关闭"）、安全指派的截止时间显示错且学生待办**提前 8 小时消失**。
+     **规则：前端拿到后端的 datetime 串，必须先过 `reviveDates`（无时区后缀补 `Z`）再用。** 已有覆盖面：
+     - `bootstrapFromApi` 统一 revive：coinTxs.createdAt、quizSessions.createdAt、projects.startDate/dueDate、recruitments.deadline、showcaseItems.createdAt、challenges.deadline、**classMeta 的两个 windowClosesAt**
+     - `groupStore.updateActivityWindow` 合并后端回包时也要 revive（那里绕过了 bootstrap）
+     - **安全模块**（`safetyApi.myRecords` / `safetyAssignmentApi.list|get`）不走 bootstrap，是在 `apiService` 里就地 revive 的（2026-09-30 补）
+     - `lib/activityWindow.ts` 的 `parseUtc` 是兜底，负责还没 revive 的来路（旧 localStorage 等）
+     - 已经带时区偏移的串**不用**处理，直接 `new Date()` 就是对的——后端用 aware datetime `.isoformat()` 写进 JSON 列的字段（如 `challenge.submissions[].submittedAt`、`recruitment.bids[].bidAt`）属于这类
 
 ---
 

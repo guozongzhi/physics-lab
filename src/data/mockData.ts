@@ -198,14 +198,15 @@ export interface ClassMeta {
    * 但已开的挑战与招募照常作答、结算。
    * 字段可缺省——旧的 localStorage 里没有，此时按"开着"处理，见 lib/activityWindow.ts。
    * closesAt 为空表示不限时；到点后按惰性判定当作已关闭。
+   * 在线时由 bootstrap / groupStore 过 `reviveDates` 转成 Date（后端给的是无时区 UTC 串）。
    */
   challengeWindowOpen?: boolean;
   /** 老师选的时长（空＝不限时）。界面回显用——closesAt 会随时间衰减，分钟数不会。 */
   challengeWindowMinutes?: number | null;
-  challengeWindowClosesAt?: string | Date | null;
+  challengeWindowClosesAt?: Date | null;
   recruitWindowOpen?: boolean;
   recruitWindowMinutes?: number | null;
-  recruitWindowClosesAt?: string | Date | null;
+  recruitWindowClosesAt?: Date | null;
 }
 
 export interface CurrentUser {

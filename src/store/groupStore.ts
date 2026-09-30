@@ -12,6 +12,7 @@ import {
 import { groupsApi, usersApi, coinsApi } from '../lib/apiService';
 import { syncToApi } from '../lib/syncQueue';
 import { apiEnabled } from '../lib/apiClient';
+import { reviveDates } from '../lib/reviveDates';
 
 interface GroupState {
   groups: Group[];
@@ -255,8 +256,13 @@ export const useGroupStore = create<GroupState>((set, get) => {
       set({ classMeta: nextMeta });
       syncToApi(async () => {
         const fresh = await coinsApi.updateActivityWindow(payload);
-        // 后端算出的到期时间是权威值，回填对齐
-        set({ classMeta: { ...get().classMeta, ...fresh } });
+        // 后端算出的到期时间是权威值，回填对齐；同样要过 reviveDates——
+        // 后端给的是无时区 UTC 串，直接 new Date 会早 8 小时。
+        const revived = reviveDates(
+          [fresh],
+          ['challengeWindowClosesAt', 'recruitWindowClosesAt']
+        )[0];
+        set({ classMeta: { ...get().classMeta, ...revived } });
       }, 'classMeta.window');
     },
 
