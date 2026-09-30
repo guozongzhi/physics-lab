@@ -127,10 +127,24 @@ function SwordsIcon(props: any) {
   );
 }
 
+/**
+ * 把行数组导成 CSV 并触发下载。
+ *
+ * 字段值按 RFC 4180 转义：含逗号 / 引号 / 换行的值必须用引号包起来、内部引号翻倍。
+ * 否则「备注」这类自由文本（如老师填的调币理由）里只要有一个英文逗号，整行的列就会错位。
+ * 开头加 BOM，Excel 打开中文才不乱码。
+ */
 function downloadCSV(filename: string, rows: Record<string, unknown>[]) {
   if (!rows.length) return;
   const headers = Object.keys(rows[0]);
-  const csv = [headers.join(','), ...rows.map((r) => headers.map((h) => String(r[h] ?? '')).join(','))].join('\n');
+  const cell = (v: unknown) => {
+    const s = String(v ?? '');
+    return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+  const csv = [
+    headers.map(cell).join(','),
+    ...rows.map((r) => headers.map((h) => cell(r[h])).join(',')),
+  ].join('\n');
   const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -255,6 +269,32 @@ export default function TeacherOverview() {
           groupName: groups.find((g) => g.id === tx.groupId)?.name ?? '已解散小组',
         })),
     [coinTxs, groups]
+  );
+
+  // 导出用的流水行：**当前班级范围内的全部流水**（不是屏幕上那 20 条）。
+  // 老师导出是要拿去统计/对账/存档的，只有 20 条基本没用。
+  // 时间刻意用绝对格式（YYYY-MM-DD HH:mm）而不是表格里那套相对文案——
+  // 「19:48」「昨天 19:48」存下来过几天就看不懂了。
+  const ledgerCsvRows = useMemo(
+    () =>
+      [...coinTxs]
+        // 与页面顶部班级筛选一致（同 groupInScope，只是内联以便依赖数组诚实）
+        .filter((tx) => insightClass === 'all' || groupIdToClass.get(tx.groupId) === insightClass)
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        .map((tx) => {
+          const d = tx.createdAt instanceof Date ? tx.createdAt : new Date(tx.createdAt);
+          const p = (n: number) => String(n).padStart(2, '0');
+          return {
+            时间: `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`,
+            小组: groups.find((g) => g.id === tx.groupId)?.name ?? '已解散小组',
+            // 复用界面上那张表的中文来源名，导出与所见一致
+            来源: (SOURCE_CONFIG[tx.source] ?? SOURCE_CONFIG.teacher_set).label,
+            能量变动: tx.delta,
+            余额: tx.balanceAfter,
+            备注: tx.note,
+          };
+        }),
+    [coinTxs, groups, insightClass, groupIdToClass]
   );
 
   // 冻结项目预警：真实 frozen 状态项目
@@ -614,15 +654,27 @@ export default function TeacherOverview() {
               <div className="flex items-center justify-between mb-4">
                 <h3 className="flex items-center gap-2 text-[17px] font-bold text-ink-800">
                   <LineChart size={19} className="text-energy-500" />
-                  Top 20 · 能量币流水
+                  最新 20 条 · 能量币流水
                 </h3>
                 <div className="flex items-center gap-2">
                   <span className="text-[11px] text-ink-400 font-mono">最新 20 条</span>
                   <button
                     className="btn-ghost !py-1.5 !px-2 text-[11px]"
-                    onClick={() => pushToast('CSV 导出功能即将上线', 'info')}
+                    onClick={() => {
+                      if (!ledgerCsvRows.length) {
+                        pushToast('当前范围内没有流水可导出', 'warning');
+                        return;
+                      }
+                      const d = new Date();
+                      const p = (n: number) => String(n).padStart(2, '0');
+                      downloadCSV(
+                        `能量币流水_${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}.csv`,
+                        ledgerCsvRows
+                      );
+                      pushToast(`已导出 ${ledgerCsvRows.length} 条流水`, 'success');
+                    }}
                   >
-                    导出 CSV
+                    导出全部 CSV
                     <ChevronRight size={12} />
                   </button>
                 </div>
