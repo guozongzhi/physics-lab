@@ -1,10 +1,10 @@
 # ---- 构建阶段 ----
-FROM node:22-alpine AS build
+FROM node:20-alpine AS build
 WORKDIR /app
 
 # 依赖层缓存：仅当 package*.json 变更才重装
 COPY package.json package-lock.json ./
-RUN npm ci
+RUN npm ci --registry=https://registry.npmmirror.com
 
 # 复制源码
 COPY . .

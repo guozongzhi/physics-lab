@@ -1,4 +1,5 @@
 import { LS_KEYS } from '../data/mockData';
+import { autoReviveDate } from './dateReviver';
 
 /**
  * 后端 API 客户端。
@@ -61,7 +62,8 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
   if (res.status === 204) return undefined as T;
 
   const text = await res.text();
-  const data = text ? JSON.parse(text) : undefined;
+  const rawData = text ? JSON.parse(text) : undefined;
+  const data = autoReviveDate(rawData);
 
   if (!res.ok) {
     if (res.status === 401 && token) {
