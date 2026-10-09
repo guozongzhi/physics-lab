@@ -26,24 +26,20 @@ import {
   ClipboardList,
   Shield,
   Menu,
+  FileCheck,
+  KeyRound,
 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { useGroupStore } from '@/store/groupStore';
 import { useUIStore } from '@/store/uiStore';
 import { cn } from '@/lib/utils';
+import ChangePasswordModal from '@/components/ui/ChangePasswordModal';
 
 interface MissionShellProps {
   children: ReactNode;
   requireAuth?: boolean;
 }
 
-/**
- * 把用户选的照片压成小尺寸正方形的 data URL。
- *
- * 头像最终以字符串存进数据库 `users.avatar`，而 `/api/users` 每次登录都会整表返回，
- * 所以必须在客户端压到位——否则一张手机原图（数 MB）会让这个接口直接爆掉。
- * 128×128 JPEG 约 3–8KB，48 人全上传时接口约增加 0.2–0.4MB，可接受。
- */
 async function compressImageToDataUrl(file: File, size = 128, quality = 0.75): Promise<string> {
   const bitmap = await createImageBitmap(file);
   try {
@@ -52,7 +48,6 @@ async function compressImageToDataUrl(file: File, size = 128, quality = 0.75): P
     canvas.height = size;
     const ctx = canvas.getContext('2d');
     if (!ctx) throw new Error('无法创建画布');
-    // 居中裁剪成正方形，避免照片被拉变形
     const edge = Math.min(bitmap.width, bitmap.height);
     const sx = (bitmap.width - edge) / 2;
     const sy = (bitmap.height - edge) / 2;
@@ -63,7 +58,8 @@ async function compressImageToDataUrl(file: File, size = 128, quality = 0.75): P
   }
 }
 
-const AVATAR_OPTIONS = [  'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix&backgroundColor=ffdfbf',
+const AVATAR_OPTIONS = [
+  'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix&backgroundColor=ffdfbf',
   'https://api.dicebear.com/7.x/avataaars/svg?seed=Aneka&backgroundColor=cbf3f0',
   'https://api.dicebear.com/7.x/avataaars/svg?seed=Bailey&backgroundColor=e0f2fe',
   'https://api.dicebear.com/7.x/avataaars/svg?seed=Charlie&backgroundColor=ede9fe',
@@ -76,73 +72,93 @@ const AVATAR_OPTIONS = [  'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix
 interface NavItem {
   id: string;
   label: string;
+  subLabel?: string;
   icon: any;
   to: string;
 }
 
-const NAV_ITEMS: NavItem[] = [
-  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, to: '/dashboard' },
-  { id: 'team', label: 'My Team', icon: UsersRound, to: '/my-team' },
-  { id: 'learning', label: 'Learning Hub', icon: BookOpen, to: '/theory/topics' },
-  { id: 'galaxy', label: 'Knowledge Galaxy', icon: Sparkles, to: '/theory/challenge' },
-  { id: 'communicator', label: 'Group Communicator', icon: Users, to: '/communicator' },
-  { id: 'project', label: 'Project Center', icon: FolderKanban, to: '/projects' },
-  { id: 'safety', label: 'Safety Lab', icon: ShieldCheck, to: '/safety-lab' },
-  { id: 'market', label: 'Research Marketplace', icon: ShoppingCart, to: '/recruit/market' },
-  { id: 'league', label: 'Research League', icon: Trophy, to: '/coins' },
-  { id: 'achievement', label: 'Achievement Hall', icon: Medal, to: '/showcase' },
+const STUDENT_NAV_ITEMS: NavItem[] = [
+  { id: 'dashboard', label: '主控看板', subLabel: '综合态势', icon: LayoutDashboard, to: '/dashboard' },
+  { id: 'learning', label: '知识星系', subLabel: '理论体系', icon: BookOpen, to: '/theory/topics' },
+  { id: 'galaxy', label: '关卡挑战', subLabel: '答题竞技', icon: Sparkles, to: '/theory/challenge' },
+  { id: 'project', label: '课题中心', subLabel: '实验研发', icon: FolderKanban, to: '/projects' },
+  { id: 'safety', label: '安全准入', subLabel: '实验资质', icon: ShieldCheck, to: '/safety-lab' },
+  { id: 'team', label: '我的小组', subLabel: '团队协同', icon: UsersRound, to: '/my-team' },
+  { id: 'communicator', label: '小组通讯', subLabel: '组间协作', icon: Users, to: '/communicator' },
+  { id: 'market', label: '悬赏市场', subLabel: '招募投标', icon: ShoppingCart, to: '/recruit/market' },
+  { id: 'league', label: '能量天梯', subLabel: '积分榜单', icon: Trophy, to: '/coins' },
+  { id: 'achievement', label: '成果殿堂', subLabel: '结题展示', icon: Medal, to: '/showcase' },
 ];
 
-/** 教师 / 管理员控制台专属导航（学生端不可见） */
 const TEACHER_NAV_ITEMS: NavItem[] = [
-  { id: 't-overview', label: 'Mission Overview', icon: Gauge, to: '/teacher/overview' },
-  { id: 't-groups', label: 'Fleet Management', icon: Users, to: '/teacher/groups' },
-  { id: 't-projects', label: 'Project & Recruitment', icon: FolderKanban, to: '/teacher/projects' },
-  { id: 't-roster', label: 'Student Roster', icon: ClipboardList, to: '/teacher/roster' },
-  { id: 't-question', label: 'Question Bank', icon: BookOpen, to: '/teacher/question-bank' },
-  { id: 't-showcase', label: 'Showcase Review', icon: Trophy, to: '/teacher/showcase' },
-  { id: 't-safety', label: 'Safety Center', icon: ShieldCheck, to: '/teacher/safety' },
+  { id: 't-overview', label: '指挥总揽', subLabel: '全局数据', icon: Gauge, to: '/teacher/overview' },
+  { id: 't-groups', label: '分组调度', subLabel: '班级编制', icon: Users, to: '/teacher/groups' },
+  { id: 't-projects', label: '课题治理', subLabel: '立项审核', icon: FolderKanban, to: '/teacher/projects' },
+  { id: 't-roster', label: '学生名册', subLabel: '档案名录', icon: ClipboardList, to: '/teacher/roster' },
+  { id: 't-questions', label: '题库审核', subLabel: '提题审批', icon: FileCheck, to: '/teacher/question-bank' },
+  { id: 't-safety', label: '安全考评', subLabel: '题库与任务', icon: Shield, to: '/teacher/safety' },
 ];
 
-function RequireAuth({ children, allowRoles }: { children: ReactNode; allowRoles?: Array<'student' | 'teacher' | 'admin'> }) {
-  const { role } = useAuthStore();
+const ADMIN_NAV_ITEMS: NavItem[] = [
+  { id: 'admin', label: '管理控制台', subLabel: '权限与班级', icon: Shield, to: '/admin' },
+];
+
+function RequireAuth({
+  children,
+  allowRoles,
+}: {
+  children: ReactNode;
+  allowRoles: Array<'student' | 'teacher' | 'admin'>;
+}) {
+  const { role, userId } = useAuthStore();
   const location = useLocation();
-  if (!role) {
+
+  if (!userId) {
     return <Navigate to="/login" replace state={{ from: location.pathname }} />;
   }
-  if (allowRoles && !allowRoles.includes(role as 'student' | 'teacher' | 'admin')) {
-    if (role === 'admin') return <Navigate to="/admin" replace />;
-    return <Navigate to={role === 'teacher' ? '/teacher/overview' : '/dashboard'} replace />;
+
+  if (role && !allowRoles.includes(role)) {
+    const fallback =
+      role === 'teacher'
+        ? '/teacher/overview'
+        : role === 'admin'
+        ? '/admin'
+        : '/dashboard';
+    return <Navigate to={fallback} replace />;
   }
+
   return <>{children}</>;
 }
 
 function MissionHeader({ onOpenNav }: { onOpenNav: () => void }) {
   const navigate = useNavigate();
-  const { role, logout, userId } = useAuthStore();
-  const { getGroupById, getUserById, updateUserAvatar } = useGroupStore();
-  const groupId = useAuthStore((s) => s.groupId);
-  const currentUser = userId && userId !== 'teacher' && userId !== 'admin' ? getUserById(userId) : undefined;
-  const currentGroup = groupId ? getGroupById(groupId) : undefined;
-  const coreCoins = Math.max(0, currentGroup?.totalCoins || 0);
-  const level = Math.max(1, Math.min(12, Math.floor(Math.log10(Math.max(1, coreCoins)) * 2)));
+  const { userId, role, groupId, logout } = useAuthStore();
+  const getUserById = useGroupStore((s) => s.getUserById);
+  const groups = useGroupStore((s) => s.groups);
+  const pushToast = useUIStore((s) => s.pushToast);
+
+  const currentUser = userId ? getUserById(userId) : null;
+  const currentGroup = groupId ? groups.find((g) => g.id === groupId) : null;
+  const coreCoins = currentGroup ? currentGroup.totalCoins : 0;
 
   const [showAvatarModal, setShowAvatarModal] = useState(false);
+  const [showChangePwdModal, setShowChangePwdModal] = useState(false);
   const [selectedAvatar, setSelectedAvatar] = useState('');
-  const [avatarErr, setAvatarErr] = useState('');
   const [compressing, setCompressing] = useState(false);
+  const [avatarErr, setAvatarErr] = useState('');
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
 
-  /** 选照片 → 客户端压缩成小图 data URL，再走原有的「确认更换」保存 */
-  const handleAvatarFile = async (file: File | undefined) => {
+  const handleAvatarFile = async (file?: File) => {
     if (!file) return;
-    setAvatarErr('');
     if (!file.type.startsWith('image/')) {
-      setAvatarErr('请选择图片文件（jpg / png 等）');
+      setAvatarErr('请选择有效的图片文件');
       return;
     }
     setCompressing(true);
+    setAvatarErr('');
     try {
-      setSelectedAvatar(await compressImageToDataUrl(file));
+      const dataUrl = await compressImageToDataUrl(file);
+      setSelectedAvatar(dataUrl);
     } catch {
       setAvatarErr('图片处理失败，请换一张试试');
     } finally {
@@ -150,182 +166,163 @@ function MissionHeader({ onOpenNav }: { onOpenNav: () => void }) {
     }
   };
 
-  const handleAvatarChange = () => {
-    if (selectedAvatar && userId) {
-      updateUserAvatar(userId, selectedAvatar);
+  const handleAvatarChange = async () => {
+    if (!selectedAvatar || !userId) return;
+    try {
+      useGroupStore.getState().updateUserAvatar(userId, selectedAvatar);
+      pushToast('头像已更新', 'success');
       setShowAvatarModal(false);
       setSelectedAvatar('');
+    } catch {
+      pushToast('头像更新失败', 'error');
     }
   };
 
-  const todayStr = new Date().toLocaleDateString('zh-CN', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    weekday: 'long',
-  });
-
   return (
     <>
-    <header
-      className="fixed top-0 left-0 right-0 z-50 h-16 glass-card rounded-none !border-t-0 !border-l-0 !border-r-0 border-b border-mission-100/60 flex items-center gap-2 px-3 md:gap-4 md:px-8"
-    >
-      {/* 移动端汉堡：桌面端已有常驻侧边栏，故隐藏 */}
-      <button
-        onClick={onOpenNav}
-        aria-label="打开导航菜单"
-        className="md:hidden shrink-0 w-10 h-10 rounded-xl flex items-center justify-center text-ink-600 hover:bg-mission-50/70 hover:text-mission-600 transition-colors"
-      >
-        <Menu size={20} />
-      </button>
+      <header className="fixed top-0 left-0 right-0 z-50 h-16 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-slate-200/80 dark:border-slate-800/80 flex items-center justify-between px-4 md:px-8">
+        {/* 左侧：菜单开关与品牌 */}
+        <div className="flex items-center gap-3">
+          <button
+            onClick={onOpenNav}
+            aria-label="打开导航菜单"
+            className="md:hidden shrink-0 w-9 h-9 rounded-xl flex items-center justify-center text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+          >
+            <Menu size={20} />
+          </button>
 
-      <div className="flex items-center gap-2.5 md:gap-4 md:w-[380px] min-w-0">
-        <div className="relative w-11 h-11 flex items-center justify-center shrink-0">
-          <div className="orbit-ring w-[72px] h-[72px] animate-spin" style={{ animationDuration: '20s' }} />
-          <div className="orbit-ring w-[56px] h-[56px] animate-spin" style={{ animationDuration: '14s', animationDirection: 'reverse' }} />
-          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-mission-400 via-mission-500 to-mission-600 shadow-glowMission flex items-center justify-center relative z-10">
-            <div className="w-3 h-3 rounded-full bg-white/90 animate-pulseRing" />
-          </div>
-        </div>
-        <div className="leading-tight min-w-0">
-          <div className="text-[15px] font-extrabold text-ink-800 tracking-tight truncate">
-            <span className="hidden sm:inline">Physics Mission Control</span>
-            <span className="sm:hidden">物理实验室</span>
-          </div>
-          <div className="hidden sm:block text-[11px] text-ink-500 font-medium tracking-wide mt-0.5">
-            PBL Learning Platform · v2.6
-          </div>
-        </div>
-      </div>
-
-      <div className="flex-1 hidden lg:flex justify-center">
-        <div className="glass-card glass-card-hover px-5 py-2.5 flex items-center gap-4 rounded-2xl">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-mission-500 to-nova-500 flex items-center justify-center shadow-lg shadow-mission-500/20">
-            <Rocket size={18} className="text-white" />
-          </div>
-          <div className="leading-tight">
-            <div className="text-[11px] font-mono font-semibold text-mission-600 tracking-wider uppercase">
-              Today&apos;s Mission
+          <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate(role === 'teacher' ? '/teacher/overview' : role === 'admin' ? '/admin' : '/dashboard')}>
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-mission-500 to-nova-600 flex items-center justify-center text-white shadow-sm shadow-mission-500/20 shrink-0">
+              <Rocket size={18} />
             </div>
-            <div className="text-[14px] font-semibold text-ink-800 mt-0.5">
-              {todayStr} · <span className="text-mission-600">特色班</span>
-            </div>
-          </div>
-          {/* 这里原有一个写死的 "Today 82%" 进度条与徽章——对所有角色、任何时候都显示
-              82%，且与首页真实的「今日任务进度」重复，已移除。 */}
-        </div>
-      </div>
-
-      {/* md:w-[380px] 是给学生的能量卡预留的宽度；教师/管理员没有能量卡，留固定宽会空一大块 */}
-      <div
-        className={cn(
-          'flex items-center gap-2 md:gap-3 justify-end ml-auto shrink-0',
-          role === 'student' && 'md:w-[380px]'
-        )}
-      >
-        {/* 能量卡与等级都是**小组**指标（读 currentGroup.totalCoins）。教师/管理员没有小组，
-            一直显示 0 / LV1，看着像坏了——这两个只对学生有意义，其余角色不渲染。
-            窄屏放不下能量卡，手机上同样隐藏（能量在 Dashboard / 我的小组里都有）。 */}
-        {role === 'student' && (
-          <div className="hidden md:flex glass-card px-3.5 py-2 rounded-2xl items-center gap-2.5 group cursor-pointer">
-            <div className="relative">
-              <div className="absolute inset-0 rounded-full bg-energy-400/30 blur-md animate-pulse" />
-              <Zap size={18} className="text-energy-500 relative z-10 fill-energy-400/30" />
-            </div>
-            <div className="text-[16px] font-extrabold text-gradient-energy leading-none tabular-nums">
-              {coreCoins}
-            </div>
-            <div className="text-[10px] text-ink-400 font-medium">⚡CORE</div>
-          </div>
-        )}
-
-        <div className="flex items-center gap-2.5">
-          <div className="relative group">
-            {currentUser ? (
-              <button onClick={() => setShowAvatarModal(true)} className="relative" title="点击更换头像">
-                <img
-                  src={currentUser.avatar}
-                  alt={currentUser.name}
-                  className="w-10 h-10 rounded-2xl ring-2 ring-white shadow-soft object-cover bg-gradient-to-br from-mission-100 to-nova-100"
-                />
-                <span className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-mission-500 flex items-center justify-center ring-2 ring-white opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Camera size={11} className="text-white" />
-                </span>
-              </button>
-            ) : (
-              <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-mission-400 to-nova-500 flex items-center justify-center text-white font-bold ring-2 ring-white shadow-soft">
-                {role === 'admin' ? 'A' : role === 'teacher' ? 'T' : 'Y'}
+            <div className="leading-tight">
+              <div className="text-[14px] font-bold text-slate-900 dark:text-slate-100 tracking-tight">
+                物理任务指挥中心
               </div>
-            )}
+              <div className="hidden sm:block text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+                PBL 高中物理探究平台
+              </div>
+            </div>
           </div>
+        </div>
+
+        {/* 右侧：能量统计与用户档案 */}
+        <div className="flex items-center gap-3">
           {role === 'student' && (
-            <div className="hidden sm:flex chip-nova !py-1 !px-2.5 items-center gap-1">
-              <span className="text-[10px] font-black tracking-wider">LV{level}</span>
-              <span className="text-[11px] font-semibold">Researcher</span>
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-energy-50/80 dark:bg-energy-950/40 border border-energy-200/80 dark:border-energy-800/60 text-xs">
+              <Zap size={14} className="text-energy-500 fill-energy-400/30" />
+              <span className="font-bold text-energy-700 dark:text-energy-300 font-mono">
+                {coreCoins}
+              </span>
+              <span className="text-[10px] text-energy-600 dark:text-energy-400 font-medium">⚡能量</span>
             </div>
           )}
-        </div>
 
-        <button
-          onClick={() => {
-            logout();
-            navigate('/login');
-          }}
-          className="w-9 h-9 rounded-xl glass-card glass-card-hover flex items-center justify-center text-ink-500 hover:text-danger-600"
-          title="退出登录"
-        >
-          <LogOut size={16} />
-        </button>
-      </div>
+          <div className="relative">
+            <button
+              onClick={() => setUserMenuOpen(!userMenuOpen)}
+              className="flex items-center gap-2 p-1 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            >
+              <img
+                src={currentUser?.avatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix'}
+                alt={currentUser?.name || '用户头像'}
+                className="w-8 h-8 rounded-lg object-cover border border-slate-200 dark:border-slate-700"
+              />
+              <span className="hidden sm:inline text-xs font-semibold text-slate-700 dark:text-slate-300 max-w-[90px] truncate">
+                {currentUser?.name || '研究员'}
+              </span>
+            </button>
+
+            {/* 用户下拉菜单 */}
+            <AnimatePresence>
+              {userMenuOpen && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setUserMenuOpen(false)} />
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95, y: -4 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95, y: -4 }}
+                    className="absolute right-0 mt-2 w-48 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl py-1.5 z-50 text-xs"
+                  >
+                    <div className="px-3 py-2 border-b border-slate-100 dark:border-slate-800">
+                      <p className="font-bold text-slate-900 dark:text-slate-100">{currentUser?.name}</p>
+                      <p className="text-[11px] text-slate-400 capitalize">角色：{role}</p>
+                    </div>
+
+                    <button
+                      onClick={() => {
+                        setUserMenuOpen(false);
+                        setShowAvatarModal(true);
+                      }}
+                      className="w-full text-left px-3 py-2 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-2"
+                    >
+                      <Camera size={14} /> 更换头像
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setUserMenuOpen(false);
+                        setShowChangePwdModal(true);
+                      }}
+                      className="w-full text-left px-3 py-2 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-2"
+                    >
+                      <KeyRound size={14} /> 修改密码
+                    </button>
+
+                    <div className="border-t border-slate-100 dark:border-slate-800 mt-1 pt-1">
+                      <button
+                        onClick={() => {
+                          setUserMenuOpen(false);
+                          logout();
+                          navigate('/login');
+                        }}
+                        className="w-full text-left px-3 py-2 text-danger-600 dark:text-danger-400 hover:bg-danger-50 dark:hover:bg-danger-950/40 flex items-center gap-2"
+                      >
+                        <LogOut size={14} /> 退出登录
+                      </button>
+                    </div>
+                  </motion.div>
+                </>
+              )}
+            </AnimatePresence>
+          </div>
+        </div>
       </header>
 
-      {/* 头像弹窗必须放在 <header> 之外：header 用了 glass-card（backdrop-filter），
-          而 backdrop-filter 会让该元素成为内部 position:fixed 的定位基准——弹窗会被
-          「困」在 64px 高的 header 里，垂直居中后被顶出屏幕（实测 top:-125px）。
-          加 max-h + overflow-y-auto 兜底矮屏。 */}
+      {/* 头像弹窗 */}
       {showAvatarModal && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-ink-900/50 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 w-full max-w-sm shadow-2xl border border-slate-200 dark:border-slate-800">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-bold text-lg text-ink-800">选择头像</h3>
-              <button
-                onClick={() => { setShowAvatarModal(false); setSelectedAvatar(''); }}
-                className="p-1.5 rounded-lg hover:bg-ink-100 transition-colors"
-              >
-                <X size={20} className="text-ink-500" />
-              </button>
+              <h3 className="font-bold text-base text-slate-900 dark:text-slate-100">选择个性头像</h3>
+              <button onClick={() => setShowAvatarModal(false)} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"><X size={18} /></button>
             </div>
-            <div className="grid grid-cols-4 gap-3 mb-6">
+            <div className="grid grid-cols-4 gap-2.5 mb-5">
               {AVATAR_OPTIONS.map((avatar, idx) => (
                 <button
                   key={idx}
                   onClick={() => setSelectedAvatar(avatar)}
                   className={cn(
-                    'relative rounded-xl overflow-hidden border-2 transition-all',
+                    'relative rounded-xl overflow-hidden border-2 transition-all aspect-square',
                     selectedAvatar === avatar
                       ? 'border-mission-500 ring-2 ring-mission-200 scale-105'
                       : 'border-transparent hover:border-mission-200'
                   )}
                 >
-                  <img
-                    src={avatar}
-                    alt={`头像 ${idx + 1}`}
-                    className="w-full aspect-square object-cover"
-                  />
+                  <img src={avatar} alt={`头像 ${idx + 1}`} className="w-full h-full object-cover" />
                   {selectedAvatar === avatar && (
                     <div className="absolute inset-0 bg-mission-500/20 flex items-center justify-center">
-                      <CheckCircle2 size={20} className="text-mission-500" />
+                      <CheckCircle2 size={18} className="text-mission-500" />
                     </div>
                   )}
                 </button>
               ))}
             </div>
 
-            {/* 上传真人照片：客户端压成 128×128 JPEG 再入库，避免 /api/users 体积爆炸 */}
-            <div className="mb-6">
-              <label className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl border-2 border-dashed border-mission-200 text-[13px] font-bold text-mission-600 hover:bg-mission-50/60 cursor-pointer transition-colors">
-                <Camera size={15} />
-                {compressing ? '处理中…' : '上传自己的照片'}
+            <div className="mb-5">
+              <label className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer transition-colors">
+                <Camera size={14} />
+                {compressing ? '正在处理…' : '上传自定义照片'}
                 <input
                   type="file"
                   accept="image/*"
@@ -337,32 +334,20 @@ function MissionHeader({ onOpenNav }: { onOpenNav: () => void }) {
                 />
               </label>
               {avatarErr && (
-                <p className="mt-2 text-[12px] font-semibold text-danger-600 flex items-center gap-1">
-                  <AlertTriangle size={11} />{avatarErr}
+                <p className="mt-2 text-xs text-danger-600 flex items-center gap-1">
+                  <AlertTriangle size={12} /> {avatarErr}
                 </p>
-              )}
-              {selectedAvatar.startsWith('data:') && (
-                <div className="mt-3 flex items-center gap-2.5 p-2 rounded-xl bg-mission-50/70 border border-mission-100">
-                  <img src={selectedAvatar} alt="已选照片" className="w-10 h-10 rounded-lg object-cover" />
-                  <span className="text-[12px] font-semibold text-ink-600">已选照片，点「确认更换」保存</span>
-                </div>
               )}
             </div>
 
-            <div className="flex gap-3">
-              <button
-                onClick={() => { setShowAvatarModal(false); setSelectedAvatar(''); }}
-                className="flex-1 btn-outline !py-2.5"
-              >
+            <div className="flex gap-2">
+              <button onClick={() => setShowAvatarModal(false)} className="flex-1 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800">
                 取消
               </button>
               <button
                 onClick={handleAvatarChange}
                 disabled={!selectedAvatar}
-                className={cn(
-                  'flex-1 btn-primary !py-2.5',
-                  !selectedAvatar && 'opacity-50 cursor-not-allowed'
-                )}
+                className="flex-1 py-2 text-xs rounded-xl bg-mission-600 text-white font-medium hover:bg-mission-500 disabled:opacity-50"
               >
                 确认更换
               </button>
@@ -370,6 +355,8 @@ function MissionHeader({ onOpenNav }: { onOpenNav: () => void }) {
           </div>
         </div>
       )}
+
+      {showChangePwdModal && <ChangePasswordModal onClose={() => setShowChangePwdModal(false)} />}
     </>
   );
 }
@@ -378,237 +365,133 @@ function NavRail({ open, onClose }: { open: boolean; onClose: () => void }) {
   const location = useLocation();
   const navigate = useNavigate();
   const { role } = useAuthStore();
-  const [hovered, setHovered] = useState<string | null>(null);
 
-  // 教师使用控制台专属导航，学生使用学习端导航
   const baseItems: NavItem[] =
-    role === 'teacher' || role === 'admin' ? TEACHER_NAV_ITEMS : NAV_ITEMS;
-  const adminItems: NavItem[] = role === 'admin'
-    ? [{ id: 'admin', label: 'Admin Console', icon: Shield, to: '/admin' }]
-    : [];
+    role === 'teacher' || role === 'admin' ? TEACHER_NAV_ITEMS : STUDENT_NAV_ITEMS;
+  const adminItems: NavItem[] = role === 'admin' ? ADMIN_NAV_ITEMS : [];
+  const allItems = [...baseItems, ...adminItems];
 
   return (
     <>
-      {/* 移动端抽屉遮罩：点击关闭 */}
       <AnimatePresence>
         {open && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
             onClick={onClose}
-            className="fixed inset-0 z-40 bg-ink-900/40 backdrop-blur-sm md:hidden"
+            className="fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-sm md:hidden"
           />
         )}
       </AnimatePresence>
 
-      <nav
+      <aside
         className={cn(
-          'fixed z-50 glass-card flex flex-col py-4 gap-1.5 transition-transform duration-300 ease-out',
-          // 桌面：常驻左侧竖排图标条
-          'md:left-5 md:top-20 md:w-[76px] md:h-[calc(100vh-100px)] md:items-center md:rounded-2xl md:translate-x-0',
-          // 移动：左侧抽屉。触屏没有 hover，所以文字标签必须常显（桌面靠悬停气泡）
-          'left-0 top-0 h-full w-[248px] items-stretch px-3 rounded-r-3xl',
+          'fixed z-40 flex flex-col transition-transform duration-300 ease-out',
+          // 桌面端：紧凑型常驻面板
+          'md:left-4 md:top-20 md:w-52 md:h-[calc(100vh-96px)] md:rounded-2xl md:translate-x-0',
+          'md:bg-white/80 md:dark:bg-slate-900/80 md:border md:border-slate-200/80 md:dark:border-slate-800/80 md:backdrop-blur-xl md:p-3',
+          // 移动端：滑出式全尺寸抽屉
+          'left-0 top-0 h-full w-64 bg-white dark:bg-slate-900 p-4 shadow-2xl border-r border-slate-200 dark:border-slate-800',
           open ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
         )}
       >
-      {[...baseItems, ...adminItems].map((item, idx) => {
-        const Icon = item.icon;
-        const active = location.pathname.startsWith(item.to) || (idx === 0 && location.pathname === '/');
-        const isHovered = hovered === item.id;
-        return (
-          <div
-            key={item.id}
-            className="relative w-full flex justify-center"
-            onMouseEnter={() => setHovered(item.id)}
-            onMouseLeave={() => setHovered(null)}
-          >
-            <button
-              onClick={() => { navigate(item.to); onClose(); }}
-              aria-label={item.label}
-              className={cn(
-                'relative rounded-2xl flex items-center transition-all duration-300 group',
-                'gap-3 px-3 h-12 w-full justify-start',
-                'md:w-[56px] md:h-[56px] md:px-0 md:justify-center',
-                active
-                  ? 'bg-gradient-to-br from-mission-400 via-mission-500 to-mission-600 text-white shadow-glowMission md:scale-105'
-                  : 'text-ink-400 hover:text-mission-600 hover:bg-mission-50/60'
-              )}
-            >
-              {active && (
-                <>
-                  <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-white/20 to-transparent" />
-                  <div className="absolute -left-1 w-1 h-6 rounded-r-full bg-gradient-to-b from-mission-300 to-nova-400" />
-                </>
-              )}
-              <Icon size={22} strokeWidth={active ? 2.4 : 2} className="relative z-10 shrink-0" />
-              <span className="md:hidden relative z-10 text-[13.5px] font-bold truncate">{item.label}</span>
-            </button>
-
-            <AnimatePresence>
-              {isHovered && (
-                <motion.div
-                  initial={{ opacity: 0, x: -8 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -8 }}
-                  transition={{ duration: 0.18 }}
-                  className="absolute left-full top-1/2 -translate-y-1/2 ml-3 z-50 pointer-events-none"
-                >
-                  <div className="glass-card px-3 py-2 rounded-xl whitespace-nowrap shadow-glowMission">
-                    <div className="text-[12px] font-bold text-ink-800">{item.label}</div>
-                    <div className="text-[10px] text-ink-500 font-mono mt-0.5">CMD-{String(idx + 1).padStart(2, '0')}</div>
-                  </div>
-                  <div className="absolute left-[-5px] top-1/2 -translate-y-1/2 w-2.5 h-2.5 rotate-45 glass-card !rounded-sm !border-r-0 !border-t-0" />
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-        );
-      })}
-
-      <div className="flex-1" />
-
-      <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-energy-400/20 via-alert-400/15 to-transparent flex items-center justify-center cursor-pointer group hover:shadow-glowEnergy transition-all">
-        <Zap size={20} className="text-energy-500 group-hover:scale-110 transition-transform" />
-      </div>
-    </nav>
+        <div className="space-y-1 flex-1 overflow-y-auto pr-1">
+          {allItems.map((item) => {
+            const Icon = item.icon;
+            const active = location.pathname === item.to || (item.to !== '/dashboard' && location.pathname.startsWith(item.to));
+            return (
+              <button
+                key={item.id}
+                onClick={() => {
+                  navigate(item.to);
+                  onClose();
+                }}
+                className={cn(
+                  'w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all relative text-left',
+                  active
+                    ? 'bg-mission-50 dark:bg-mission-950/50 text-mission-700 dark:text-mission-300 border border-mission-200/60 dark:border-mission-800/60 shadow-sm'
+                    : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-slate-100'
+                )}
+              >
+                <Icon size={16} className={active ? 'text-mission-600 dark:text-mission-400 shrink-0' : 'text-slate-400 shrink-0'} />
+                <div className="truncate flex-1">
+                  <div className="truncate">{item.label}</div>
+                  {item.subLabel && (
+                    <div className="text-[10px] text-slate-400 dark:text-slate-500 font-normal truncate">
+                      {item.subLabel}
+                    </div>
+                  )}
+                </div>
+                {active && (
+                  <div className="w-1.5 h-1.5 rounded-full bg-mission-500 shrink-0" />
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </aside>
     </>
   );
 }
 
 function ToastStack() {
   const { toasts, removeToast, clearToasts } = useUIStore();
-  const [isOpen, setIsOpen] = useState(true);
-  const [hasAutoCollapsed, setHasAutoCollapsed] = useState(false);
-  const prevCountRef = useRef(toasts.length);
-
-  // 新通知到达时自动弹出面板（如转账成功提醒），5 秒后自动收起
-  useEffect(() => {
-    if (toasts.length > prevCountRef.current) {
-      setIsOpen(true);
-      const timer = setTimeout(() => setIsOpen(false), 5000);
-      prevCountRef.current = toasts.length;
-      return () => clearTimeout(timer);
-    }
-    prevCountRef.current = toasts.length;
-  }, [toasts.length]);
-
-  useEffect(() => {
-    if (toasts.length > 0 && !hasAutoCollapsed) {
-      const timer = setTimeout(() => {
-        setIsOpen(false);
-        setHasAutoCollapsed(true);
-      }, 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [toasts.length, hasAutoCollapsed]);
-
-  // 点击小喇叭：有未读消息时直接清除（让消息消失）；无消息时再切换面板开合。
-  const toggleToasts = () => {
-    if (toasts.length > 0) {
-      clearToasts();
-      setIsOpen(false);
-    } else {
-      setIsOpen(true);
-    }
-  };
-
-  const markAllRead = () => {
-    clearToasts();
-    setIsOpen(false);
-  };
-
-  const typeIcon = {
-    info: Info,
-    success: CheckCircle2,
-    warning: AlertTriangle,
-    error: AlertTriangle,
-  };
-  const typeColor = {
-    info: 'from-mission-400 to-mission-600 text-mission-600 bg-mission-50',
-    success: 'from-growth-400 to-growth-600 text-growth-600 bg-growth-50',
-    warning: 'from-alert-400 to-alert-600 text-alert-600 bg-alert-50',
-    error: 'from-danger-400 to-danger-600 text-danger-600 bg-danger-50',
-  };
+  const [isOpen, setIsOpen] = useState(false);
 
   return (
     <>
       <button
-        onClick={toggleToasts}
-        className="fixed top-[60px] right-6 z-[100] w-10 h-10 rounded-2xl glass-card glass-card-hover flex items-center justify-center text-ink-600 hover:text-mission-600 transition-all hover:scale-105"
+        onClick={() => setIsOpen(!isOpen)}
+        aria-label="查看通知"
+        className="fixed bottom-6 right-6 z-50 w-11 h-11 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl flex items-center justify-center text-slate-600 dark:text-slate-300 hover:text-mission-600 hover:scale-105 transition-all"
       >
         <Bell size={18} />
         {toasts.length > 0 && (
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            className="absolute -top-1 -right-1 min-w-[20px] h-[20px] rounded-full bg-danger-500 text-white text-[10px] font-bold flex items-center justify-center px-1.5 ring-2 ring-white"
-          >
+          <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] rounded-full bg-danger-500 text-white text-[10px] font-bold flex items-center justify-center px-1">
             {toasts.length}
-          </motion.div>
+          </span>
         )}
       </button>
 
       <AnimatePresence>
-        {isOpen && toasts.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[99]"
-            onClick={() => setIsOpen(false)}
-          />
+        {isOpen && (
+          <>
+            <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              className="fixed bottom-20 right-6 z-50 w-80 max-h-96 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl p-4 flex flex-col"
+            >
+              <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800 mb-2">
+                <span className="font-bold text-xs text-slate-900 dark:text-slate-100">通知消息中心</span>
+                {toasts.length > 0 && (
+                  <button onClick={clearToasts} className="text-[11px] text-mission-600 hover:underline">
+                    全部清空
+                  </button>
+                )}
+              </div>
+
+              <div className="flex-1 overflow-y-auto space-y-2 text-xs">
+                {toasts.length === 0 ? (
+                  <div className="py-8 text-center text-slate-400 text-xs">暂无未读消息通知</div>
+                ) : (
+                  toasts.map((t) => (
+                    <div key={t.id} className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 flex items-start justify-between gap-2">
+                      <div className="flex items-start gap-2">
+                        <Info size={14} className="text-mission-500 shrink-0 mt-0.5" />
+                        <span className="text-slate-700 dark:text-slate-300 leading-snug">{t.msg}</span>
+                      </div>
+                      <button onClick={() => removeToast(t.id)} className="text-slate-400 hover:text-slate-600"><X size={12} /></button>
+                    </div>
+                  ))
+                )}
+              </div>
+            </motion.div>
+          </>
         )}
       </AnimatePresence>
-
-      <div className={`toast-container ${isOpen ? '' : 'opacity-0 pointer-events-none'}`}>
-        <AnimatePresence>
-          {isOpen &&
-            toasts.slice().reverse().map((t, i) => {
-              const Icon = typeIcon[t.type];
-              return (
-                <motion.div
-                  key={t.id}
-                  layout
-                  initial={{ opacity: 0, x: 40, y: 20, scale: 0.92 }}
-                  animate={{ opacity: 1, x: 0, y: i * -4, scale: 1 }}
-                  exit={{ opacity: 0, x: 60, scale: 0.9 }}
-                  transition={{ type: 'spring', damping: 26, stiffness: 280, delay: i * 0.06 }}
-                  className="toast-item"
-                >
-                  <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${typeColor[t.type]} flex items-center justify-center shrink-0`}>
-                    <Icon size={17} className="text-white" />
-                  </div>
-                  <div className="flex-1 min-w-0 text-[13px] leading-relaxed text-ink-700 font-medium">
-                    {t.msg}
-                  </div>
-                  <button
-                    onClick={() => removeToast(t.id)}
-                    className="shrink-0 w-6 h-6 rounded-lg hover:bg-ink-100 flex items-center justify-center text-ink-400 hover:text-ink-600 transition"
-                  >
-                    <X size={13} strokeWidth={2.5} />
-                  </button>
-                </motion.div>
-              );
-            })}
-          {isOpen && toasts.length > 0 && (
-            <motion.div
-              key="mark-all"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="flex justify-end pt-2"
-            >
-              <button
-                onClick={markAllRead}
-                className="text-[12px] text-mission-600 font-medium hover:text-mission-700 transition"
-              >
-                全部已读
-              </button>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
     </>
   );
 }
@@ -616,7 +499,6 @@ function ToastStack() {
 export default function MissionShell({ children, requireAuth = true }: MissionShellProps) {
   const location = useLocation();
   const { userId, init } = useAuthStore();
-  // 移动端抽屉开合；桌面端导航常驻，此状态不影响布局
   const [navOpen, setNavOpen] = useState(false);
 
   useEffect(() => {
@@ -628,24 +510,24 @@ export default function MissionShell({ children, requireAuth = true }: MissionSh
   }
 
   const allowRoles: Array<'student' | 'teacher' | 'admin'> = ['student', 'teacher', 'admin'];
+
   return (
     <RequireAuth allowRoles={allowRoles}>
-      <div className="min-h-screen w-full relative">
+      <div className="min-h-screen w-full relative bg-slate-50/60 dark:bg-slate-950 text-slate-900 dark:text-slate-100">
         <MissionHeader onOpenNav={() => setNavOpen(true)} />
         <NavRail open={navOpen} onClose={() => setNavOpen(false)} />
         <ToastStack />
 
-        {/* 移动端不留左侧空间、内边距收窄；桌面端为常驻导航让出 120px */}
-        <main className="md:ml-[120px] px-4 md:px-8 pt-[72px] md:pt-20 pb-10">
-          <div className="max-w-[1440px] mx-auto w-full box-border">
+        {/* 桌面端常驻导航预留 220px 边距 */}
+        <main className="md:ml-[220px] px-4 md:px-8 pt-20 pb-12">
+          <div className="max-w-[1440px] mx-auto w-full">
             <AnimatePresence mode="wait">
               <motion.div
                 key={location.pathname}
-                initial={{ opacity: 0, y: 24 }}
+                initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -12 }}
-                transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-                className="min-h-[calc(100vh-140px)]"
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.25 }}
               >
                 {children}
               </motion.div>
