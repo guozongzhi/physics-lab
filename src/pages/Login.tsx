@@ -224,72 +224,66 @@ export default function Login() {
             </p>
 
             <div className="grid grid-cols-3 gap-3 mb-8 max-w-[500px]" aria-label="平台能力">
-              <div className="login-metric-card">
+              <div className="glass-acrylic-card">
                 <div className="text-[22px] sm:text-[26px] font-black text-gradient-mission leading-none whitespace-nowrap">
                   11 步
                 </div>
-                <div className="mt-1.5 text-[11px] font-bold text-slate-500 tracking-wide flex items-center justify-center gap-1">
+                <div className="mt-1.5 text-[11px] font-bold text-slate-600 tracking-wide flex items-center justify-center gap-1">
                   <BookOpen size={12} className="text-mission-500" />
                   <span>学习路径</span>
                 </div>
               </div>
 
-              <div className="login-metric-card">
+              <div className="glass-acrylic-card">
                 <div className="text-[22px] sm:text-[26px] font-black text-gradient-energy leading-none whitespace-nowrap">
                   协作
                 </div>
-                <div className="mt-1.5 text-[11px] font-bold text-slate-500 tracking-wide flex items-center justify-center gap-1">
+                <div className="mt-1.5 text-[11px] font-bold text-slate-600 tracking-wide flex items-center justify-center gap-1">
                   <Users size={12} className="text-energy-500" />
                   <span>研究小组</span>
                 </div>
               </div>
 
-              <div className="login-metric-card">
+              <div className="glass-acrylic-card">
                 <div className="text-[22px] sm:text-[26px] font-black text-growth-600 leading-none whitespace-nowrap">
                   实验
                 </div>
-                <div className="mt-1.5 text-[11px] font-bold text-slate-500 tracking-wide flex items-center justify-center gap-1">
+                <div className="mt-1.5 text-[11px] font-bold text-slate-600 tracking-wide flex items-center justify-center gap-1">
                   <ShieldCheck size={12} className="text-growth-500" />
                   <span>安全准入</span>
                 </div>
               </div>
             </div>
 
-            <div className="login-hero-window p-5 md:p-6 max-w-[540px]">
-              <div className="login-hero-window-bg" />
-              <div className="login-hero-window-overlay" />
-              <div className="relative z-10">
-                <div className="flex items-center justify-between mb-3.5">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-sky-400 animate-pulse" />
-                    <span className="text-[12px] font-bold text-sky-200 tracking-wide">
-                      科学研究闭环
-                    </span>
-                  </div>
-                  <span className="text-[11px] font-medium text-slate-300">
-                    从问题出发 · 走向真实探究
+            <div className="glass-journey-card p-5 md:p-6 max-w-[540px]">
+              <div className="flex items-center justify-between mb-3.5">
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-mission-500 animate-pulse" />
+                  <span className="text-[12px] font-bold text-mission-700 tracking-wide">
+                    从问题出发 · 走向真实研究
                   </span>
                 </div>
+                <span className="text-[11px] font-semibold text-slate-500">
+                  物理探究闭环体系
+                </span>
+              </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
-                  <div className="login-step-pill">
-                    <span className="text-sky-300 font-bold">01</span>
-                    <span>理论探索</span>
-                  </div>
-                  <div className="login-step-pill">
-                    <span className="text-amber-300 font-bold">02</span>
-                    <span>小组协作</span>
-                  </div>
-                  <div className="login-step-pill">
-                    <div className="flex items-center gap-1">
-                      <span className="text-emerald-300 font-bold">03</span>
-                      <span>实验项目</span>
-                    </div>
-                  </div>
-                  <div className="login-step-pill">
-                    <span className="text-indigo-300 font-bold">04</span>
-                    <span>成果展示</span>
-                  </div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
+                <div className="glass-journey-step">
+                  <div className="text-[10px] font-black text-mission-600 mb-0.5">STEP 01</div>
+                  <div className="text-[13px] font-bold text-slate-800">理论探索</div>
+                </div>
+                <div className="glass-journey-step">
+                  <div className="text-[10px] font-black text-energy-600 mb-0.5">STEP 02</div>
+                  <div className="text-[13px] font-bold text-slate-800">小组协作</div>
+                </div>
+                <div className="glass-journey-step">
+                  <div className="text-[10px] font-black text-growth-600 mb-0.5">STEP 03</div>
+                  <div className="text-[13px] font-bold text-slate-800">实验项目</div>
+                </div>
+                <div className="glass-journey-step">
+                  <div className="text-[10px] font-black text-nova-600 mb-0.5">STEP 04</div>
+                  <div className="text-[13px] font-bold text-slate-800">成果展示</div>
                 </div>
               </div>
             </div>
