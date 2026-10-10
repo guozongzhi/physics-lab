@@ -104,47 +104,45 @@ def test_delete_assignment(client, auth):
     assert client.get("/api/safety/assignments", headers=auth("teacher", "teacher123")).json() == []
 
 
-# ---------- 及格由服务端推导 ----------
+# ---------- 服务端判分 ----------
 
-def test_forged_passed_is_ignored_when_assignment_present(client, auth, db):
-    """学生提交 score=0 / passed=true，入库必须按指派及格线判为 false。"""
+def _question(db):
+    from app.models import Question
+    db.add(Question(id="sq-radiation", type="single", stem="安全题", options=["错", "对"], answer=1, safety_category="radiation"))
+    db.commit()
+
+
+def test_client_cannot_forge_safety_result(client, auth, db):
+    _question(db)
     aid = _create(client, auth, passScore=60).json()["id"]
-    resp = client.post(
-        "/api/safety/records",
-        json={"category": "radiation", "score": 0, "passed": True, "assignmentId": aid},
-        headers=auth("u-4"),
-    )
-    assert resp.status_code == 200, resp.text
-    assert resp.json()["passed"] is False
-    assert resp.json()["assignmentId"] == aid
+    headers = auth("u-4")
+    assert client.post("/api/safety/records", json={"category": "radiation", "score": 100, "passed": True}, headers=headers).status_code == 410
+    started = client.post("/api/safety/exams/start", json={"category": "radiation", "assignmentId": aid}, headers=headers)
+    assert started.status_code == 200
+    assert "answer" not in started.json()["questions"][0]
+    result = client.post(f"/api/safety/exams/{started.json()['id']}/submit", json={"answers": {"sq-radiation": 0}}, headers=headers)
+    assert result.status_code == 200
+    assert result.json()["score"] == 0 and result.json()["passed"] is False
+    assert result.json()["assignmentId"] == aid
+    assert client.post(f"/api/safety/exams/{started.json()['id']}/submit", json={"answers": {"sq-radiation": 1}}, headers=headers).status_code == 409
 
 
-def test_score_above_pass_score_passes(client, auth):
+def test_correct_answer_passes(client, auth, db):
+    _question(db)
     aid = _create(client, auth, passScore=60).json()["id"]
-    resp = client.post(
-        "/api/safety/records",
-        json={"category": "radiation", "score": 80, "passed": False, "assignmentId": aid},
-        headers=auth("u-4"),
-    )
-    assert resp.json()["passed"] is True
+    headers = auth("u-4")
+    started = client.post("/api/safety/exams/start", json={"category": "radiation", "assignmentId": aid}, headers=headers).json()
+    result = client.post(f"/api/safety/exams/{started['id']}/submit", json={"answers": {"sq-radiation": 1}}, headers=headers)
+    assert result.json()["passed"] is True
 
 
-def test_free_practice_keeps_client_passed(client, auth):
-    """无指派时保持原行为，不带 assignmentId 的自由练习不受影响。"""
-    resp = client.post(
-        "/api/safety/records",
-        json={"category": "radiation", "score": 10, "passed": True},
-        headers=auth("u-1"),
-    )
-    assert resp.status_code == 200
-    assert resp.json()["passed"] is True
-    assert resp.json()["assignmentId"] is None
+def test_unassigned_student_cannot_start_other_class_exam(client, auth, db):
+    _question(db)
+    aid = _create(client, auth).json()["id"]
+    resp = client.post("/api/safety/exams/start", json={"category": "radiation", "assignmentId": aid}, headers=auth("u-5"))
+    assert resp.status_code == 403
 
 
-def test_record_with_unknown_assignment_is_404(client, auth):
-    resp = client.post(
-        "/api/safety/records",
-        json={"category": "radiation", "score": 90, "passed": True, "assignmentId": "sasgn_nope"},
-        headers=auth("u-1"),
-    )
+def test_unknown_assignment_is_404(client, auth):
+    resp = client.post("/api/safety/exams/start", json={"category": "radiation", "assignmentId": "sasgn_nope"}, headers=auth("u-1"))
     assert resp.status_code == 404

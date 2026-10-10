@@ -1,14 +1,5 @@
 import { create } from 'zustand';
-import {
-  Group,
-  User,
-  ClassMeta,
-  MemberRole,
-  LS_KEYS,
-  loadLS,
-  saveLS,
-  initMockData,
-} from '../data/mockData';
+import { Group, User, ClassMeta, MemberRole, LS_KEYS, loadLS, saveLS, initMockData } from '../data/mockData';
 import { groupsApi, usersApi, coinsApi } from '../lib/apiService';
 import { syncToApi } from '../lib/syncQueue';
 import { apiEnabled } from '../lib/apiClient';
@@ -52,7 +43,7 @@ interface GroupState {
 
 const uid = () => Math.random().toString(36).slice(2, 10);
 
-const loadUsersFromGroups = (groups: Group[]): User[] => {
+const loadUsersFromGroups = (): User[] => {
   const existingUsers = loadLS<User[] | null>('plab_users_cache', null);
   if (existingUsers && existingUsers.length > 0) return existingUsers;
   return [];
@@ -61,7 +52,7 @@ const loadUsersFromGroups = (groups: Group[]): User[] => {
 export const useGroupStore = create<GroupState>((set, get) => {
   initMockData();
   const initialGroups = loadLS<Group[]>(LS_KEYS.GROUPS, []);
-  const initialUsers = loadUsersFromGroups(initialGroups);
+  const initialUsers = loadUsersFromGroups();
   const initialClassMeta = loadLS<ClassMeta>(LS_KEYS.CLASS_META, {
     initialCoinsPerGroup: 500,
     termName: '',

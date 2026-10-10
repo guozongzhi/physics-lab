@@ -31,6 +31,7 @@ def test_start_creates_session_for_current_user(client, auth, db):
     assert body["graded"] is False
     assert body["blindPoints"] == []
     assert body["userAnswers"] == {}
+    assert all("answer" not in q for q in body["questions"])
 
     from app.models import QuizSession
 
@@ -41,6 +42,13 @@ def test_start_creates_session_for_current_user(client, auth, db):
 
 def test_start_unknown_topic_is_404(client, auth):
     assert _start(client, auth, topic="t-404").status_code == 404
+
+
+def test_student_question_bank_does_not_reveal_answers(client, auth):
+    student = client.get("/api/questions", headers=auth("u-1")).json()
+    teacher = client.get("/api/questions", headers=auth("teacher", "teacher123")).json()
+    assert all(q.get("answer") is None for q in student)
+    assert any(q["answer"] is not None for q in teacher)
 
 
 def test_start_requires_auth(client):

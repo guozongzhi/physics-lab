@@ -36,10 +36,37 @@ def test_list_groups_filter_by_class(client, auth):
     resp = client.get("/api/groups", headers=auth("u-1"))
     assert resp.status_code == 200
     all_ids = {g["id"] for g in resp.json()}
-    assert {"g-1", "g-2", "g-3"} <= all_ids
+    assert all_ids == {"g-1", "g-2"}
 
     resp = client.get("/api/groups", params={"class_id": "class-1"}, headers=auth("u-1"))
     assert {g["id"] for g in resp.json()} == {"g-1", "g-2"}
+
+
+def test_student_cannot_read_other_class_students(client, auth):
+    headers = auth("u-1")
+    assert "u-5" not in {u["id"] for u in client.get("/api/users", headers=headers).json()}
+    assert client.get("/api/users/u-5", headers=headers).status_code == 403
+
+
+def test_student_only_sees_own_class_coin_history(client, auth, db):
+    from app.models import CoinTransaction
+
+    db.add_all([
+        CoinTransaction(id="tx-class-1", group_id="g-1", source="teacher_set", delta=5, balance_after=505),
+        CoinTransaction(id="tx-class-2", group_id="g-3", source="teacher_set", delta=5, balance_after=205),
+    ])
+    db.commit()
+    ids = {row["id"] for row in client.get("/api/coin-transactions", headers=auth("u-1")).json()}
+    assert ids == {"tx-class-1"}
+
+
+def test_teacher_cannot_move_student_across_classes(client, auth):
+    resp = client.put(
+        "/api/users/u-1/group",
+        json={"groupId": "g-3", "role": "member"},
+        headers=auth("teacher", "teacher123"),
+    )
+    assert resp.status_code == 403
 
 
 def test_student_join_group(client, auth):

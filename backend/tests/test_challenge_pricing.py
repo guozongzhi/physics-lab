@@ -64,6 +64,13 @@ def test_reward_is_sum_of_difficulty_rates(client, auth):
     assert resp.json()["reward"] == 30
 
 
+def test_challenge_questions_do_not_reveal_answers(client, auth):
+    challenge = _create(client, auth, ["q-1", "q-3"]).json()
+    questions = client.get(f"/api/challenges/{challenge['id']}/questions", headers=auth("u-3")).json()
+    assert len(questions) == 2
+    assert all(q.get("answer") is None for q in questions)
+
+
 def test_reward_follows_rate_changes(client, auth):
     _set_rates(client, auth, 1, 1, 1)
     assert _create(client, auth, ["q-1", "q-2"]).json()["reward"] == 2

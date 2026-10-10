@@ -2,7 +2,7 @@ import React from "react";
 import { BentoCard } from "@/design-system/components/BentoCard";
 import { Badge } from "@/design-system/components/Badge";
 import { Button } from "@/design-system/components/Button";
-import { FileCheck, Snowflake, AlertTriangle, ArrowRight, Check } from "lucide-react";
+import { FileCheck, Snowflake, AlertTriangle, ArrowRight } from "lucide-react";
 import { ReviewableQuestion } from "@/data/mockData";
 
 interface AuditAndAlertBentoProps {

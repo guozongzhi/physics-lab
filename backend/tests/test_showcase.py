@@ -41,6 +41,28 @@ def test_teacher_edit_keeps_approved_status(client, auth):
     assert body["title"] == "改过的标题"
 
 
+def test_approval_reward_is_not_duplicated(client, auth, db):
+    sid = _create(client, auth)
+    _approve(client, auth, sid, coins=50)
+    db.expire_all()
+    before = db.get(Group, "g-1").total_coins
+    repeat = client.post(f"/api/showcase/{sid}/review", json={"action": "approve", "coins": 50}, headers=teacher(auth))
+    assert repeat.status_code == 409
+    db.expire_all()
+    assert db.get(Group, "g-1").total_coins == before
+
+
+def test_student_cannot_submit_for_another_group(client, auth):
+    resp = client.post("/api/showcase", json={"title": "越权", "coverImage": "", "groupId": "g-2"}, headers=auth("u-1"))
+    assert resp.status_code == 403
+
+
+def test_student_only_sees_own_pending_items(client, auth):
+    sid = _create(client, auth)
+    assert any(item["id"] == sid for item in client.get("/api/showcase", headers=auth("u-1")).json())
+    assert all(item["id"] != sid for item in client.get("/api/showcase", headers=auth("u-3")).json())
+
+
 def test_teacher_edit_can_change_cover_and_description(client, auth):
     sid = _create(client, auth)
     resp = client.put(

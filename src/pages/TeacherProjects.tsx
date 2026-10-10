@@ -101,8 +101,8 @@ export default function TeacherProjects() {
       }
       setFormOpen(false);
       setEditing(null);
-    } catch (e: any) {
-      pushToast(e?.message || '保存失败', 'error');
+    } catch (e: unknown) {
+      pushToast((e instanceof Error ? e.message : undefined) || '保存失败', 'error');
     } finally { setSaving(false); }
   };
 
@@ -135,8 +135,8 @@ export default function TeacherProjects() {
       });
       pushToast('招募已发布，学生可在招募市场投标', 'success');
       setRecOpen(false);
-    } catch (e: any) {
-      pushToast(e?.message || '发布失败', 'error');
+    } catch (e: unknown) {
+      pushToast((e instanceof Error ? e.message : undefined) || '发布失败', 'error');
     } finally { setRecSaving(false); }
   };
 

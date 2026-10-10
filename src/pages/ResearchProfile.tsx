@@ -1,39 +1,9 @@
+import type { LucideIcon } from 'lucide-react';
 import { applyAvatarFallback } from '@/lib/imageFallback';
 import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import {
-  User,
-  Zap,
-  Target,
-  Swords,
-  Users,
-  Crown,
-  Star,
-  Sparkles,
-  Lock,
-  BookOpen,
-  FlaskConical,
-  Puzzle,
-  Code,
-  ShieldCheck,
-  Handshake,
-  Trophy,
-  Rocket,
-  CheckCircle2,
-  Calendar,
-  Award,
-  Flag,
-} from 'lucide-react';
-import {
-  RadarChart,
-  PolarGrid,
-  PolarAngleAxis,
-  PolarRadiusAxis,
-  Radar as ReRadar,
-  ResponsiveContainer,
-  Tooltip,
-  Legend,
-} from 'recharts';
+import { User, Zap, Target, Swords, Users, Crown, Star, Sparkles, Lock, BookOpen, FlaskConical, Puzzle, Code, ShieldCheck, Handshake, Trophy, Rocket, CheckCircle2, Calendar, Award, Flag } from 'lucide-react';
+import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar as ReRadar, ResponsiveContainer, Tooltip } from 'recharts';
 import Checkbox from '@/components/ui/Checkbox';
 import { useGroupStore } from '@/store/groupStore';
 import { useAuthStore } from '@/store/authStore';
@@ -149,7 +119,7 @@ export default function ResearchProfile() {
   const earnedBadgeCount = BADGES.filter((b) => badgeEarned[b.id]).length;
   const timeline = useMemo(() => {
     const events: TimelineEvent[] = [];
-    const dstr = (v: any) => { const d = v instanceof Date ? v : new Date(v); return `${d.getMonth() + 1}/${d.getDate()}`; };
+    const dstr = (v: Date | string) => { const d = v instanceof Date ? v : new Date(v); return `${d.getMonth() + 1}/${d.getDate()}`; };
     for (const p of projects) if (p.ownerGroupId === me.groupId) events.push({ id: `p-${p.id}`, date: dstr(p.startDate), type: 'project', title: p.title, desc: `小组项目 · 进度 ${p.progress}%`, coins: p.rewardCoins });
     for (const c of challenges) if (c.creatorGroupId === me.groupId) events.push({ id: `c-${c.id}`, date: dstr(c.deadline), type: 'challenge', title: c.title, desc: '发起知识挑战', coins: c.reward });
     for (const qs of quizSessions) events.push({ id: `q-${qs.id}`, date: dstr(qs.createdAt), type: 'exam', title: '理论 / 安全测验', desc: `${qs.score} 分 · ${qs.passed ? '通过' : '未过'}`, coins: 0 });
@@ -163,7 +133,7 @@ export default function ResearchProfile() {
 
   const [pwdOpen, setPwdOpen] = useState(false);
 
-  const timelineCfg: Record<TimelineEvent['type'], { grad: string; chip: string; icon: any }> = {
+  const timelineCfg: Record<TimelineEvent['type'], { grad: string; chip: string; icon: LucideIcon }> = {
     challenge: { grad: 'from-nova-400 to-mission-500', chip: 'chip-nova', icon: Swords },
     project: { grad: 'from-growth-400 to-mission-500', chip: 'chip-growth', icon: Target },
     exam: { grad: 'from-mission-400 to-cyan-500', chip: 'chip-mission', icon: ShieldCheck },
@@ -458,7 +428,7 @@ export default function ResearchProfile() {
                         backdropFilter: 'blur(10px)',
                         boxShadow: '0 8px 24px rgba(15,23,42,0.1)',
                       }}
-                      formatter={(v: any) => [`${v} / 100`, '得分']}
+                      formatter={(v: number | string) => [`${v} / 100`, '得分']}
                     />
                   </RadarChart>
                 </ResponsiveContainer>

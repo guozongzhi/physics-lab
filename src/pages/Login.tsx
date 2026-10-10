@@ -91,8 +91,8 @@ export default function Login() {
         await bootstrapFromApi(true);
         setTeacherErr('');
         navigate(result.role === 'admin' ? '/admin' : '/teacher/overview');
-      } catch (err: any) {
-        setTeacherErr(err?.message || '密码错误，请联系管理员获取密码');
+      } catch (err: unknown) {
+        setTeacherErr((err instanceof Error ? err.message : undefined) || '密码错误，请联系管理员获取密码');
       } finally {
         setSubmitting(false);
       }
@@ -149,8 +149,8 @@ export default function Login() {
       await bootstrapFromApi(true);
       setRegErr('');
       navigate('/dashboard');
-    } catch (err: any) {
-      setRegErr(err?.message || '注册失败，请稍后重试');
+    } catch (err: unknown) {
+      setRegErr((err instanceof Error ? err.message : undefined) || '注册失败，请稍后重试');
     } finally {
       setSubmitting(false);
     }
@@ -168,8 +168,8 @@ export default function Login() {
       await bootstrapFromApi(true);
       setCredErr('');
       navigate('/dashboard');
-    } catch (err: any) {
-      setCredErr(err?.message || '登录失败，请检查用户名/邮箱或密码');
+    } catch (err: unknown) {
+      setCredErr((err instanceof Error ? err.message : undefined) || '登录失败，请检查用户名/邮箱或密码');
     } finally {
       setSubmitting(false);
     }

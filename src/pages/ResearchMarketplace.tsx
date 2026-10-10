@@ -1,23 +1,7 @@
+import type { LucideIcon } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import {
-  Briefcase,
-  Search,
-  Clock,
-  Zap,
-  Users,
-  TrendingDown,
-  TrendingUp,
-  CheckCircle2,
-  AlertCircle,
-  XCircle,
-  Award,
-  Send,
-  Megaphone,
-  SlidersHorizontal,
-  Home,
-  Globe,
-} from 'lucide-react';
+import { Briefcase, Search, Clock, Zap, Users, TrendingDown, TrendingUp, CheckCircle2, XCircle, Award, Send, Megaphone, SlidersHorizontal, Home, Globe } from 'lucide-react';
 import AvatarStack from '@/components/ui/AvatarStack';
 import RecruitDialog from '@/components/ui/RecruitDialog';
 import { useGroupStore } from '@/store/groupStore';
@@ -30,9 +14,7 @@ import { windowState, windowClosedMessage } from '@/lib/activityWindow';
 
 type SortKey = 'reward' | 'deadline';
 
-function daysFromNow(days: number) {
-  return Date.now() + days * 86400000;
-}
+
 
 interface BidState {
   status: 'bidding' | 'won' | 'done' | 'rejected';
@@ -374,7 +356,7 @@ export default function ResearchMarketplace() {
               </div>
               <div className="space-y-3">
                 {myBids.map((b) => {
-                  const statusCfg: Record<BidState['status'], { label: string; chip: string; icon: any }> = {
+                  const statusCfg: Record<BidState['status'], { label: string; chip: string; icon: LucideIcon }> = {
                     bidding: { label: '竞标中', chip: 'chip-mission', icon: TrendingUp },
                     won: { label: '已中标', chip: 'chip-growth', icon: CheckCircle2 },
                     done: { label: '已完成', chip: 'chip-nova', icon: Award },

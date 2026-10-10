@@ -1,37 +1,10 @@
+import type { LucideIcon } from 'lucide-react';
 import { applyAvatarFallback, avatarFallback } from '@/lib/imageFallback';
 import type { ReactNode } from 'react';
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import { useEffect, useRef, useState } from 'react';
-import {
-  LayoutDashboard,
-  BookOpen,
-  Sparkles,
-  FolderKanban,
-  ShieldCheck,
-  ShoppingCart,
-  Trophy,
-  Medal,
-  Users,
-  UsersRound,
-  Rocket,
-  Bell,
-  LogOut,
-  Zap,
-  Info,
-  CheckCircle2,
-  AlertTriangle,
-  X,
-  Camera,
-  Gauge,
-  ClipboardList,
-  Shield,
-  Menu,
-  FileCheck,
-  KeyRound,
-  UserRound,
-  ChevronRight,
-} from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { LayoutDashboard, BookOpen, Sparkles, FolderKanban, ShieldCheck, ShoppingCart, Trophy, Medal, Users, UsersRound, Rocket, Bell, LogOut, Zap, Info, CheckCircle2, AlertTriangle, X, Camera, Gauge, ClipboardList, Shield, Menu, FileCheck, KeyRound, UserRound, ChevronRight } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { useGroupStore } from '@/store/groupStore';
 import { useUIStore } from '@/store/uiStore';
@@ -76,7 +49,7 @@ interface NavItem {
   id: string;
   label: string;
   subLabel?: string;
-  icon: any;
+  icon: LucideIcon;
   to: string;
 }
 

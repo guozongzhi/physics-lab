@@ -1,7 +1,7 @@
 import React from "react";
 import { BentoCard } from "@/design-system/components/BentoCard";
-import { Badge } from "@/design-system/components/Badge";
-import { Trophy, ArrowRight, Zap, TrendingUp, Megaphone } from "lucide-react";
+
+import { Trophy, ArrowRight, Zap, Megaphone } from "lucide-react";
 
 export interface TeamRankItem {
   rank: number;

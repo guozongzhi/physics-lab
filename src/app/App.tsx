@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import {
   BrowserRouter, Navigate, Outlet, Route, Routes, useLocation, useNavigate,
 } from 'react-router-dom';
@@ -7,6 +7,7 @@ import { useAuthStore } from '@/store/authStore';
 import { initMockData } from '@/data/mockData';
 import { apiEnabled, getToken } from '@/lib/apiClient';
 import { bootstrapFromApi } from '@/lib/bootstrap';
+import { clearBusinessData } from '@/lib/sessionCleanup';
 import { useUIStore } from '@/store/uiStore';
 import AppShell from './layouts/AppShell';
 
@@ -85,16 +86,44 @@ export default function App() {
   const initAuth = useAuthStore((s) => s.init);
   const role = useAuthStore((s) => s.role);
   const userId = useAuthStore((s) => s.userId);
+  const [bootstrapState, setBootstrapState] = useState<'loading' | 'ready' | 'error'>(
+    apiEnabled && getToken() ? 'loading' : 'ready'
+  );
+  const loadSequence = useRef(0);
+
+  const reloadBusinessData = useCallback(() => {
+    const sequence = ++loadSequence.current;
+    setBootstrapState('loading');
+    clearBusinessData();
+    void bootstrapFromApi(true)
+      .then(() => { if (sequence === loadSequence.current) setBootstrapState('ready'); })
+      .catch(() => { if (sequence === loadSequence.current) setBootstrapState('error'); });
+  }, []);
 
   useEffect(() => {
     if (!apiEnabled) initMockData();
     initAuth();
-    if (apiEnabled && getToken()) void bootstrapFromApi();
-  }, [initAuth]);
+    if (apiEnabled && getToken()) reloadBusinessData();
+  }, [initAuth, reloadBusinessData]);
 
   useEffect(() => {
     if (!userId || !role) useUIStore.getState().clearToasts();
   }, [userId, role]);
+
+  if (bootstrapState !== 'ready') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-mission-50 p-6">
+        <div className="glass-card max-w-md w-full p-8 text-center">
+          <h1 className="font-serif text-xl font-bold text-mission-800 mb-3">
+            {bootstrapState === 'loading' ? '正在加载研究数据…' : '研究数据加载失败'}
+          </h1>
+          {bootstrapState === 'error' && (
+            <button className="btn-mission" onClick={reloadBusinessData}>重新加载</button>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <BrowserRouter>

@@ -1,4 +1,15 @@
+import type { LucideIcon } from 'lucide-react';
 import { applyAvatarFallback } from '@/lib/imageFallback';
+/**
+ * 学生名单管理 —— 教师/管理员视图
+ *
+ * 功能：
+ *  - 按班级查看学生名单（表格）
+ *  - 重命名班级
+ *  - 批量上传学生（粘贴名单 / JSON）
+ *  - 删除学生
+ *  - 每班人数上限 30
+ */
 /**
  * 学生名单管理 —— 教师/管理员视图
  *
@@ -11,22 +22,7 @@ import { applyAvatarFallback } from '@/lib/imageFallback';
  */
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import {
-  Users,
-  School,
-  Pencil,
-  Plus,
-  Trash2,
-  X,
-  Upload,
-  Loader2,
-  AlertTriangle,
-  CheckCircle2,
-  ChevronRight,
-  Zap,
-  RotateCcw,
-  KeyRound,
-} from 'lucide-react';
+import { Users, School, Pencil, Trash2, X, Upload, Loader2, AlertTriangle, CheckCircle2, Zap, RotateCcw, KeyRound } from 'lucide-react';
 import { useUIStore } from '@/store/uiStore';
 import { useGroupStore } from '@/store/groupStore';
 import { useCoinStore } from '@/store/coinStore';
@@ -120,8 +116,8 @@ export default function StudentRoster() {
       setClasses((prev) => prev.map((c) => (c.id === cls.id ? cls : c)));
       setEditingClass(null);
       pushToast('班级重命名成功', 'success');
-    } catch (err: any) {
-      pushToast(err?.message || '重命名失败', 'error');
+    } catch (err: unknown) {
+      pushToast((err instanceof Error ? err.message : undefined) || '重命名失败', 'error');
     }
   };
 
@@ -134,10 +130,10 @@ export default function StudentRoster() {
       // 尝试 JSON 解析
       const parsed = JSON.parse(text);
       if (Array.isArray(parsed)) {
-        items = parsed.map((p: any) => ({
+        items = parsed.map((p: string | { name: string; username?: string; password?: string }) => ({
           name: typeof p === 'string' ? p : p.name,
-          username: p.username,
-          password: p.password,
+          username: typeof p === 'string' ? undefined : p.username,
+          password: typeof p === 'string' ? undefined : p.password,
         }));
       }
     } catch {
@@ -164,8 +160,8 @@ export default function StudentRoster() {
       setUploadText('');
       setShowUpload(false);
       pushToast(`成功导入 ${created.length} 名学生`, 'success');
-    } catch (err: any) {
-      pushToast(err?.message || '上传失败', 'error');
+    } catch (err: unknown) {
+      pushToast((err instanceof Error ? err.message : undefined) || '上传失败', 'error');
     } finally {
       setUploading(false);
     }
@@ -185,8 +181,8 @@ export default function StudentRoster() {
       );
       setDeleteStudentId(null);
       pushToast(`已删除学生「${deleteStudentId.name}」`, 'success');
-    } catch (err: any) {
-      pushToast(err?.message || '删除失败', 'error');
+    } catch (err: unknown) {
+      pushToast((err instanceof Error ? err.message : undefined) || '删除失败', 'error');
     }
   };
 
@@ -547,7 +543,7 @@ function Modal({
   open: boolean;
   onClose: () => void;
   title: string;
-  icon: any;
+  icon: LucideIcon;
   children: React.ReactNode;
 }) {
   return (

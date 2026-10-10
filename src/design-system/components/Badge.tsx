@@ -2,7 +2,7 @@ import React from "react";
 import { cva, type VariantProps } from "../utils/cva";
 import { cn } from "../../lib/utils";
 
-export const badgeVariants = cva(
+const badgeVariants = cva(
   "inline-flex items-center font-medium transition-colors select-none",
   {
     variants: {

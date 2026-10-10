@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from .. import services
 from ..database import get_db
 from ..deps import get_current_user, require_teacher, window_guard
-from ..models import Group, Project, Recruitment, ShowcaseItem, User
+from ..models import Group, Project, Recruitment, SafetyExamAttempt, ShowcaseItem, User
 from ..schemas import (
     AssignRequest,
     BidCreate,
@@ -226,6 +226,20 @@ def mark_safety_pass(project_id: str, db: Session = Depends(get_db), current: Us
     p = db.get(Project, project_id)
     if not p:
         raise HTTPException(status_code=404, detail="项目不存在")
+    if current.account_role == "student" and current.group_id != p.owner_group_id:
+        raise HTTPException(status_code=403, detail="只能认证本组项目")
+    passed_attempt = (
+        db.query(SafetyExamAttempt)
+        .filter(
+            SafetyExamAttempt.user_id == current.id,
+            SafetyExamAttempt.project_id == project_id,
+            SafetyExamAttempt.graded.is_(True),
+            SafetyExamAttempt.passed.is_(True),
+        )
+        .first()
+    )
+    if not passed_attempt:
+        raise HTTPException(status_code=403, detail="请先完成本项目的安全考核")
     passed = dict(p.safety_passed)
     passed[current.id] = True
     p.safety_passed = passed
@@ -357,12 +371,26 @@ def resolve(rec_id: str, payload: ResolveRequest, db: Session = Depends(get_db),
 
 # ---------- Showcase ----------
 @router.get("/showcase", response_model=list[ShowcaseOut])
-def list_showcase(db: Session = Depends(get_db), _: User = Depends(get_current_user)):
-    return db.query(ShowcaseItem).all()
+def list_showcase(db: Session = Depends(get_db), current: User = Depends(get_current_user)):
+    q = db.query(ShowcaseItem)
+    if current.account_role == "student":
+        from sqlalchemy import or_
+
+        q = q.filter(or_(ShowcaseItem.status == "approved", ShowcaseItem.group_id == current.group_id))
+    return q.all()
 
 
 @router.post("/showcase", response_model=ShowcaseOut)
-def create_showcase(payload: ShowcaseCreate, db: Session = Depends(get_db), _: User = Depends(get_current_user)):
+def create_showcase(payload: ShowcaseCreate, db: Session = Depends(get_db), current: User = Depends(get_current_user)):
+    group = db.get(Group, payload.groupId)
+    if not group:
+        raise HTTPException(status_code=404, detail="小组不存在")
+    if current.account_role == "student" and current.group_id != group.id:
+        raise HTTPException(status_code=403, detail="只能以本组名义提交作品")
+    if payload.projectId:
+        project = db.get(Project, payload.projectId)
+        if not project or project.owner_group_id != group.id:
+            raise HTTPException(status_code=400, detail="项目与作品小组不匹配")
     item = ShowcaseItem(
         id=services.gen_id("showcase_"),
         project_id=payload.projectId or "",
@@ -454,10 +482,17 @@ def review_showcase(
         raise HTTPException(status_code=404, detail="展示不存在")
 
     if payload.action == "approve":
-        item.status = "approved"
-        item.reject_reason = ""
+        # 状态转换在数据库中原子执行；并发重试只能有一个请求拿到发奖资格。
+        changed = (
+            db.query(ShowcaseItem)
+            .filter(ShowcaseItem.id == showcase_id, ShowcaseItem.status != "approved")
+            .update({ShowcaseItem.status: "approved", ShowcaseItem.reject_reason: ""}, synchronize_session=False)
+        )
+        if changed != 1:
+            raise HTTPException(status_code=409, detail="作品已审批通过，不可重复发放奖励")
+        db.refresh(item)
         coins = max(0, payload.coins or 0)
-        if coins > 0:
+        if coins > 0 and item.awarded_coins == 0:
             # add_tx 会同时更新 group.total_coins 并写入流水，但不提交——由这里统一 commit
             services.add_tx(
                 db,

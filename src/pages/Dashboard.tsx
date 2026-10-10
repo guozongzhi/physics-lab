@@ -7,13 +7,7 @@ import { useTheoryStore } from '../store/theoryStore';
 import { useProjectStore } from '../store/projectStore';
 import { useCoinStore } from '../store/coinStore';
 import ChangePasswordModal from '../components/ui/ChangePasswordModal';
-import {
-  classesApi,
-  safetyApi,
-  groupsApi,
-  coinsApi,
-  SafetyRecord,
-} from '@/lib/apiService';
+import { classesApi, safetyApi, groupsApi, coinsApi, SafetyRecord } from '@/lib/apiService';
 import { apiEnabled, getToken } from '@/lib/apiClient';
 import type { User, Project, ProjectStatus } from '@/data/mockData';
 import { X, UserPlus, AlertTriangle, Megaphone, ArrowRight, BookOpen, FlaskConical, Zap } from 'lucide-react';
@@ -57,14 +51,14 @@ export default function Dashboard() {
     if (!userId) return;
     try {
       setPwdHintDismissed(localStorage.getItem(pwdHintKey) === '1');
-    } catch {}
+    } catch { /* 浏览器禁用本地存储时继续显示页面 */ }
   }, [userId, pwdHintKey]);
 
   const dismissPwdHint = () => {
     setPwdHintDismissed(true);
     try {
       localStorage.setItem(pwdHintKey, '1');
-    } catch {}
+    } catch { /* 浏览器禁用本地存储时继续显示页面 */ }
   };
   const showPwdHint = role === 'student' && Boolean(isDefaultPassword) && !pwdHintDismissed;
 
@@ -98,7 +92,7 @@ export default function Dashboard() {
     [groups, classId]
   );
   const { quizSessions, challenges } = useTheoryStore();
-  const { projects, showcaseItems, recruitments, createProject, updateProject, deleteProject, createRecruitment } = useProjectStore();
+  const { projects, createProject, updateProject, deleteProject, createRecruitment } = useProjectStore();
   const { coinTxs } = useCoinStore();
 
   // 自助加入小组本地状态
@@ -119,8 +113,8 @@ export default function Dashboard() {
       setGroupId(pendingGroupId);
       const g = groups.find((x) => x.id === pendingGroupId);
       pushToast(`🚀 已加入小组「${g?.name || ''}」，开始你的研究之旅！`, 'success');
-    } catch (err: any) {
-      setJoinError(err?.message || '加入失败，请稍后重试或联系老师');
+    } catch (err: unknown) {
+      setJoinError((err instanceof Error ? err.message : undefined) || '加入失败，请稍后重试或联系老师');
     } finally {
       setJoining(false);
     }
@@ -128,7 +122,6 @@ export default function Dashboard() {
 
   const currentUser = userId ? getUserById(userId) || null : null;
   const myGroup = groupId ? groups.find((g) => g.id === groupId) || null : null;
-  const isStaff = role === 'teacher' || role === 'admin';
 
   // 项目表单相关状态
   const [formOpen, setFormOpen] = useState(false);
@@ -210,8 +203,8 @@ export default function Dashboard() {
         pushToast('新项目立项成功！', 'success');
       }
       setFormOpen(false);
-    } catch (err: any) {
-      pushToast(err?.message || '保存失败', 'error');
+    } catch (err: unknown) {
+      pushToast((err instanceof Error ? err.message : undefined) || '保存失败', 'error');
     } finally {
       setSaving(false);
     }
@@ -223,14 +216,14 @@ export default function Dashboard() {
       await deleteProject(deleteTarget.id);
       pushToast(`项目「${deleteTarget.title}」已删除`, 'success');
       setDeleteTarget(null);
-    } catch (err: any) {
-      pushToast(err?.message || '删除失败', 'error');
+    } catch (err: unknown) {
+      pushToast((err instanceof Error ? err.message : undefined) || '删除失败', 'error');
     }
   };
 
   // 招募相关状态
   const [recOpen, setRecOpen] = useState(false);
-  const [recProject, setRecProject] = useState<Project | null>(null);
+  const [recProject] = useState<Project | null>(null);
   const [recSaving, setRecSaving] = useState(false);
   const [recForm, setRecForm] = useState({ title: '', description: '', skills: '', reward: 30, daysLeft: 7 });
 
@@ -252,8 +245,8 @@ export default function Dashboard() {
       });
       pushToast('招募公告已发布！', 'success');
       setRecOpen(false);
-    } catch (err: any) {
-      pushToast(err?.message || '发布招募失败', 'error');
+    } catch (err: unknown) {
+      pushToast((err instanceof Error ? err.message : undefined) || '发布招募失败', 'error');
     } finally {
       setRecSaving(false);
     }
@@ -337,15 +330,13 @@ export default function Dashboard() {
   // 30秒轻量轮询
   useEffect(() => {
     if (!apiEnabled || !getToken()) return;
-    let alive = true;
     const tick = async () => {
       try {
         await Promise.all([groupsApi.list(), coinsApi.transactions()]);
-      } catch {}
+      } catch { /* 轮询失败时等待下次重试 */ }
     };
     const timer = setInterval(tick, 30000);
     return () => {
-      alive = false;
       clearInterval(timer);
     };
   }, []);
@@ -369,6 +360,7 @@ export default function Dashboard() {
               ))}
             </select>
           </div>
+          {joinError && <span role="alert" className="text-xs text-danger-600">{joinError}</span>}
           <Button size="sm" variant="energy" isLoading={joining} onClick={handleJoinGroup}>
             确认加入
           </Button>

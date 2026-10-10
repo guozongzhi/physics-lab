@@ -6,25 +6,17 @@
  *  - 对每道题：查看题干/选项/答案、写教师评价（学生可见）、修改原题内容、通过/驳回、删除
  *  - 教师上传题库：手动新增 / JSON 批量导入
  */
+/**
+ * 题库审核中心 —— 教师/管理员视图
+ *
+ * 功能：
+ *  - 查看两个分区：学生提交（pending/approved/rejected）与教师上传
+ *  - 对每道题：查看题干/选项/答案、写教师评价（学生可见）、修改原题内容、通过/驳回、删除
+ *  - 教师上传题库：手动新增 / JSON 批量导入
+ */
 import { useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import {
-  LibraryBig,
-  Plus,
-  Upload,
-  Download,
-  Pencil,
-  Trash2,
-  X,
-  CheckCircle2,
-  AlertTriangle,
-  FileUp,
-  Loader2,
-  MessageSquare,
-  Check,
-  XCircle,
-  Clock,
-} from 'lucide-react';
+import { LibraryBig, Plus, Upload, Download, Pencil, Trash2, X, CheckCircle2, AlertTriangle, FileUp, Loader2, MessageSquare, Check, XCircle } from 'lucide-react';
 import { useQuestionBankStore } from '@/store/questionBankStore';
 import { useAuthStore } from '@/store/authStore';
 import { useUIStore } from '@/store/uiStore';
@@ -73,7 +65,6 @@ export default function TeacherQuestionBank() {
   const userName = useAuthStore((s) => s.name) || '教师';
   const questions = useQuestionBankStore((s) => s.questions);
   const uploadQuestion = useQuestionBankStore((s) => s.uploadQuestion);
-  const submitQuestion = useQuestionBankStore((s) => s.submitQuestion);
   const approveQuestion = useQuestionBankStore((s) => s.approveQuestion);
   const rejectQuestion = useQuestionBankStore((s) => s.rejectQuestion);
   const editQuestion = useQuestionBankStore((s) => s.editQuestion);
@@ -248,9 +239,10 @@ export default function TeacherQuestionBank() {
 
   const doImport = () => {
     if (!importText.trim()) return setImportErr('请粘贴 JSON 或选择文件');
-    let parsed: any;
+    let parsed: unknown;
     try { parsed = JSON.parse(importText); } catch { return setImportErr('JSON 格式错误'); }
-    const list = Array.isArray(parsed) ? parsed : parsed.questions || [];
+    const questions = parsed && typeof parsed === 'object' && 'questions' in parsed ? parsed.questions : undefined;
+    const list: unknown[] = Array.isArray(parsed) ? parsed : Array.isArray(questions) ? questions : [];
     if (!list.length) return setImportErr('未解析到题目');
     setImporting(true);
     setTimeout(() => {

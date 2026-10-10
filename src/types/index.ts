@@ -54,7 +54,7 @@ export interface QuizSession {
   id: string;
   topicId: string;
   questions: Question[];
-  userAnswers: Record<string, any>;
+  userAnswers: Record<string, number | number[] | boolean>;
   score: number;
   passed: boolean;
   blindPoints: string[];

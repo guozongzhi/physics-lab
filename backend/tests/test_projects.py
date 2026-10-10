@@ -17,6 +17,22 @@ def _create_project(client, headers, title="单摆实验", topic="力学"):
     return resp.json()
 
 
+def test_safety_pass_requires_server_graded_attempt(client, auth, db):
+    from app.models import Question
+
+    project = _create_project(client, auth("u-1"))
+    endpoint = f"/api/projects/{project['id']}/safety-pass"
+    assert client.post(endpoint, headers=auth("u-1")).status_code == 403
+    assert client.post(endpoint, headers=auth("u-3")).status_code == 403
+    db.add(Question(id="sq-project", type="single", stem="机械安全", options=["错", "对"], answer=1, safety_category="mechanical"))
+    db.commit()
+    headers = auth("u-1")
+    exam = client.post("/api/safety/exams/start", json={"category": "mechanical", "projectId": project["id"]}, headers=headers).json()
+    result = client.post(f"/api/safety/exams/{exam['id']}/submit", json={"answers": {"sq-project": 1}}, headers=headers)
+    assert result.json()["passed"] is True
+    assert client.post(endpoint, headers=headers).status_code == 200
+
+
 def test_create_and_update_project_tech_points(client, auth):
     headers = auth("u-1")  # g-1 组长
     project = _create_project(client, headers)

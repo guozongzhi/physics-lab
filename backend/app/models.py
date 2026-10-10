@@ -206,6 +206,24 @@ class ShowcaseItem(Base):
     category: Mapped[str] = mapped_column(String, default="photo", index=True)
 
 
+class SafetyExamAttempt(Base):
+    """服务端保存题目快照与判分状态，客户端只收到无答案的题目。"""
+
+    __tablename__ = "safety_exam_attempts"
+
+    id: Mapped[str] = mapped_column(String, primary_key=True)
+    user_id: Mapped[str] = mapped_column(String, index=True)
+    category: Mapped[str] = mapped_column(String)
+    assignment_id: Mapped[str | None] = mapped_column(String, nullable=True)
+    project_id: Mapped[str | None] = mapped_column(String, nullable=True)
+    questions: Mapped[list] = mapped_column(JSON, default=list)
+    pass_score: Mapped[int] = mapped_column(Integer, default=80)
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    graded: Mapped[bool] = mapped_column(Boolean, default=False)
+    score: Mapped[int] = mapped_column(Integer, default=0)
+    passed: Mapped[bool] = mapped_column(Boolean, default=False)
+
+
 class ClassMeta(Base):
     __tablename__ = "class_meta"
 

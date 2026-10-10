@@ -1,5 +1,5 @@
 import React from "react";
-import { Users, FolderKanban, CheckCircle2, AlertTriangle, FileCheck, Snowflake } from "lucide-react";
+import { Users, FolderKanban, CheckCircle2, FileCheck, Snowflake } from "lucide-react";
 import { StatWidget } from "@/design-system/components/StatWidget";
 
 interface TeachingKPISectionProps {

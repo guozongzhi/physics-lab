@@ -34,7 +34,7 @@ cd backend
 .venv/bin/python -m pytest tests/ -q
 ```
 
-前端不配 `VITE_API_BASE_URL` 时走 **localStorage 离线演示模式**；配置后进入在线模式（乐观更新 + 后台同步）。本地联调可复制 `.env.example` 为 `.env.local` 并设为 `http://localhost:8000`。
+前端不配 `VITE_API_BASE_URL` 时走 **localStorage 离线演示模式**；配置后进入在线模式。在线测验与安全考核由服务端判分，业务写入后会重拉服务端快照；无法完成数据引导时不会沿用上一账号的缓存。本地联调可复制 `.env.example` 为 `.env.local` 并设为 `http://localhost:8000`。
 
 ## 默认账号
 

@@ -3,7 +3,7 @@ import { User, Group } from "@/data/mockData";
 import { BentoCard } from "@/design-system/components/BentoCard";
 import { Badge } from "@/design-system/components/Badge";
 import { Button } from "@/design-system/components/Button";
-import { Users, ShieldCheck, Zap, TrendingUp, Sparkles } from "lucide-react";
+import { Users, Zap, Sparkles } from "lucide-react";
 
 interface CommanderHeaderProps {
   user: User | null;

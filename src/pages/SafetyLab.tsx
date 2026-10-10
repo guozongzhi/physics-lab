@@ -1,3 +1,4 @@
+import type { LucideIcon } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
 import { safetyApi, safetyAssignmentApi, SafetyRecord, SafetyAssignment } from '@/lib/apiService';
 import { useNavigate } from 'react-router-dom';
@@ -28,7 +29,7 @@ import { cn } from '@/lib/utils';
 interface SafetyDomain {
   category: SafetyCategory;
   name: string;
-  icon: any;
+  icon: LucideIcon;
   color: string;
   grad: string;
   passedQuestions: number;

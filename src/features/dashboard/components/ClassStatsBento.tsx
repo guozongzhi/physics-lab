@@ -1,6 +1,6 @@
 import React from "react";
 import { BentoCard } from "@/design-system/components/BentoCard";
-import { Users, FlaskConical, Zap, ShieldCheck } from "lucide-react";
+
 
 export interface ClassStatItem {
   label: string;

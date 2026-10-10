@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from ..database import get_db
-from ..deps import get_current_user, require_teacher
+from ..deps import get_current_user, require_teacher, visible_class_id
 from ..models import Class, CoinTransaction, Group, User
 from ..schemas import (
     ClassOut,
@@ -46,9 +46,14 @@ def list_classes(db: Session = Depends(get_db)):
 def list_groups(
     class_id: str | None = None,
     db: Session = Depends(get_db),
-    _: User = Depends(get_current_user),
+    current: User = Depends(get_current_user),
 ):
     q = db.query(Group)
+    scoped = visible_class_id(current)
+    if current.account_role == "student" and not scoped:
+        return []
+    if scoped:
+        q = q.filter(Group.class_id == scoped)
     if class_id:
         q = q.filter(Group.class_id == class_id)
     return q.all()
@@ -183,9 +188,14 @@ def list_users(
     class_id: str | None = None,
     unassigned: bool = False,
     db: Session = Depends(get_db),
-    _: User = Depends(get_current_user),
+    current: User = Depends(get_current_user),
 ):
     q = db.query(User).filter(User.account_role == "student")
+    scoped = visible_class_id(current)
+    if current.account_role == "student" and not scoped:
+        return []
+    if scoped:
+        q = q.filter(User.class_id == scoped)
     if class_id:
         q = q.filter(User.class_id == class_id)
     if unassigned:
@@ -200,7 +210,7 @@ def assign_user_group(
     user_id: str,
     payload: UserGroupAssign,
     db: Session = Depends(get_db),
-    _: User = Depends(require_teacher),
+    current: User = Depends(require_teacher),
 ):
     """教师把学生分配/移动到某小组，或移出（groupId 为 null）。
 
@@ -211,10 +221,14 @@ def assign_user_group(
         raise HTTPException(status_code=404, detail="用户不存在")
     if u.account_role != "student":
         raise HTTPException(status_code=400, detail="只能对学生分组")
+    if current.class_id and u.class_id != current.class_id:
+        raise HTTPException(status_code=403, detail="只能调整本班学生")
     if payload.groupId:
         group = db.get(Group, payload.groupId)
         if not group:
             raise HTTPException(status_code=404, detail="目标小组不存在")
+        if current.account_role != "admin" and u.class_id and group.class_id != u.class_id:
+            raise HTTPException(status_code=403, detail="跨班调组仅管理员可操作")
         if payload.role == "leader":
             # 降级目标小组现任组长，避免出现两个组长
             for other in db.query(User).filter(
@@ -236,10 +250,15 @@ def assign_user_group(
 
 
 @router.get("/users/{user_id}", response_model=UserOut)
-def get_user(user_id: str, db: Session = Depends(get_db), _: User = Depends(get_current_user)):
+def get_user(user_id: str, db: Session = Depends(get_db), current: User = Depends(get_current_user)):
     u = db.get(User, user_id)
     if not u:
         raise HTTPException(status_code=404, detail="用户不存在")
+    scoped = visible_class_id(current)
+    if current.account_role == "student" and (not scoped or u.class_id != scoped):
+        raise HTTPException(status_code=403, detail="只能查看本班学生")
+    if current.account_role == "teacher" and scoped and u.class_id != scoped:
+        raise HTTPException(status_code=403, detail="只能查看本班学生")
     return user_to_out(u)
 
 

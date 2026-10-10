@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from .. import services
 from ..database import get_db
-from ..deps import get_current_user, require_teacher, window_guard
+from ..deps import get_current_user, require_teacher, visible_class_id, window_guard
 from ..models import ClassMeta, CoinTransaction, Group, User
 from ..schemas import (
     ActivityWindowUpdate,
@@ -25,9 +25,14 @@ router = APIRouter(prefix="/api", tags=["coins"])
 def list_transactions(
     group_id: str | None = None,
     db: Session = Depends(get_db),
-    _: User = Depends(get_current_user),
+    current: User = Depends(get_current_user),
 ):
     q = db.query(CoinTransaction)
+    scoped = visible_class_id(current)
+    if current.account_role == "student" and not scoped:
+        return []
+    if scoped:
+        q = q.join(Group, CoinTransaction.group_id == Group.id).filter(Group.class_id == scoped)
     if group_id:
         q = q.filter(CoinTransaction.group_id == group_id)
     txs = q.order_by(CoinTransaction.created_at.desc()).all()
@@ -48,9 +53,17 @@ def list_transactions(
 
 
 @router.get("/rankings", response_model=RankingsOut)
-def rankings(db: Session = Depends(get_db), _: User = Depends(get_current_user)):
-    groups = db.query(Group).all()
-    users = db.query(User).filter(User.account_role == "student").all()
+def rankings(db: Session = Depends(get_db), current: User = Depends(get_current_user)):
+    groups_q = db.query(Group)
+    users_q = db.query(User).filter(User.account_role == "student")
+    scoped = visible_class_id(current)
+    if current.account_role == "student" and not scoped:
+        groups, users = [], []
+    else:
+        if scoped:
+            groups_q = groups_q.filter(Group.class_id == scoped)
+            users_q = users_q.filter(User.class_id == scoped)
+        groups, users = groups_q.all(), users_q.all()
 
     group_ranking = [
         GroupRankRow(group_id=g.id, name=g.name, total_coins=g.total_coins, rank=idx + 1)

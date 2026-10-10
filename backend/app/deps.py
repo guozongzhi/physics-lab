@@ -43,6 +43,13 @@ def require_admin(current: User = Depends(get_current_user)) -> User:
     return current
 
 
+def visible_class_id(current: User) -> str | None:
+    """管理员与未绑定班级的全校教师可见全局；学生及绑定班级的教师限定本班。"""
+    if current.account_role == "admin":
+        return None
+    return current.class_id
+
+
 #: 窗口关闭时给学生看的话术
 _WINDOW_LABELS = {
     "challenge": "挑战窗口",

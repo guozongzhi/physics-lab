@@ -1,8 +1,8 @@
 import React from "react";
 import { BentoCard } from "@/design-system/components/BentoCard";
 import { Button } from "@/design-system/components/Button";
-import { Badge } from "@/design-system/components/Badge";
-import { ArrowRightLeft, Download, Zap } from "lucide-react";
+
+import { ArrowRightLeft, Download } from "lucide-react";
 import { CoinTransaction } from "@/data/mockData";
 
 interface RecentTxItem extends CoinTransaction {

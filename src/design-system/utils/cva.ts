@@ -11,7 +11,7 @@ export type VariantConfig<V extends Record<string, Record<string, string>>> = {
   compoundVariants?: Array<{ [K in keyof V]?: keyof V[K] } & { className: string }>;
 };
 
-export type VariantProps<T extends (...args: any[]) => string> = Parameters<T>[0];
+export type VariantProps<T extends (...args: never[]) => string> = Parameters<T>[0];
 
 export function cva<V extends Record<string, Record<string, string>>>(
   baseClass?: string,

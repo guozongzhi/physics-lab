@@ -1,30 +1,8 @@
+import type { LucideIcon } from 'lucide-react';
 import { applyAvatarFallback } from '@/lib/imageFallback';
 import { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import {
-  Rocket,
-  Users,
-  Zap,
-  Crown,
-  Pencil,
-  Trash2,
-  Plus,
-  Minus,
-  RefreshCw,
-  AlertTriangle,
-  X,
-  Trophy,
-  Sparkles,
-  GripVertical,
-  CheckCircle2,
-  Coins,
-  UserPlus,
-  Settings,
-  Shield,
-  UserMinus,
-  LogIn,
-  RotateCcw,
-} from 'lucide-react';
+import { Rocket, Users, Zap, Crown, Pencil, Trash2, Plus, Minus, RefreshCw, AlertTriangle, X, Trophy, Sparkles, GripVertical, CheckCircle2, Coins, UserPlus, Settings, Shield, UserMinus, RotateCcw } from 'lucide-react';
 import { useGroupStore } from '@/store/groupStore';
 import { useCoinStore } from '@/store/coinStore';
 import { windowState, formatCloseTime } from '@/lib/activityWindow';
@@ -790,7 +768,7 @@ export default function TeacherGroups() {
 
                     <div className="mb-4">
                       {members.length ? (
-                        <AvatarStack users={members as any} size={32} max={6} />
+                        <AvatarStack users={members} size={32} max={6} />
                       ) : (
                         <span className="text-[12px] text-ink-400">暂无成员，点击「成员管理」添加</span>
                       )}
@@ -1513,7 +1491,7 @@ export default function TeacherGroups() {
   );
 }
 
-function FleetStat({ label, val, unit, grad, icon: Icon }: { label: string; val: number; unit: string; grad: string; icon: any }) {
+function FleetStat({ label, val, unit, grad, icon: Icon }: { label: string; val: number; unit: string; grad: string; icon: LucideIcon }) {
   const v = useTicker(val, 1000);
   return (
     <div className="glass-card !shadow-none !border-mission-100/50 px-4 py-3 rounded-2xl min-w-0 sm:min-w-[130px]">

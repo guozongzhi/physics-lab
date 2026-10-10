@@ -104,13 +104,13 @@ def test_change_password_requires_auth(client):
     assert resp.status_code == 401
 
 
-def test_safety_record_create_and_list(client, auth):
+def test_safety_record_create_and_list(client, auth, db):
+    from app.models import Question
+    db.add(Question(id="sq-auth", type="single", stem="安全题", options=["错", "对"], answer=1, safety_category="electric"))
+    db.commit()
     headers = auth("u-1")
-    resp = client.post(
-        "/api/safety/records",
-        json={"category": "electric", "score": 90, "passed": True},
-        headers=headers,
-    )
+    started = client.post("/api/safety/exams/start", json={"category": "electric"}, headers=headers).json()
+    resp = client.post(f"/api/safety/exams/{started['id']}/submit", json={"answers": {"sq-auth": 1}}, headers=headers)
     assert resp.status_code == 200
     body = resp.json()
     assert body["category"] == "electric" and body["passed"] is True

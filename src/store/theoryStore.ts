@@ -1,17 +1,8 @@
 import { create } from 'zustand';
-import {
-  PhysicsTopic,
-  Question,
-  QuizSession,
-  Challenge,
-  ChallengeSubmission,
-  LS_KEYS,
-  loadLS,
-  saveLS,
-} from '../data/mockData';
+import { PhysicsTopic, Question, QuizSession, Challenge, ChallengeSubmission, LS_KEYS, loadLS, saveLS } from '../data/mockData';
 import { useCoinStore } from './coinStore';
 import { useGroupStore } from './groupStore';
-import { useUIStore } from './uiStore';
+
 import { theoryApi, groupsApi, usersApi, coinsApi } from '../lib/apiService';
 import { syncToApi } from '../lib/syncQueue';
 import { reviveDates } from '../lib/reviveDates';
@@ -28,7 +19,7 @@ async function refetchAfterChallenge(): Promise<void> {
     theoryApi.challenges(),
     groupsApi.list(),
     usersApi.list(),
-    coinsApi.transactions() as Promise<any[]>,
+    coinsApi.transactions(),
   ]);
   useTheoryStore.setState({ challenges: reviveDates(challenges, ['deadline']) });
   useGroupStore.setState({ groups, users });
@@ -45,7 +36,7 @@ interface TheoryState {
    * userId 由调用方传入（本地兜底时用来给会话打归属），避免 store 之间互相 import 成环。
    */
   startQuiz: (topicId: string, userId?: string | null) => Promise<QuizSession>;
-  submitAnswer: (sessionId: string, qid: string, answer: any) => void;
+  submitAnswer: (sessionId: string, qid: string, answer: Question['answer']) => void;
   gradeQuiz: (sessionId: string) => QuizSession;
   /**
    * 创建挑战。**不接受调用方传奖励**——按所选题目难度与教师设的单价算
@@ -62,14 +53,14 @@ interface TheoryState {
   submitChallengeAnswers: (
     challengeId: string,
     solverGroupId: string,
-    answers: Record<string, any>
+    answers: Record<string, Question['answer']>
   ) => { accuracy: number; earned: number };
   getTopicQuestions: (topicId: string) => Question[];
 }
 
 const uid = () => `${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
 
-const isAnswerCorrect = (question: Question, userAnswer: any): boolean => {
+const isAnswerCorrect = (question: Question, userAnswer: Question['answer'] | undefined): boolean => {
   if (question.type === 'multiple') {
     // 拷贝后再排序，避免就地修改持久化的题目答案
     const correct = [...(question.answer as number[])].sort().join(',');
@@ -118,18 +109,13 @@ export const useTheoryStore = create<TheoryState>((set, get) => {
     startQuiz: async (topicId, userId) => {
       const { questions, quizSessions, topics, challenges } = get();
 
-      let remoteFailed = false;
       if (apiEnabled) {
-        try {
-          const remote = await theoryApi.startQuiz(topicId);
-          const session = reviveDates([remote], ['createdAt'])[0] as QuizSession;
-          const next = [...quizSessions, session];
-          persist(topics, questions, next, challenges);
-          set({ quizSessions: next });
-          return session;
-        } catch {
-          remoteFailed = true;
-        }
+        const remote = await theoryApi.startQuiz(topicId);
+        const session = reviveDates([remote], ['createdAt'])[0] as QuizSession;
+        const next = [...quizSessions, session];
+        persist(topics, questions, next, challenges);
+        set({ quizSessions: next });
+        return session;
       }
 
       const topicQuestions = questions.filter((q) => q.topicId === topicId);
@@ -170,9 +156,6 @@ export const useTheoryStore = create<TheoryState>((set, get) => {
       const next = [...quizSessions, session];
       persist(topics, questions, next, challenges);
       set({ quizSessions: next });
-      if (remoteFailed) {
-        useUIStore.getState().pushToast('后端暂不可用，已进入离线测验模式', 'warning');
-      }
       return session;
     },
 
@@ -265,7 +248,7 @@ export const useTheoryStore = create<TheoryState>((set, get) => {
       return challenge;
     },
 
-    acceptChallenge: (challengeId, solverGroupId) => {
+    acceptChallenge: (challengeId) => {
       const { challenges, questions } = get();
       const challenge = challenges.find((c) => c.id === challengeId);
       if (!challenge) return [];

@@ -94,7 +94,7 @@ interface QuestionBankState {
   setFeedback: (id: string, feedback: string, teacherName: string) => void;
   deleteQuestion: (id: string) => void;
   /** 批量导入教师上传题目 */
-  importTeacherQuestions: (raw: any[], teacherName: string) => number;
+  importTeacherQuestions: (raw: unknown[], teacherName: string) => number;
 }
 
 const persist = (questions: ReviewableQuestion[]) => saveLS(LS_KEY, questions);
@@ -193,12 +193,13 @@ export const useQuestionBankStore = create<QuestionBankState>((set, get) => ({
   importTeacherQuestions: (raw, teacherName) => {
     const valid = ['single', 'multiple', 'judge'];
     const incoming: ReviewableQuestion[] = [];
-    for (const item of raw) {
+    for (const candidate of raw) {
+      const item = candidate as Record<string, unknown>;
       if (!item || typeof item !== 'object') continue;
       const stem = String(item.stem || '').trim();
-      let options = Array.isArray(item.options) ? item.options.map((o: any) => String(o).trim()).filter(Boolean) : [];
-      const type = valid.includes(item.type) ? item.type : 'single';
-      let answer: any = item.answer;
+      let options = Array.isArray(item.options) ? item.options.map((o: unknown) => String(o).trim()).filter(Boolean) : [];
+      const type: QuestionType = valid.includes(String(item.type)) ? item.type as QuestionType : 'single';
+      let answer: unknown = item.answer;
       if (type === 'judge') {
         answer = answer === true || answer === 'true' || answer === '正确' || answer === 1;
         if (options.length !== 2 || options[0] !== '正确' || options[1] !== '错误') options = ['正确', '错误'];
@@ -211,7 +212,7 @@ export const useQuestionBankStore = create<QuestionBankState>((set, get) => ({
       }
       if (!stem || options.length < 2) continue;
       incoming.push({
-        id: uid(), type, stem, options, answer,
+        id: uid(), type, stem, options, answer: answer as ReviewableQuestion['answer'],
         knowledgePoint: String(item.knowledgePoint || '').trim(),
         difficulty: ([1, 2, 3].includes(Number(item.difficulty)) ? Number(item.difficulty) : 1) as 1 | 2 | 3,
         submittedBy: null, submittedByName: teacherName,

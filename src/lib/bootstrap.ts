@@ -28,12 +28,14 @@ import type { QuizSession } from '../data/mockData';
 
 let loaded = false;
 let loadingPromise: Promise<void> | null = null;
+let generation = 0;
 
 export function isBootstrapped(): boolean {
   return loaded;
 }
 
 export function resetBootstrap(): void {
+  generation++;
   loaded = false;
   loadingPromise = null;
 }
@@ -46,11 +48,11 @@ export async function bootstrapFromApi(force = false): Promise<void> {
   if (loaded && !force) return;
   if (loadingPromise && !force) return loadingPromise;
 
-  loadingPromise = (async () => {
+  const myGeneration = ++generation;
+  const currentPromise = (async () => {
     const pick = <T>(r: PromiseSettledResult<T>): T | null => (r.status === 'fulfilled' ? r.value : null);
 
-    // 单个接口失败（如过期 token、网络抖动）不再中断整批拉取；成功的部分照常注入，
-    // 失败字段保持 store 原有数据，避免整页回退旧数据且无提示。
+    // 所有接口完成后统一检查；任何失败都不注入部分快照，避免混合新旧账号数据。
     const [
       rGroups, rUsers, rTopics, rQuestions, rChallenges, rProjects, rRecruits, rShowcase, rCoinTxs, rClassMeta, rQuizSessions,
     ] = await Promise.allSettled([
@@ -62,10 +64,18 @@ export async function bootstrapFromApi(force = false): Promise<void> {
       projectsApi.list(),
       recruitmentsApi.list(),
       showcaseApi.list(),
-      coinsApi.transactions() as Promise<any[]>,
+      coinsApi.transactions(),
       coinsApi.classMeta(),
       theoryApi.quizSessions(),
     ]);
+
+    const results = [rGroups, rUsers, rTopics, rQuestions, rChallenges, rProjects, rRecruits, rShowcase, rCoinTxs, rClassMeta, rQuizSessions];
+    const failed = results.find((result) => result.status === 'rejected');
+    if (failed && failed.status === 'rejected') throw failed.reason;
+    if (myGeneration !== generation) {
+      if (loadingPromise && loadingPromise !== currentPromise) await loadingPromise;
+      return;
+    }
 
     const groups = pick(rGroups);
     const users = pick(rUsers);
@@ -142,10 +152,11 @@ export async function bootstrapFromApi(force = false): Promise<void> {
 
     loaded = true;
   })();
+  loadingPromise = currentPromise;
 
   try {
-    await loadingPromise;
+    await currentPromise;
   } finally {
-    loadingPromise = null;
+    if (loadingPromise === currentPromise) loadingPromise = null;
   }
 }

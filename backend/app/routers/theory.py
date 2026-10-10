@@ -1,5 +1,5 @@
 import random
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import or_
@@ -15,7 +15,9 @@ from ..models import (
     Group,
     Question,
     QuizSession,
+    Project,
     SafetyAssignment,
+    SafetyExamAttempt,
     SafetyRecord,
     Topic,
     User,
@@ -35,6 +37,8 @@ from ..schemas import (
     SafetyQuestionUpdate,
     SafetyRecordCreate,
     SafetyRecordOut,
+    SafetyExamStart,
+    SafetyExamSubmit,
     TopicOut,
 )
 from ..safety_builtin import build_safety_questions
@@ -56,6 +60,24 @@ def _question_dict(q: Question) -> dict:
     }
 
 
+def _public_question(q: dict) -> dict:
+    return {key: value for key, value in q.items() if key != "answer"}
+
+
+def _quiz_response(session: QuizSession) -> dict:
+    return {
+        "id": session.id,
+        "topic_id": session.topic_id,
+        "questions": [q if session.graded else _public_question(q) for q in session.questions],
+        "user_answers": session.user_answers,
+        "score": session.score,
+        "passed": session.passed,
+        "blind_points": session.blind_points,
+        "graded": session.graded,
+        "created_at": session.created_at,
+    }
+
+
 def _require_group(current: User) -> str:
     if not current.group_id:
         raise HTTPException(status_code=400, detail="当前用户未归属小组")
@@ -72,12 +94,15 @@ def list_topics(db: Session = Depends(get_db), _: User = Depends(get_current_use
 def list_questions(
     topic_id: str | None = None,
     db: Session = Depends(get_db),
-    _: User = Depends(get_current_user),
+    current: User = Depends(get_current_user),
 ):
     q = db.query(Question)
     if topic_id:
         q = q.filter(Question.topic_id == topic_id)
-    return q.all()
+    questions = q.all()
+    if current.account_role in ("teacher", "admin"):
+        return questions
+    return [_public_question(_question_dict(item)) for item in questions]
 
 
 # ---------- Safety question bank（教师维护；与理论题共用 questions 表，靠 safety_category 区分） ----------
@@ -99,13 +124,16 @@ def _new_safety_question(payload: SafetyQuestionInput) -> Question:
 def list_safety_questions(
     category: str | None = None,
     db: Session = Depends(get_db),
-    _: User = Depends(get_current_user),
+    current: User = Depends(get_current_user),
 ):
     """安全题库。登录即可读——学生安全考核据此出题，教师端据此维护。"""
     q = db.query(Question).filter(Question.safety_category.isnot(None))
     if category:
         q = q.filter(Question.safety_category == category)
-    return q.all()
+    questions = q.all()
+    if current.account_role in ("teacher", "admin"):
+        return questions
+    return [_public_question(_question_dict(item)) for item in questions]
 
 
 @router.post("/safety/questions", response_model=QuestionOut, status_code=201)
@@ -223,12 +251,13 @@ def list_quiz_sessions(db: Session = Depends(get_db), current: User = Depends(ge
     只返回本人的记录——QuizSessionOut 里不含 user_id，不泄露他人信息。
     前端 bootstrap 拉这个列表，学习路径的「学习/检测」几步据此判定。
     """
-    return (
+    sessions = (
         db.query(QuizSession)
         .filter(QuizSession.user_id == current.id)
         .order_by(QuizSession.created_at.desc())
         .all()
     )
+    return [_quiz_response(session) for session in sessions]
 
 
 def _own_session(session_id: str, current: User, db: Session) -> QuizSession:
@@ -277,7 +306,7 @@ def start_quiz(payload: QuizStartRequest, db: Session = Depends(get_db), current
     db.add(session)
     db.commit()
     db.refresh(session)
-    return session
+    return _quiz_response(session)
 
 
 @router.post("/quiz/{session_id}/answer", response_model=QuizSessionOut)
@@ -288,17 +317,23 @@ def submit_answer(
     current: User = Depends(get_current_user),
 ):
     session = _own_session(session_id, current, db)
+    if session.graded:
+        raise HTTPException(status_code=409, detail="测验已交卷")
+    if payload.qid not in {q["id"] for q in session.questions}:
+        raise HTTPException(status_code=400, detail="题目不属于本次测验")
     answers = dict(session.user_answers)
     answers[payload.qid] = payload.answer
     session.user_answers = answers
     db.commit()
     db.refresh(session)
-    return session
+    return _quiz_response(session)
 
 
 @router.post("/quiz/{session_id}/grade", response_model=QuizSessionOut)
 def grade_quiz(session_id: str, db: Session = Depends(get_db), current: User = Depends(get_current_user)):
     session = _own_session(session_id, current, db)
+    if session.graded:
+        return session
     correct = 0
     blind: set[str] = set()
     for q in session.questions:
@@ -385,9 +420,9 @@ def accept_challenge(challenge_id: str, db: Session = Depends(get_db), _: User =
     if challenge.question_ids:
         qs = db.query(Question).filter(Question.id.in_(challenge.question_ids)).all()
         if qs:
-            return qs
+            return [_public_question(_question_dict(q)) for q in qs]
     # 回退：取该主题前 10 题
-    return db.query(Question).filter(Question.topic_id == challenge.topic_id).limit(10).all()
+    return [_public_question(_question_dict(q)) for q in db.query(Question).filter(Question.topic_id == challenge.topic_id).limit(10).all()]
 
 
 @router.post("/challenges/{challenge_id}/submit", response_model=ChallengeOut)
@@ -438,37 +473,102 @@ def submit_challenge(
 
 
 # ---------- Safety exam records ----------
+@router.post("/safety/exams/start")
+def start_safety_exam(
+    payload: SafetyExamStart,
+    db: Session = Depends(get_db),
+    current: User = Depends(get_current_user),
+):
+    assignment = db.get(SafetyAssignment, payload.assignmentId) if payload.assignmentId else None
+    if payload.assignmentId and not assignment:
+        raise HTTPException(status_code=404, detail="指派不存在")
+    if assignment:
+        if not _assignment_visible_to(assignment, current):
+            raise HTTPException(status_code=403, detail="无权参加该考核")
+        if assignment.category != payload.category:
+            raise HTTPException(status_code=400, detail="考核类别与指派不符")
+        if assignment.deadline and assignment.deadline.replace(tzinfo=None) < datetime.now(timezone.utc).replace(tzinfo=None):
+            raise HTTPException(status_code=400, detail="考核已截止")
+    project = db.get(Project, payload.projectId) if payload.projectId else None
+    if payload.projectId and not project:
+        raise HTTPException(status_code=404, detail="项目不存在")
+    if project:
+        if current.account_role == "student" and current.group_id != project.owner_group_id:
+            raise HTTPException(status_code=403, detail="只能参加本组项目考核")
+        if project.safety_category != payload.category:
+            raise HTTPException(status_code=400, detail="考核类别与项目不符")
+    pool = db.query(Question).filter(Question.safety_category == payload.category).all()
+    if not pool:
+        raise HTTPException(status_code=404, detail="该类别暂无安全题目")
+    picked = random.sample(pool, min(len(pool), assignment.question_count if assignment else 10))
+    expires_at = datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(minutes=assignment.time_limit if assignment else 60)
+    attempt = SafetyExamAttempt(
+        id=services.gen_id("sexam_"),
+        user_id=current.id,
+        category=payload.category,
+        assignment_id=payload.assignmentId,
+        project_id=payload.projectId,
+        questions=[_question_dict(q) for q in picked],
+        pass_score=assignment.pass_score if assignment else 80,
+        expires_at=expires_at,
+    )
+    db.add(attempt)
+    db.commit()
+    return {"id": attempt.id, "questions": [_public_question(q) for q in attempt.questions], "passScore": attempt.pass_score}
+
+
+@router.post("/safety/exams/{attempt_id}/submit", response_model=SafetyRecordOut)
+def submit_safety_exam(
+    attempt_id: str,
+    payload: SafetyExamSubmit,
+    db: Session = Depends(get_db),
+    current: User = Depends(get_current_user),
+):
+    attempt = db.get(SafetyExamAttempt, attempt_id)
+    if not attempt:
+        raise HTTPException(status_code=404, detail="考核不存在")
+    if attempt.user_id != current.id:
+        raise HTTPException(status_code=403, detail="无权提交他人考核")
+    if attempt.graded:
+        raise HTTPException(status_code=409, detail="考核已提交")
+    if attempt.expires_at and attempt.expires_at.replace(tzinfo=None) + timedelta(seconds=15) < datetime.now(timezone.utc).replace(tzinfo=None):
+        raise HTTPException(status_code=400, detail="考核已超时")
+    correct = sum(
+        1 for q in attempt.questions
+        if q["id"] in payload.answers and services.is_answer_correct(q, payload.answers[q["id"]])
+    )
+    score = round(correct / len(attempt.questions) * 100)
+    passed = score >= attempt.pass_score
+    changed = (
+        db.query(SafetyExamAttempt)
+        .filter(SafetyExamAttempt.id == attempt_id, SafetyExamAttempt.graded.is_(False))
+        .update({SafetyExamAttempt.score: score, SafetyExamAttempt.passed: passed, SafetyExamAttempt.graded: True}, synchronize_session=False)
+    )
+    if changed != 1:
+        raise HTTPException(status_code=409, detail="考核已提交")
+    db.refresh(attempt)
+    rec = SafetyRecord(
+        id=services.gen_id("srec_"), user_id=current.id, category=attempt.category,
+        score=score, passed=passed, assignment_id=attempt.assignment_id,
+    )
+    db.add(rec)
+    if passed and attempt.project_id:
+        project = db.get(Project, attempt.project_id)
+        project.safety_passed = {**project.safety_passed, current.id: True}
+    elif not passed and attempt.project_id:
+        db.get(Project, attempt.project_id).status = "frozen"
+    db.commit()
+    db.refresh(rec)
+    return rec
+
+
 @router.post("/safety/records", response_model=SafetyRecordOut)
 def create_safety_record(
     payload: SafetyRecordCreate,
     db: Session = Depends(get_db),
     current: User = Depends(get_current_user),
 ):
-    """记录一次安全科目考核结果（用于安全实验室按真实记录算通过率）。
-
-    带了 assignmentId（来自教师指派）时，**忽略客户端传来的 passed**，改由该指派的
-    及格线推导——否则学生可以 POST `{score: 0, passed: true}` 伪造通过。
-    自由练习（无 assignmentId）保持原行为。
-    """
-    passed = payload.passed
-    if payload.assignmentId:
-        assignment = db.get(SafetyAssignment, payload.assignmentId)
-        if not assignment:
-            raise HTTPException(status_code=404, detail="指派不存在")
-        passed = payload.score >= assignment.pass_score
-
-    rec = SafetyRecord(
-        id=services.gen_id("srec_"),
-        user_id=current.id,
-        category=payload.category,
-        score=payload.score,
-        passed=passed,
-        assignment_id=payload.assignmentId,
-    )
-    db.add(rec)
-    db.commit()
-    db.refresh(rec)
-    return rec
+    raise HTTPException(status_code=410, detail="请使用安全考核接口提交答案")
 
 
 @router.get("/safety/records", response_model=list[SafetyRecordOut])

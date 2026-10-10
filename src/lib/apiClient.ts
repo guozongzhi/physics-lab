@@ -62,7 +62,7 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
   if (res.status === 204) return undefined as T;
 
   const text = await res.text();
-  const rawData = text ? JSON.parse(text) : undefined;
+  const rawData: unknown = text ? JSON.parse(text) : undefined;
   const data = autoReviveDate(rawData);
 
   if (!res.ok) {
@@ -81,7 +81,8 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
       }
       if (typeof window !== 'undefined') window.location.href = '/login';
     }
-    const detail = (data && (data.detail || data.message)) || res.statusText;
+    const errorData = data && typeof data === 'object' ? data as Record<string, unknown> : null;
+    const detail = errorData?.detail || errorData?.message || res.statusText;
     throw new ApiError(res.status, typeof detail === 'string' ? detail : '请求失败');
   }
   return data as T;

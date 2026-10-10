@@ -1,30 +1,9 @@
+import type { LucideIcon } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
-import {
-  Atom,
-  Zap,
-  Eye,
-  ThermometerSun,
-  RadioTower,
-  Waves,
-  Rocket,
-  Scale,
-  CheckCircle2,
-  Star,
-  Sparkles,
-  PlayCircle,
-  Trophy,
-  Target,
-  Lightbulb,
-  Brain,
-  ChevronRight,
-  ChevronDown,
-  BookOpen,
-  X,
-  HelpCircle,
-} from 'lucide-react';
+import { Atom, Zap, Eye, ThermometerSun, RadioTower, Waves, Rocket, Scale, CheckCircle2, Star, Sparkles, PlayCircle, Trophy, Target, Lightbulb, Brain, ChevronRight, ChevronDown, BookOpen, X, HelpCircle } from 'lucide-react';
 import ProgressRing from '@/components/ui/ProgressRing';
 import { useTheoryStore } from '@/store/theoryStore';
 import { useAuthStore } from '@/store/authStore';
@@ -37,7 +16,7 @@ type TopicTab = 'ai-study' | 'knowledge' | 'quiz';
 interface TopicMeta {
   id: string;
   title: string;
-  icon: any;
+  icon: LucideIcon;
   chapters: number;
   difficulty: 1 | 2 | 3;
   completed: boolean;
@@ -55,11 +34,7 @@ const TOPIC_META: TopicMeta[] = [
   { id: 'topic-8', title: '误差分析', icon: Scale, chapters: 7, difficulty: 2, completed: false, unlocked: false },
 ];
 
-const QUIZ_HISTORY = [
-  { id: 1, date: '07-12 14:30', accuracy: 92, reward: 180, passed: true },
-  { id: 2, date: '07-08 19:15', accuracy: 85, reward: 120, passed: true },
-  { id: 3, date: '07-05 10:20', accuracy: 76, reward: 60, passed: false },
-];
+
 
 export default function LearningHub() {
   const [activeTopicId, setActiveTopicId] = useState('topic-2');

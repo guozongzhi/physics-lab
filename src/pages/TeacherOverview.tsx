@@ -72,8 +72,6 @@ export default function TeacherOverview() {
   // 班级筛选
   const [insightClass, setInsightClass] = useState('all');
   const groupIdToClass = useMemo(() => new Map(groups.map((g) => [g.id, g.classId || ''])), [groups]);
-  const insightClassFiltered = (classId: string | null | undefined) => insightClass === 'all' || classId === insightClass;
-  const groupInScope = (gid: string) => insightClassFiltered(groupIdToClass.get(gid));
 
   // 1. KPI 数据计算
   const totalStudents = users.length;
@@ -112,7 +110,7 @@ export default function TeacherOverview() {
   const coinTrend = useMemo(() => {
     const byDay: Record<string, number> = {};
     for (const tx of coinTxs) {
-      if (!groupInScope(tx.groupId)) continue;
+      if (!(insightClass === 'all' || groupIdToClass.get(tx.groupId) === insightClass)) continue;
       const d = new Date(tx.createdAt);
       const k = `${d.getMonth() + 1}/${d.getDate()}`;
       byDay[k] = (byDay[k] || 0) + tx.delta;
@@ -133,7 +131,7 @@ export default function TeacherOverview() {
     const bins = { open: 0, assigned: 0, done: 0, failed: 0 };
     for (const r of recruitments) {
       const p = projects.find((p) => p.id === r.projectId);
-      if (p && !insightClassFiltered(p.ownerGroupId ? groupIdToClass.get(p.ownerGroupId) : null)) continue;
+      if (p && !(insightClass === 'all' || groupIdToClass.get(p.ownerGroupId) === insightClass)) continue;
       bins[r.status] = (bins[r.status] || 0) + 1;
     }
     return [
@@ -148,13 +146,13 @@ export default function TeacherOverview() {
   const classScale = useMemo(() => {
     const map = new Map<string, { groups: number; students: number }>();
     for (const g of groups) {
-      if (!insightClassFiltered(g.classId)) continue;
+      if (!(insightClass === 'all' || g.classId === insightClass)) continue;
       const c = map.get(g.classId || '') || { groups: 0, students: 0 };
       c.groups++;
       map.set(g.classId || '', c);
     }
     for (const u of users) {
-      if (!insightClassFiltered(u.classId)) continue;
+      if (!(insightClass === 'all' || u.classId === insightClass)) continue;
       const c = map.get(u.classId || '') || { groups: 0, students: 0 };
       c.students++;
       map.set(u.classId || '', c);

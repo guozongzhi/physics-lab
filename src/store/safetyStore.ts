@@ -36,16 +36,17 @@ function loadInitial(): Question[] {
 }
 
 /** 清洗并校验导入的题目，返回合法题目数组 */
-export function normalizeQuestions(raw: any[]): Question[] {
+export function normalizeQuestions(raw: unknown[]): Question[] {
   const validCats: SafetyCategory[] = ['electric', 'thermal', 'optical', 'mechanical', 'radiation', 'chemical', 'combined'];
   const out: Question[] = [];
-  for (const item of raw) {
+  for (const candidate of raw) {
+    const item = candidate as Record<string, unknown>;
     if (!item || typeof item !== 'object') continue;
-    const cat = validCats.includes(item.safetyCategory) ? item.safetyCategory : 'combined';
+    const cat: SafetyCategory = validCats.includes(item.safetyCategory as SafetyCategory) ? item.safetyCategory as SafetyCategory : 'combined';
     const stem = String(item.stem || '').trim();
-    const options = Array.isArray(item.options) ? item.options.map((o: any) => String(o).trim()).filter(Boolean) : [];
-    const type = ['single', 'multiple', 'judge'].includes(item.type) ? item.type : 'single';
-    const rawAnswer: any = item.answer;
+    const options = Array.isArray(item.options) ? item.options.map((o: unknown) => String(o).trim()).filter(Boolean) : [];
+    const type: Question['type'] = ['single', 'multiple', 'judge'].includes(String(item.type)) ? item.type as Question['type'] : 'single';
+    const rawAnswer: unknown = item.answer;
     let answer: Question['answer'];
     if (type === 'judge') {
       answer = rawAnswer === true || rawAnswer === 'true' || rawAnswer === '正确' || rawAnswer === 1;
@@ -82,7 +83,7 @@ interface SafetyState {
   updateQuestion: (id: string, patch: Partial<SafetyQuestionInput>) => void;
   deleteQuestion: (id: string) => void;
   /** 导入题目：merge=按题干去重合并，replace=整体替换 */
-  importQuestions: (raw: any[], mode: 'merge' | 'replace') => number;
+  importQuestions: (raw: unknown[], mode: 'merge' | 'replace') => number;
   resetToDefault: () => void;
 }
 

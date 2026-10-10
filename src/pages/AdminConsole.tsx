@@ -1,3 +1,4 @@
+import type { LucideIcon } from 'lucide-react';
 import { applyAvatarFallback } from '@/lib/imageFallback';
 import { useEffect, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -95,8 +96,8 @@ export default function AdminConsole() {
       setClasses((prev) => [...prev, cls]);
       setNewClassName('');
       pushToast(`班级「${name}」创建成功`, 'success');
-    } catch (err: any) {
-      pushToast(err?.message || '创建失败', 'error');
+    } catch (err: unknown) {
+      pushToast((err instanceof Error ? err.message : undefined) || '创建失败', 'error');
     }
   };
 
@@ -109,8 +110,8 @@ export default function AdminConsole() {
       setClasses((prev) => prev.map((c) => (c.id === cls.id ? cls : c)));
       setEditingClass(null);
       pushToast('班级重命名成功', 'success');
-    } catch (err: any) {
-      pushToast(err?.message || '重命名失败', 'error');
+    } catch (err: unknown) {
+      pushToast((err instanceof Error ? err.message : undefined) || '重命名失败', 'error');
     }
   };
 
@@ -121,8 +122,8 @@ export default function AdminConsole() {
       setClasses((prev) => prev.filter((c) => c.id !== deleteClassId));
       setDeleteClassId(null);
       pushToast('班级已删除', 'success');
-    } catch (err: any) {
-      pushToast(err?.message || '删除失败', 'error');
+    } catch (err: unknown) {
+      pushToast((err instanceof Error ? err.message : undefined) || '删除失败', 'error');
     }
   };
 
@@ -139,8 +140,8 @@ export default function AdminConsole() {
       setTeacherForm({ username: '', password: '', name: '' });
       setShowTeacherForm(false);
       pushToast(`教师「${t.name}」创建成功`, 'success');
-    } catch (err: any) {
-      pushToast(err?.message || '创建失败', 'error');
+    } catch (err: unknown) {
+      pushToast((err instanceof Error ? err.message : undefined) || '创建失败', 'error');
     }
   };
 
@@ -151,8 +152,8 @@ export default function AdminConsole() {
       setTeachers((prev) => prev.filter((t) => t.id !== deleteTeacherId));
       setDeleteTeacherId(null);
       pushToast('教师账号已删除', 'success');
-    } catch (err: any) {
-      pushToast(err?.message || '删除失败', 'error');
+    } catch (err: unknown) {
+      pushToast((err instanceof Error ? err.message : undefined) || '删除失败', 'error');
     }
   };
 
@@ -167,8 +168,8 @@ export default function AdminConsole() {
       pushToast(`教师「${resetTeacher.name}」密码已重置`, 'success');
       setResetTeacher(null);
       setResetPassword('');
-    } catch (err: any) {
-      pushToast(err?.message || '重置失败', 'error');
+    } catch (err: unknown) {
+      pushToast((err instanceof Error ? err.message : undefined) || '重置失败', 'error');
     }
   };
 
@@ -498,7 +499,7 @@ function Modal({
   open: boolean;
   onClose: () => void;
   title: string;
-  icon: any;
+  icon: LucideIcon;
   children: React.ReactNode;
 }) {
   return (

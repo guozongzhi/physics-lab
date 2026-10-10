@@ -1,34 +1,14 @@
+import type { LucideIcon } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useParams } from 'react-router-dom';
-import {
-  Rocket,
-  Search,
-  Filter,
-  FolderKanban,
-  Users,
-  Zap,
-  Clock,
-  ShieldCheck,
-  Wrench,
-  Lightbulb,
-  CheckCircle2,
-  AlertTriangle,
-  XCircle,
-  Snowflake,
-  ChevronRight,
-  ArrowRight,
-  CalendarDays,
-  Award,
-  User,
-  X,
-  Check,
-  ListTodo,
-} from 'lucide-react';
+import { Rocket, Search, Filter, FolderKanban, Users, Zap, Clock, ShieldCheck, Wrench, Lightbulb, CheckCircle2, AlertTriangle, XCircle, Snowflake, ChevronRight, CalendarDays, Award, User, X, Check, ListTodo } from 'lucide-react';
 import { useUIStore } from '@/store/uiStore';
 import { useProjectStore } from '@/store/projectStore';
 import { useGroupStore } from '@/store/groupStore';
+import { useAuthStore } from '@/store/authStore';
 import type { ProjectStatus, Project } from '@/types';
+import type { Group, User as StudentUser } from '@/data/mockData';
 import { cn } from '@/lib/utils';
 
 type MissionTab = 'overview' | 'tech' | 'milestones';
@@ -62,7 +42,7 @@ interface ProjectPlanet {
   milestonesData: { name: string; progress: number; status: 'done' | 'progress' | 'pending' }[];
 }
 
-const STATUS_CONFIG: Record<ProjectStatus, { label: string; color: string; chip: any; planetGrad: string; halo: string }> = {
+const STATUS_CONFIG: Record<ProjectStatus, { label: string; color: string; chip: string; planetGrad: string; halo: string }> = {
   planning: { label: '规划中', color: 'ink', chip: 'chip-ink', planetGrad: 'from-ink-300 via-ink-200 to-ink-100', halo: 'bg-ink-400/20' },
   progress: { label: '进行中', color: 'mission', chip: 'chip-mission', planetGrad: 'from-mission-400 via-mission-500 to-mission-600', halo: 'bg-mission-400/25' },
   review: { label: '评审中', color: 'alert', chip: 'chip-alert', planetGrad: 'from-alert-400 via-alert-500 to-energy-500', halo: 'bg-alert-400/25' },
@@ -71,7 +51,7 @@ const STATUS_CONFIG: Record<ProjectStatus, { label: string; color: string; chip:
   frozen: { label: '已冻结', color: 'nova', chip: 'chip-nova', planetGrad: 'from-nova-400 via-nova-500 to-nova-600', halo: 'bg-nova-400/25' },
 };
 
-const STATUS_ICONS: Record<ProjectStatus, any> = {
+const STATUS_ICONS: Record<ProjectStatus, LucideIcon> = {
   planning: FolderKanban,
   progress: Rocket,
   review: Users,
@@ -83,11 +63,10 @@ const STATUS_ICONS: Record<ProjectStatus, any> = {
 const OWNER_COLORS = ['#4F7CFF', '#FF8A34', '#22C55E', '#8B5CF6', '#F59E0B', '#06B6D4'];
 
 /** 把真实项目映射成展示星球的形状；里程碑按真实进度派生。 */
-function buildPlanets(projects: Project[], groups: any[], users: any[]): ProjectPlanet[] {
-  return projects.map((p, idx) => {
+function buildPlanets(projects: Project[], groups: Group[], users: StudentUser[], userId: string | null, role: string | null): ProjectPlanet[] {
+  return projects.map((p) => {
     const g = groups.find((x) => x.id === p.ownerGroupId);
     const members = users.filter((u) => u.groupId === p.ownerGroupId);
-    const start = p.startDate instanceof Date ? p.startDate : new Date(p.startDate);
     const due = p.dueDate instanceof Date ? p.dueDate : new Date(p.dueDate);
     const now = Date.now();
     const dueInDays = Math.max(0, Math.ceil((due.getTime() - now) / 86400000));
@@ -113,7 +92,9 @@ function buildPlanets(projects: Project[], groups: any[], users: any[]): Project
       milestones: 5,
       description: p.results || p.title,
       equipmentList: p.equipmentList || [],
-      safetyPassed: Object.keys(p.safetyPassed || {}).length > 0,
+      safetyPassed: role === 'student'
+        ? Boolean(userId && p.safetyPassed?.[userId])
+        : Object.values(p.safetyPassed || {}).some(Boolean),
       groupName: g?.name || '未分组',
       difficulties: (p.difficulties || '')
         .split('\n')
@@ -128,6 +109,8 @@ function buildPlanets(projects: Project[], groups: any[], users: any[]): Project
 const STATUSES: ProjectStatus[] = ['planning', 'progress', 'review', 'done', 'failed', 'frozen'];
 
 export default function ProjectCenter() {
+  const userId = useAuthStore((s) => s.userId);
+  const role = useAuthStore((s) => s.role);
   const navigate = useNavigate();
   const { id: projectId } = useParams<{ id: string }>();
   const [selectedId, setSelectedId] = useState(projectId || 'p1');
@@ -145,7 +128,7 @@ export default function ProjectCenter() {
   const pushToast = useUIStore((s) => s.pushToast);
   const { projects, recruitments } = useProjectStore();
   const { groups, users } = useGroupStore();
-  const planets = useMemo(() => buildPlanets(projects, groups, users), [projects, groups, users]);
+  const planets = useMemo(() => buildPlanets(projects, groups, users, userId, role), [projects, groups, users, userId, role]);
   const projectRecruits = useMemo(() => recruitments.filter((r) => r.projectId === selectedId), [recruitments, selectedId]);
 
   const filteredPlanets = planets

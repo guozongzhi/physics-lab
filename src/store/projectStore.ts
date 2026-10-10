@@ -75,7 +75,7 @@ interface ProjectState {
     coins?: number,
     reason?: string
   ) => void;
-  toggleShowcaseLove: (showcaseId: string, userId: any) => void;
+  toggleShowcaseLove: (showcaseId: string, userId: string) => void;
   getProjectById: (projectId: string) => Project | undefined;
   getRecruitmentsByProject: (projectId: string) => Recruitment[];
 }
@@ -98,7 +98,7 @@ async function refetchAfterSettlement(): Promise<void> {
   const [groups, users, coinTxs] = await Promise.all([
     groupsApi.list(),
     usersApi.list(),
-    coinsApi.transactions() as Promise<any[]>,
+    coinsApi.transactions(),
   ]);
   useGroupStore.setState({ groups, users });
   useCoinStore.setState({ coinTxs: reviveDates(coinTxs, ['createdAt']) });
@@ -185,7 +185,7 @@ export const useProjectStore = create<ProjectState>((set, get) => {
           ).toISOString(),
           rewardCoins: project.rewardCoins,
           ownerGroupId: project.ownerGroupId,
-        } as any);
+        });
         const fresh = await projectsApi.list();
         set({ projects: reviveProjectDates(fresh) });
       }, 'projects.create');

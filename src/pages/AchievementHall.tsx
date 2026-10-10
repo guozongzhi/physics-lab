@@ -1,43 +1,15 @@
+import type { LucideIcon } from 'lucide-react';
 import { applyAvatarFallback } from '@/lib/imageFallback';
 import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import {
-  Trophy,
-  Heart,
-  Image as ImageIcon,
-  Video,
-  FileText,
-  Box,
-  Medal,
-  Sparkles,
-  MessageSquare,
-  LineChart,
-  BarChart3,
-  Activity,
-  BookOpen,
-  Upload,
-  X,
-  Plus,
-  Pencil,
-} from 'lucide-react';
-import {
-  LineChart as ReLineChart,
-  Line,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  Legend,
-} from 'recharts';
-import AvatarStack from '@/components/ui/AvatarStack';
+import { Trophy, Heart, Image as ImageIcon, Video, FileText, Box, Medal, Sparkles, MessageSquare, LineChart, BarChart3, Activity, BookOpen, Upload, X, Plus, Pencil } from 'lucide-react';
+import { LineChart as ReLineChart, Line, BarChart, Bar, XAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+
 import { useGroupStore } from '@/store/groupStore';
 import { useProjectStore } from '@/store/projectStore';
 import { useAuthStore } from '@/store/authStore';
 import { useUIStore } from '@/store/uiStore';
-import { User, ShowcaseCategory } from '@/data/mockData';
+import { ShowcaseCategory } from '@/data/mockData';
 import { cn } from '@/lib/utils';
 
 type GalleryTab = ShowcaseCategory;
@@ -51,7 +23,7 @@ function useShowcaseFallback(event: React.SyntheticEvent<HTMLImageElement>) {
   }
 }
 
-const GALLERY_TABS: Array<{ key: GalleryTab; label: string; icon: any }> = [
+const GALLERY_TABS: Array<{ key: GalleryTab; label: string; icon: LucideIcon }> = [
   { key: 'photo', label: '照片展', icon: ImageIcon },
   { key: 'video', label: '视频', icon: Video },
   { key: 'paper', label: '论文', icon: FileText },
@@ -62,23 +34,6 @@ const GALLERY_TABS: Array<{ key: GalleryTab; label: string; icon: any }> = [
 const CATEGORY_LABEL: Record<ShowcaseCategory, string> = Object.fromEntries(
   GALLERY_TABS.map((t) => [t.key, t.label])
 ) as Record<ShowcaseCategory, string>;
-
-function useTicker(target: number, duration = 800) {
-  const [val, setVal] = useState(0);
-  useEffect(() => {
-    let raf: number;
-    const t0 = performance.now();
-    const step = (now: number) => {
-      const p = Math.min(1, (now - t0) / duration);
-      const ease = 1 - Math.pow(1 - p, 3);
-      setVal(Math.round(target * ease));
-      if (p < 1) raf = requestAnimationFrame(step);
-    };
-    raf = requestAnimationFrame(step);
-    return () => cancelAnimationFrame(raf);
-  }, [target, duration]);
-  return val;
-}
 
 interface ShowcaseCard {
   id: string;
@@ -95,26 +50,7 @@ interface ShowcaseCard {
   awardedCoins: number;
 }
 
-const PHYSICS_IMAGES = [
-  'https://images.unsplash.com/photo-1551985974-b826bc6379f5?w=800&q=80',
-  'https://images.unsplash.com/photo-1589492477829-5e65395b667c?w=800&q=80',
-  'https://images.unsplash.com/photo-1581093638397-826761c65f61?w=800&q=80',
-  'https://images.unsplash.com/photo-1614529072589-3f6c59b6d9d5?w=800&q=80',
-  'https://images.unsplash.com/photo-1592861956093-46574388857e?w=800&q=80',
-  'https://images.unsplash.com/photo-1583465766507-a37458119065?w=800&q=80',
-  'https://images.unsplash.com/photo-1598431786950-17348736a25a?w=800&q=80',
-  'https://images.unsplash.com/photo-1594812470835-245e7e979070?w=800&q=80',
-  'https://images.unsplash.com/photo-1596854407442-870262d3d051?w=800&q=80',
-  'https://images.unsplash.com/photo-1621361164796-86878265944d?w=800&q=80',
-  'https://images.unsplash.com/photo-1551985974-b826bc6379f5?w=800&q=80',
-  'https://images.unsplash.com/photo-1589492477829-5e65395b667c?w=800&q=80',
-  'https://images.unsplash.com/photo-1581093638397-826761c65f61?w=800&q=80',
-  'https://images.unsplash.com/photo-1614529072589-3f6c59b6d9d5?w=800&q=80',
-  'https://images.unsplash.com/photo-1592861956093-46574388857e?w=800&q=80',
-  'https://images.unsplash.com/photo-1583465766507-a37458119065?w=800&q=80',
-  'https://images.unsplash.com/photo-1598431786950-17348736a25a?w=800&q=80',
-  'https://images.unsplash.com/photo-1594812470835-245e7e979070?w=800&q=80',
-];
+
 
 export default function AchievementHall() {
   const { groups, users } = useGroupStore();

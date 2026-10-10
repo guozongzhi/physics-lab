@@ -10,13 +10,12 @@ import ProgressRing from '@/components/ui/ProgressRing';
 import ReactMarkdown from 'react-markdown';
 import { safetyNotices, sampleExamQuestions } from '@/data/safetyContent';
 import { Question, SafetyCategory } from '@/data/mockData';
-import {
-  Shield, AlertTriangle, CheckCircle, BookOpen, ClipboardCheck, Unlock,
-  ChevronLeft, ChevronRight, Send, Clock
-} from 'lucide-react';
+import { Shield, AlertTriangle, CheckCircle, BookOpen, ClipboardCheck, Unlock, ChevronLeft, ChevronRight, Send, Clock } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { safetyApi, safetyAssignmentApi, SafetyAssignment } from '@/lib/apiService';
+import { apiEnabled } from '@/lib/apiClient';
+import { bootstrapFromApi } from '@/lib/bootstrap';
 
 type ExamStep = 'notice' | 'quiz' | 'result';
 
@@ -31,7 +30,7 @@ const CATEGORY_LABEL: Record<SafetyCategory, string> = {
   mechanical: '机械', radiation: '辐射', chemical: '化学', combined: '综合',
 };
 
-function isAnswerCorrect(q: Question, userAnswer: any): boolean {
+function isAnswerCorrect(q: Question, userAnswer: Question['answer'] | undefined): boolean {
   if (q.type === 'multiple') {
     const correct = (q.answer as number[]).slice().sort().join(',');
     const user = Array.isArray(userAnswer) ? userAnswer.slice().sort().join(',') : '';
@@ -89,10 +88,11 @@ export default function SafetyExam() {
   const [step, setStep] = useState<ExamStep>('notice');
   const [agreed, setAgreed] = useState(false);
   const [questions, setQuestions] = useState<Question[]>([]);
-  const [answers, setAnswers] = useState<Record<string, any>>({});
+  const [attemptId, setAttemptId] = useState<string | null>(null);
+  const [answers, setAnswers] = useState<Record<string, Question['answer']>>({});
   const [currentQ, setCurrentQ] = useState(0);
   const [submitted, setSubmitted] = useState<null | { score: number; passed: boolean }>(null);
-  const [frozenHintOpen, setFrozenHintOpen] = useState(false);
+  const [, setFrozenHintOpen] = useState(false);
 
   const notice = examCategory ? safetyNotices[examCategory] : null;
 
@@ -141,7 +141,7 @@ export default function SafetyExam() {
   const timerText = `${String(Math.floor(remainingSec / 60)).padStart(2, '0')}:${String(remainingSec % 60).padStart(2, '0')}`;
 
   useEffect(() => {
-    if (step !== 'quiz' || questions.length > 0 || !examCategory) return;
+    if (apiEnabled || step !== 'quiz' || questions.length > 0 || !examCategory) return;
     let pool = theoryQuestions.filter((q) => q.safetyCategory === examCategory);
     if (pool.length < 10) {
       // 教师维护的安全题库（含内置题与教师上传/修改的题目）
@@ -185,15 +185,29 @@ export default function SafetyExam() {
     );
   }
 
-  const goQuiz = () => {
+  const goQuiz = async () => {
     if (!agreed) {
       pushToast('请先勾选「我已阅读并理解上述所有内容」', 'warning');
       return;
     }
+    if (assignmentParam && !assignment) {
+      pushToast('正在加载考核指派，请稍后再试', 'warning');
+      return;
+    }
+    if (apiEnabled && examCategory) {
+      try {
+        const exam = await safetyApi.startExam(examCategory, assignment?.id, project?.id);
+        setAttemptId(exam.id);
+        setQuestions(exam.questions);
+      } catch (err) {
+        pushToast(err instanceof Error ? err.message : '安全考核启动失败', 'error');
+        return;
+      }
+    }
     setStep('quiz');
   };
 
-  const handleAnswer = (qid: string, val: any) => {
+  const handleAnswer = (qid: string, val: Question['answer']) => {
     setAnswers((prev) => ({ ...prev, [qid]: val }));
   };
 
@@ -206,7 +220,7 @@ export default function SafetyExam() {
   };
 
   /** 交卷。auto=true 表示到点自动交卷——此时不拦"未答完"，直接按已答的判分 */
-  function finalize(auto: boolean) {
+  async function finalize(auto: boolean) {
     if (questions.length === 0) return;
     if (!auto) {
       const unanswered = questions.filter((q) => answers[q.id] === undefined);
@@ -214,6 +228,25 @@ export default function SafetyExam() {
         pushToast(`还有 ${unanswered.length} 道题未作答`, 'warning');
         return;
       }
+    }
+    if (apiEnabled) {
+      if (!attemptId) {
+        pushToast('考核会话不存在，请重新进入', 'error');
+        return;
+      }
+      try {
+        const result = await safetyApi.submitExam(attemptId, answers);
+        setSubmitted({ score: result.score, passed: result.passed });
+        setStep('result');
+        await bootstrapFromApi(true).catch(() => {
+          pushToast('考核结果已保存，项目数据暂未刷新', 'warning');
+        });
+        pushToast(result.passed ? `安全考核通过：${result.score} 分` : `安全考核未通过：${result.score} 分`, result.passed ? 'success' : 'warning');
+        if (!result.passed) setFrozenHintOpen(true);
+      } catch (err) {
+        pushToast(err instanceof Error ? err.message : '交卷失败，请重试', 'error');
+      }
+      return;
     }
     let correct = 0;
     questions.forEach((q) => {
@@ -224,11 +257,6 @@ export default function SafetyExam() {
     const passed = score >= passScore;
     setSubmitted({ score, passed });
     setStep('result');
-    // 上报考核记录；带 assignmentId 时后端会按指派及格线推导 passed
-    if (userId && examCategory) {
-      safetyApi.record(examCategory, score, passed, assignment?.id).catch(() => {});
-    }
-
     if (passed) {
       if (project && userId) markSafetyPass(project.id, userId);
       pushToast(`恭喜通过安全考核！得分 ${score} 分`, 'success');

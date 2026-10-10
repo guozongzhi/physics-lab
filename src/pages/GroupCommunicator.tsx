@@ -1,3 +1,4 @@
+import type { LucideIcon } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/store/authStore';
@@ -7,29 +8,15 @@ import { useProjectStore } from '@/store/projectStore';
 import { useCoinStore } from '@/store/coinStore';
 import { useUIStore } from '@/store/uiStore';
 import RecruitDialog from '@/components/ui/RecruitDialog';
-import {
-  Swords,
-  Users,
-  Coins,
-  Send,
-  Trophy,
-  Clock,
-  CheckCircle2,
-  AlertCircle,
-  X,
-  Plus,
-  ChevronRight,
-  RefreshCw,
-  Eye,
-  Award,
-} from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { Swords, Users, Coins, Send, Trophy, Clock, AlertCircle, X, Plus, Eye, Award } from 'lucide-react';
+
+import type { Challenge, Recruitment, Project, CoinTransaction } from '@/data/mockData';
 import { challengeRewardFor } from '@/lib/challengePricing';
 import { windowState, windowClosedMessage } from '@/lib/activityWindow';
 
 type TabKey = 'challenges' | 'recruitments' | 'transfers';
 
-const TABS: { key: TabKey; label: string; icon: any; color: string }[] = [
+const TABS: { key: TabKey; label: string; icon: LucideIcon; color: string }[] = [
   { key: 'challenges', label: '组间挑战', icon: Swords, color: 'text-energy-500' },
   { key: 'recruitments', label: '人才招募', icon: Users, color: 'text-physics-500' },
   { key: 'transfers', label: '能量转账', icon: Coins, color: 'text-lab-500' },
@@ -54,10 +41,9 @@ function CoinBadge({ amount, size = 'md' }: { amount: number; size?: 'sm' | 'md'
 
 const showSymbol = true;
 
-function ChallengeCard({ challenge, onAccept, onView }: { challenge: any; onAccept?: () => void; onView?: () => void }) {
-  const { getGroupById, getGroupUsers } = useGroupStore();
+function ChallengeCard({ challenge, onAccept, onView }: { challenge: Challenge; onAccept?: () => void; onView?: () => void }) {
+  const { getGroupById } = useGroupStore();
   const creatorGroup = getGroupById(challenge.creatorGroupId);
-  const creatorMembers = getGroupUsers(challenge.creatorGroupId);
   
   const isExpired = new Date(challenge.deadline) < new Date();
   
@@ -108,7 +94,7 @@ function ChallengeCard({ challenge, onAccept, onView }: { challenge: any; onAcce
   );
 }
 
-function RecruitmentCard({ recruitment, project, onBid, onResolve }: { recruitment: any; project?: any; onBid?: () => void; onResolve?: () => void }) {
+function RecruitmentCard({ recruitment, project, onBid, onResolve }: { recruitment: Recruitment; project?: Project; onBid?: () => void; onResolve?: () => void }) {
   const { getGroupById } = useGroupStore();
   const ownerGroup = getGroupById(project?.ownerGroupId);
   
@@ -178,7 +164,7 @@ function RecruitmentCard({ recruitment, project, onBid, onResolve }: { recruitme
   );
 }
 
-function TransferHistoryItem({ tx }: { tx: any }) {
+function TransferHistoryItem({ tx }: { tx: CoinTransaction }) {
   const { getGroupById, getUserById } = useGroupStore();
   const group = getGroupById(tx.groupId);
   const user = tx.userId ? getUserById(tx.userId) : null;
@@ -222,7 +208,7 @@ export default function GroupCommunicator() {
   const { userId, groupId, role } = useAuthStore();
   const { groups, getGroupById, getGroupUsers, classMeta } = useGroupStore();
   const { challenges, createChallenge, getTopicQuestions, topics, questions: allQuestions } = useTheoryStore();
-  const { recruitments, projects, placeBid, assignRecruitment, resolveRecruitment } = useProjectStore();
+  const { recruitments, projects, placeBid, resolveRecruitment } = useProjectStore();
   const { coinTxs, transferCoins } = useCoinStore();
   const pushToast = useUIStore((s) => s.pushToast);
   

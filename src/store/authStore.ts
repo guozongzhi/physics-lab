@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { CurrentUser, UserRole, LS_KEYS, loadLS, saveLS } from '../data/mockData';
 import { apiEnabled, apiLogin, apiLogout, apiRegister, getToken, RegisterPayload } from '../lib/apiClient';
 import { clearBusinessData } from '../lib/sessionCleanup';
+import { resetSyncQueue } from '../lib/syncQueue';
 import { resetBootstrap } from '../lib/bootstrap';
 
 interface AuthState extends CurrentUser {
@@ -124,8 +125,8 @@ export const useAuthStore = create<AuthState>((set) => {
         persist(next);
         set({ ...next, authLoading: false, authError: null });
         return next;
-      } catch (err: any) {
-        const msg = err?.message || '登录失败，请检查用户名或密码';
+      } catch (err: unknown) {
+        const msg = (err instanceof Error ? err.message : undefined) || '登录失败，请检查用户名或密码';
         set({ authLoading: false, authError: msg });
         throw err;
       }
@@ -145,14 +146,15 @@ export const useAuthStore = create<AuthState>((set) => {
         persist(next);
         set({ ...next, authLoading: false, authError: null });
         return next;
-      } catch (err: any) {
-        const msg = err?.message || '注册失败，请稍后重试';
+      } catch (err: unknown) {
+        const msg = (err instanceof Error ? err.message : undefined) || '注册失败，请稍后重试';
         set({ authLoading: false, authError: msg });
         throw err;
       }
     },
 
     logout: () => {
+      resetSyncQueue();
       apiLogout();
       // 在线模式清掉「属于这个人」的业务数据，避免共享电脑上换人登录读到上一个人的记录。
       // 离线模式没有后端可回填，不清——否则本地演示数据（分组/项目/流水）会被清光。

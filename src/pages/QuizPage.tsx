@@ -1,19 +1,16 @@
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTheoryStore } from '@/store/theoryStore';
-import { useGroupStore } from '@/store/groupStore';
+
 import { useAuthStore } from '@/store/authStore';
 import { useUIStore } from '@/store/uiStore';
 import ProgressRing from '@/components/ui/ProgressRing';
-import { Question, QuizSession } from '@/data/mockData';
-import {
-  BookOpen, Swords, ChevronLeft, ChevronRight, Send, CheckCircle2,
-  XCircle, AlertTriangle, Brain, RotateCcw, Trophy, Sparkles, Zap
-} from 'lucide-react';
+import { Question } from '@/data/mockData';
+import { BookOpen, Swords, ChevronLeft, ChevronRight, Send, CheckCircle2, XCircle, AlertTriangle, Brain, RotateCcw, Trophy, Sparkles, Zap } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { theoryApi } from '@/lib/apiService';
-import { syncToApi } from '@/lib/syncQueue';
 import { apiEnabled } from '@/lib/apiClient';
+import { bootstrapFromApi } from '@/lib/bootstrap';
 import { cn } from '@/lib/utils';
 
 export interface QuizPageProps {
@@ -41,7 +38,7 @@ const MODE_META = {
   },
 } as const;
 
-function isAnswerCorrect(q: Question, userAnswer: any): boolean {
+function isAnswerCorrect(q: Question, userAnswer: Question['answer'] | undefined): boolean {
   if (q.type === 'multiple') {
     const correct = (q.answer as number[]).slice().sort().join(',');
     const user = Array.isArray(userAnswer) ? userAnswer.slice().sort().join(',') : '';
@@ -56,7 +53,6 @@ export default function QuizPage(props: QuizPageProps) {
   const routerParams = useParams<{ sessionId?: string; id?: string }>();
   const navigate = useNavigate();
   const pushToast = useUIStore((s) => s.pushToast);
-  const userId = useAuthStore((s) => s.userId);
   const groupId = useAuthStore((s) => s.groupId);
   const getTopicById = (id: string) => useTheoryStore.getState().topics.find((t) => t.id === id);
   const getChallengeById = (id: string) => useTheoryStore.getState().challenges.find((c) => c.id === id);
@@ -67,14 +63,14 @@ export default function QuizPage(props: QuizPageProps) {
   const meta = MODE_META[mode];
 
   const [questions, setQuestions] = useState<Question[]>([]);
-  const [answers, setAnswers] = useState<Record<string, any>>({});
+  const [answers, setAnswers] = useState<Record<string, Question['answer']>>({});
   const [currentQ, setCurrentQ] = useState(0);
   const [submitted, setSubmitted] = useState<null | {
     score: number;
     correctCount: number;
     passed: boolean;
     blindPoints: string[];
-    questionResults: { qid: string; correct: boolean; correctAns: any; userAns: any }[];
+    questionResults: { qid: string; correct: boolean; correctAns: Question['answer']; userAns: Question['answer'] | undefined }[];
     earnedCoins?: number;
   }>(null);
   const [topicTitle, setTopicTitle] = useState('');
@@ -141,7 +137,7 @@ export default function QuizPage(props: QuizPageProps) {
 
   const answeredCount = Object.keys(answers).length;
 
-  const handleAnswer = (qid: string, val: any) => {
+  const handleAnswer = (qid: string, val: Question['answer']) => {
     setAnswers((prev) => {
       const next = { ...prev, [qid]: val };
       if (mode === 'quiz' && sessionId) {
@@ -159,15 +155,61 @@ export default function QuizPage(props: QuizPageProps) {
     handleAnswer(qid, cur);
   };
 
-  const submit = () => {
+  const submit = async () => {
     const unanswered = questions.filter((q) => answers[q.id] === undefined);
     if (unanswered.length > 0) {
       pushToast(`还有 ${unanswered.length} 道题未作答`, 'warning');
       return;
     }
+    if (apiEnabled) {
+      try {
+        if (mode === 'quiz') {
+          if (!sessionId) throw new Error('测验会话不存在');
+          for (const q of questions) {
+            await theoryApi.submitAnswer(sessionId, q.id, answers[q.id]);
+          }
+          const graded = await theoryApi.gradeQuiz(sessionId);
+          const results = graded.questions.map((q) => ({
+            qid: q.id,
+            correct: isAnswerCorrect(q, answers[q.id]),
+            correctAns: q.answer,
+            userAns: answers[q.id],
+          }));
+          setSubmitted({
+            score: graded.score,
+            correctCount: results.filter((r) => r.correct).length,
+            passed: graded.passed,
+            blindPoints: graded.blindPoints,
+            questionResults: results,
+          });
+          pushToast(`检测得分 ${graded.score} 分`, graded.passed ? 'success' : 'warning');
+        } else {
+          if (!challengeId || !groupId) throw new Error('挑战会话不存在');
+          const result = await theoryApi.submitChallenge(challengeId, answers);
+          const own = result.submissions.find((s) => s.groupId === groupId);
+          if (!own) throw new Error('服务端未返回挑战结果');
+          const accuracy = own.accuracy;
+          setSubmitted({
+            score: Math.round(accuracy * 100),
+            correctCount: Math.round(accuracy * questions.length),
+            passed: accuracy >= meta.passScore / 100,
+            blindPoints: [],
+            questionResults: [],
+            earnedCoins: own.earned,
+          });
+          pushToast(`挑战完成，获得 ${own.earned} 能量币`, 'success');
+        }
+        await bootstrapFromApi(true).catch(() => {
+          pushToast('成绩已保存，其他数据暂未刷新', 'warning');
+        });
+      } catch (err) {
+        pushToast(err instanceof Error ? err.message : '交卷失败，请重试', 'error');
+      }
+      return;
+    }
     let correct = 0;
     const blindSet = new Set<string>();
-    const qResults: typeof submitted extends infer T ? any[] : never[] = [];
+    const qResults: { qid: string; correct: boolean; correctAns: Question['answer']; userAns: Question['answer'] | undefined }[] = [];
     questions.forEach((q) => {
       const ok = isAnswerCorrect(q, answers[q.id]);
       if (ok) correct++;
@@ -196,18 +238,6 @@ export default function QuizPage(props: QuizPageProps) {
               : `检测未通过，得分 ${graded.score} 分，请继续学习`,
             passed ? 'success' : 'warning'
           );
-          // 落库：把答案整体回传后再判分。必须放在同一个有序任务里——syncToApi 的任务
-          // 之间不保证顺序，逐题 fire-and-forget 会让判分抢在最后一条答案之前，把分数算低。
-          if (apiEnabled) {
-            syncToApi(async () => {
-              for (const q of questions) {
-                if (answers[q.id] !== undefined) {
-                  await theoryApi.submitAnswer(sessionId, q.id, answers[q.id]);
-                }
-              }
-              await theoryApi.gradeQuiz(sessionId);
-            }, 'quiz.grade');
-          }
         }
       }
     } else {

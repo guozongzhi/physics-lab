@@ -2,7 +2,7 @@ import React from "react";
 import { cva, type VariantProps } from "../utils/cva";
 import { cn } from "../../lib/utils";
 
-export const bentoCardVariants = cva(
+const bentoCardVariants = cva(
   "immersive-bento rounded-2xl transition-all duration-200 relative overflow-hidden backdrop-blur-md",
   {
     variants: {

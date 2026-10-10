@@ -1,4 +1,4 @@
-import { Project, ProjectStatus } from '@/data/mockData';
+import { Project } from '@/data/mockData';
 import { useGroupStore } from '@/store/groupStore';
 import { useNavigate } from 'react-router-dom';
 import ProgressRing from '@/components/ui/ProgressRing';

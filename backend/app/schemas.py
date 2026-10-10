@@ -62,6 +62,16 @@ class SafetyRecordCreate(BaseModel):
     assignmentId: str | None = None
 
 
+class SafetyExamStart(BaseModel):
+    category: str
+    assignmentId: str | None = None
+    projectId: str | None = None
+
+
+class SafetyExamSubmit(BaseModel):
+    answers: dict[str, Any]
+
+
 class SafetyRecordOut(BaseModel):
     id: str
     category: str
@@ -246,7 +256,7 @@ class QuestionOut(CamelModel):
     type: str
     stem: str
     options: list[str]
-    answer: Any
+    answer: Any = None
     knowledge_point: str
     difficulty: int
     topic_id: str | None = None

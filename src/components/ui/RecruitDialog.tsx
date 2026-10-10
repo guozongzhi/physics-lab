@@ -54,8 +54,8 @@ export default function RecruitDialog({
       pushToast('招募已发布，学生可在招募市场投标', 'success');
       setForm({ title: '', description: '', skills: '', reward: 50, daysLeft: 7 });
       onClose();
-    } catch (e: any) {
-      pushToast(e?.message || '发布失败', 'error');
+    } catch (e: unknown) {
+      pushToast((e instanceof Error ? e.message : undefined) || '发布失败', 'error');
     } finally { setSaving(false); }
   };
 

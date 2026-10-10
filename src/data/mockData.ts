@@ -82,7 +82,7 @@ export interface QuizSession {
   userId?: string | null;
   topicId: string;
   questions: Question[];
-  userAnswers: Record<string, any>;
+  userAnswers: Record<string, number | number[] | boolean>;
   score: number;
   passed: boolean;
   blindPoints: string[];
@@ -93,7 +93,7 @@ export interface QuizSession {
 
 export interface ChallengeSubmission {
   groupId: string;
-  answers: Record<string, any>;
+  answers: Record<string, number | number[] | boolean>;
   accuracy: number;
   earned: number;
   submittedAt: Date;
@@ -232,7 +232,6 @@ export const LS_KEYS = {
   CLASS_META: 'plab_class_meta',
 } as const;
 
-const uid = () => Math.random().toString(36).slice(2, 10);
 
 const GROUP_NAMES = [
   '牛顿先锋队',

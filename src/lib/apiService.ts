@@ -8,6 +8,7 @@ import { api } from './apiClient';
 import { reviveDates } from './reviveDates';
 import type {
   Group,
+  CoinTransaction,
   SchoolClass,
   User,
   PhysicsTopic,
@@ -135,7 +136,7 @@ export const theoryApi = {
 export const projectsApi = {
   list: () => api.get<Project[]>('/api/projects'),
   get: (id: string) => api.get<Project>(`/api/projects/${id}`),
-  create: (payload: Partial<Project> & { title: string; topic: string }) =>
+  create: (payload: Omit<Partial<Project>, 'dueDate'> & { title: string; topic: string; dueDate?: string | Date }) =>
     api.post<Project>('/api/projects', payload),
   update: (id: string, payload: Partial<Project>) =>
     api.put<Project>(`/api/projects/${id}`, payload),
@@ -232,12 +233,12 @@ const reviveAssignments = (rows: SafetyAssignment[]) =>
 const reviveRecords = (rows: SafetyRecord[]) => reviveDates(rows, ['createdAt']);
 
 export const safetyApi = {
-  /**
-   * 提交一次考核结果。带 assignmentId 时后端会忽略传入的 passed，
-   * 改由该指派的及格线推导（防止伪造通过）。
-   */
-  record: (category: string, score: number, passed: boolean, assignmentId?: string | null) =>
-    api.post<SafetyRecord>('/api/safety/records', { category, score, passed, assignmentId }),
+  startExam: (category: string, assignmentId?: string | null, projectId?: string | null) =>
+    api.post<{ id: string; questions: Question[]; passScore: number }>(
+      '/api/safety/exams/start', { category, assignmentId, projectId }
+    ),
+  submitExam: (id: string, answers: Record<string, unknown>) =>
+    api.post<SafetyRecord>(`/api/safety/exams/${id}/submit`, { answers }),
   myRecords: () => api.get<SafetyRecord[]>('/api/safety/records').then(reviveRecords),
 };
 
@@ -305,7 +306,7 @@ export interface SafetyQuestionPayload {
 
 export const coinsApi = {
   transactions: (groupId?: string) =>
-    api.get(`/api/coin-transactions${groupId ? `?group_id=${groupId}` : ''}`),
+    api.get<CoinTransaction[]>(`/api/coin-transactions${groupId ? `?group_id=${groupId}` : ''}`),
   rankings: () =>
     api.get<{ groupRanking: GroupRankRow[]; personalRanking: PersonalRankRow[] }>('/api/rankings'),
   classMeta: () => api.get<ClassMeta>('/api/class-meta'),

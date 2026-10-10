@@ -5,7 +5,7 @@
 
 const ISO_DATE_REGEX = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:?\d{2})?$/;
 
-export function autoReviveDate(value: any): any {
+export function autoReviveDate(value: unknown): unknown {
   if (typeof value === "string") {
     if (ISO_DATE_REGEX.test(value)) {
       // 若无时区后缀，补充 'Z' 确保按绝对 UTC 解析，规避东八区本地时间解析偏移
@@ -25,9 +25,9 @@ export function autoReviveDate(value: any): any {
   }
 
   if (value !== null && typeof value === "object") {
-    const result: Record<string, any> = {};
+    const result: Record<string, unknown> = {};
     for (const key of Object.keys(value)) {
-      result[key] = autoReviveDate(value[key]);
+      result[key] = autoReviveDate((value as Record<string, unknown>)[key]);
     }
     return result;
   }

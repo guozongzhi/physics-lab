@@ -38,6 +38,8 @@ uvicorn app.main:app --reload --port 8000
 - 未在 `.env` 配置时，密码兜底为占位符 `change-me-via-env`，无法用于正常登录——这是刻意设计，避免仓库泄露可用凭据
 - 登录接口 `POST /api/auth/login` 返回 JWT，前端在后续请求头 `Authorization: Bearer <token>` 中携带。
 
+安全考核使用 `POST /api/safety/exams/start` 获取无答案的题目和考核 ID，再向 `POST /api/safety/exams/{id}/submit` 提交答案。服务端判分并写入考核记录；旧的直接提交分数接口 `/api/safety/records` 返回 410。项目安全认证仅接受本项目已通过的服务端考核。
+
 ## 环境变量（可选）
 
 在 `backend/` 下创建 `.env` 覆盖默认值：

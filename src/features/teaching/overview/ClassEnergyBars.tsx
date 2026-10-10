@@ -57,7 +57,7 @@ export const ClassEnergyBars: React.FC<ClassEnergyBarsProps> = ({ barByClass }) 
                 <XAxis dataKey="name" tick={{ fontSize: 10, fill: "#94A3B8" }} tickLine={false} axisLine={false} />
                 <YAxis tick={{ fontSize: 10, fill: "#94A3B8" }} tickLine={false} axisLine={false} tickFormatter={formatAxisTick} />
                 <Tooltip
-                  formatter={(val: any, _name: any, item: any) => [
+                  formatter={(val: number | string, _name: string, item: { payload: ClassEnergyGroup }) => [
                     `${val} ⚡ (${item.payload.memberCount} 人)`,
                     "小组能量",
                   ]}

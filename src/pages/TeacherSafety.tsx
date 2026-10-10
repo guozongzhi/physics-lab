@@ -335,14 +335,16 @@ export default function TeacherSafety() {
       setImportErr('请粘贴 JSON 内容或选择文件');
       return;
     }
-    let parsed: any;
+    let parsed: unknown;
     try {
       parsed = JSON.parse(importText);
     } catch {
       setImportErr('JSON 格式错误，请检查内容');
       return;
     }
-    const list = normalizeQuestions(Array.isArray(parsed) ? parsed : parsed.questions || []);
+    const questions = parsed && typeof parsed === 'object' && 'questions' in parsed ? parsed.questions : undefined;
+    const rawList: unknown[] = Array.isArray(parsed) ? parsed : Array.isArray(questions) ? questions : [];
+    const list = normalizeQuestions(rawList);
     if (list.length === 0) {
       setImportErr('未解析到有效题目（每题需包含 stem、options、safetyCategory）');
       return;
