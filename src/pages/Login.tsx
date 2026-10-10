@@ -217,36 +217,81 @@ export default function Login() {
               <span className="block bg-clip-text text-transparent bg-gradient-to-r from-mission-500 via-mission-600 to-nova-500">开启你的探索之旅</span>
             </h1>
 
-            <p className="text-[17px] text-ink-500 leading-[1.75] mb-9 max-w-[560px] font-medium">
-              围绕 <strong className="text-mission-700">11 步完整学习闭环</strong>，结合
-              <strong className="text-nova-600 mx-1">AI 自学</strong>、<strong className="text-energy-600 mx-1">能量币激励</strong>
+            <p className="text-[17px] text-ink-500 leading-[1.75] mb-8 max-w-[560px] font-medium">
+              围绕 <strong className="text-mission-700 font-bold">11 步完整学习闭环</strong>，结合
+              <strong className="text-nova-600 mx-1 font-bold">AI 自学</strong>、<strong className="text-energy-600 mx-1 font-bold">能量币激励</strong>
               与真实实验项目，构建沉浸式高中物理创新指挥中心。
             </p>
 
-            <div className="grid grid-cols-3 gap-3 mb-10 max-w-[460px]" aria-label="平台能力">
-              <div className="glass-card glass-card-hover p-2 sm:p-4 rounded-2xl text-center">
-                <div className="text-[20px] sm:text-[24px] font-black text-gradient-mission leading-none whitespace-nowrap">11 步</div>
-                <div className="mt-1 text-[11px] font-bold text-ink-500 uppercase tracking-wide flex items-center justify-center gap-1">
-                  <BookOpen size={10} />学习路径
+            <div className="grid grid-cols-3 gap-3 mb-8 max-w-[500px]" aria-label="平台能力">
+              <div className="login-metric-card">
+                <div className="text-[22px] sm:text-[26px] font-black text-gradient-mission leading-none whitespace-nowrap">
+                  11 步
+                </div>
+                <div className="mt-1.5 text-[11px] font-bold text-slate-500 tracking-wide flex items-center justify-center gap-1">
+                  <BookOpen size={12} className="text-mission-500" />
+                  <span>学习路径</span>
                 </div>
               </div>
-              <div className="glass-card glass-card-hover p-2 sm:p-4 rounded-2xl text-center">
-                <div className="text-[20px] sm:text-[24px] font-black text-gradient-energy leading-none whitespace-nowrap">协作</div>
-                <div className="mt-1 text-[11px] font-bold text-ink-500 uppercase tracking-wide flex items-center justify-center gap-1">
-                  <Users size={10} />研究小组
+
+              <div className="login-metric-card">
+                <div className="text-[22px] sm:text-[26px] font-black text-gradient-energy leading-none whitespace-nowrap">
+                  协作
+                </div>
+                <div className="mt-1.5 text-[11px] font-bold text-slate-500 tracking-wide flex items-center justify-center gap-1">
+                  <Users size={12} className="text-energy-500" />
+                  <span>研究小组</span>
                 </div>
               </div>
-              <div className="glass-card glass-card-hover p-2 sm:p-4 rounded-2xl text-center">
-                <div className="text-[20px] sm:text-[24px] font-black text-growth-600 leading-none whitespace-nowrap">实验</div>
-                <div className="mt-1 text-[11px] font-bold text-ink-500 uppercase tracking-wide flex items-center justify-center gap-1">
-                  <ShieldCheck size={10} />安全准入
+
+              <div className="login-metric-card">
+                <div className="text-[22px] sm:text-[26px] font-black text-growth-600 leading-none whitespace-nowrap">
+                  实验
+                </div>
+                <div className="mt-1.5 text-[11px] font-bold text-slate-500 tracking-wide flex items-center justify-center gap-1">
+                  <ShieldCheck size={12} className="text-growth-500" />
+                  <span>安全准入</span>
                 </div>
               </div>
             </div>
 
-            <div className="login-journey glass-card p-5 rounded-[24px] relative overflow-hidden">
-              <p className="text-xs font-bold text-mission-700">从问题出发，走向真实研究</p>
-              <p className="mt-2 text-sm font-semibold text-ink-700">理论探索 <span aria-hidden="true">→</span> 小组协作 <span aria-hidden="true">→</span> 实验项目 <span aria-hidden="true">→</span> 成果展示</p>
+            <div className="login-hero-window p-5 md:p-6 max-w-[540px]">
+              <div className="login-hero-window-bg" />
+              <div className="login-hero-window-overlay" />
+              <div className="relative z-10">
+                <div className="flex items-center justify-between mb-3.5">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-sky-400 animate-pulse" />
+                    <span className="text-[12px] font-bold text-sky-200 tracking-wide">
+                      科学研究闭环
+                    </span>
+                  </div>
+                  <span className="text-[11px] font-medium text-slate-300">
+                    从问题出发 · 走向真实探究
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
+                  <div className="login-step-pill">
+                    <span className="text-sky-300 font-bold">01</span>
+                    <span>理论探索</span>
+                  </div>
+                  <div className="login-step-pill">
+                    <span className="text-amber-300 font-bold">02</span>
+                    <span>小组协作</span>
+                  </div>
+                  <div className="login-step-pill">
+                    <div className="flex items-center gap-1">
+                      <span className="text-emerald-300 font-bold">03</span>
+                      <span>实验项目</span>
+                    </div>
+                  </div>
+                  <div className="login-step-pill">
+                    <span className="text-indigo-300 font-bold">04</span>
+                    <span>成果展示</span>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -683,12 +728,10 @@ export default function Login() {
                     </div>
                   )}
                 </div>
+                <p className="mt-6 border-t border-ink-100/70 pt-4 text-center text-balance text-[11.5px] text-ink-400 font-medium leading-relaxed">
+                  © Physics Mission Control · {apiEnabled ? '请使用分配的账号登录' : '学生请先选组后选成员'} · 教师密码请联系管理员获取
+                </p>
               </div>
-
-              {/* Footer tip */}
-              <p className="mt-6 text-center text-[11.5px] text-ink-400 font-medium leading-relaxed">
-                © Physics Mission Control · {apiEnabled ? '请使用分配的账号登录' : '学生请先选组后选成员'} · 教师密码请联系管理员获取
-              </p>
             </div>
           </div>
         </div>
