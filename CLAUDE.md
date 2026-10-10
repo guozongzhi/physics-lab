@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 项目概况
 
-物理实验室（Physics Mission Control）——面向高中物理教学的**游戏化沉浸式学习平台**。三种角色：**学生**（`/dashboard`）、**教师**（`/teacher/overview`）、**管理员**（`/admin`），三者路由**都挂在同一个布局 `MissionShell`** 上（`AppShell`/`Sidebar`/`Topbar` 已不存在）。教师导航 6 项（overview / groups / projects / roster / question-bank / safety），学生导航 10 项（dashboard / **my-team** / theory-topics / theory-challenge / communicator / projects / safety-lab / recruit-market / coins / showcase）。深度设计细节在 `docs/DESIGN.md`（权威文档；当代码与文档不一致时以代码为准并同步更新它）。
+物理实验室（Physics Mission Control）——面向高中物理教学的**游戏化沉浸式学习平台**。三种角色：**学生**（`/dashboard`）、**教师**（`/teacher/overview`）、**管理员**（`/admin`），三者路由经 `src/app/layouts/AppShell.tsx` 共用一个 `MissionShell`。教师导航 7 项（overview / groups / projects / roster / question-bank / safety / showcase），学生导航 11 项（dashboard / my-team / theory-topics / theory-challenge / communicator / projects / safety-lab / recruit-market / coins / showcase / profile）。重构状态见 `docs/refactoring/PROGRESS.md`；设计细节在 `docs/DESIGN.md`（代码与文档不一致时以代码为准并同步更新文档）。
 
 单仓库：根目录为 Vite React 前端，`backend/` 为 FastAPI 后端。仓库**公开托管**在 `github.com/shuhua-uiuc/physics-lab`，因此**任何被 git 跟踪的文件都等于对外公开**——真实密码、服务器地址、学生姓名一律不得写进其中（示例文件用占位符）。
 
@@ -65,11 +65,11 @@ Tailwind + 语义色 token（`mission/energy/growth/nova/alert/danger/ink`）。
 - **后端测试必须用 `backend/.venv/bin/python`**（系统 Python 缺依赖）。
 - 改 `schemas.py`/`models.py` 后需重启 uvicorn（dev 服务器未开 `--reload`）；重启若 `jwt_secret` 变更会使旧 token 失效。
 - `/theory/challenge`（无 `s`）和 `/theory/challenges`（带 `s`）**是两个不同页面，都还挂着**：前者渲染 `KnowledgeGalaxy`（知识星系），后者渲染 `TheoryChallenge`（挑战大厅）。不是新旧拼写关系。
-- **判断页面是否被使用，不能只 grep `src/App.tsx`**——页面之间会互相引用（如 `ClassComposition.tsx` 由 `AdminConsole.tsx` 以 tab 形式内嵌，不经过路由）。要删页面先全仓库 grep 组件名，否则会误删。
-- 改导航/路由前先读 `src/App.tsx`（唯一路由表）；`src/pages/` 里可能留有没被任何路由引用的文件。
-- **加路由时 `MissionShell` 只包一层**：`src/App.tsx` 已给每个路由包了 `MissionShell`，**页面自己不要再包**。AchievementHall / ResearchLeague / ResearchMarketplace / ResearchProfile / TeacherGroups / TeacherOverview 这 6 个页面历史上自己又包了一层，导致**顶栏与侧边导航渲染两遍**（页面上出现两条一模一样的顶栏）；现已在 App.tsx 里改为直接 `element={<Xxx />}`。新页面照 Dashboard / GroupCommunicator / MyTeam 的写法：只返回页面内容。**看到"同一元素出现两次"先查这个。**
+- **判断页面是否被使用，不能只 grep `src/app/App.tsx`**——页面之间会互相引用（如 `ClassComposition.tsx` 由 `AdminConsole.tsx` 以 tab 形式内嵌，不经过路由）。要删页面先全仓库 grep 组件名，否则会误删。
+- 改导航/路由前先读 `src/app/App.tsx`（路由表和角色守卫）；`src/App.tsx` 是兼容转发。`src/pages/` 里可能留有没被任何路由引用的文件。
+- **加路由时页面不包 `MissionShell`**：`src/app/App.tsx` 用父路由与 `AppShell` 统一包裹，子页面只返回页面内容。登录页独立。看到顶栏或侧边栏重复时检查父布局与页面是否都创建了 Shell。
 - **"我的 / 本组的"指标必须按本组口径统计**：Dashboard 的学习路径进度曾用全局数据（`projects.length > 0`、`coinTxs.length > 0` 之类）判断，结果任何一个小组做了项目、全校学生都显示同一个 45%。凡是呈现在学生个人视角的数字，都要先 `filter(x => x.groupId === groupId)`。同理 `/profile` 的能力六维图不要加写死的基线分（曾被加成"零活动也有 60/40/40/45/50/45"的假能力值）。
-- **后端测试共 129 个用例**，`pytest tests/ -q` 约 5 秒跑完，改完随手跑一次很划算。
+- **后端测试当前共 150 个用例**，`pytest tests/ -q` 约 6 秒跑完，改完随手跑一次很划算。
 
 ## 部署
 

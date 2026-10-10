@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate, useParams } from 'react-router-dom';
 import {
   Rocket,
   Search,
@@ -127,7 +128,12 @@ function buildPlanets(projects: Project[], groups: any[], users: any[]): Project
 const STATUSES: ProjectStatus[] = ['planning', 'progress', 'review', 'done', 'failed', 'frozen'];
 
 export default function ProjectCenter() {
-  const [selectedId, setSelectedId] = useState('p1');
+  const navigate = useNavigate();
+  const { id: projectId } = useParams<{ id: string }>();
+  const [selectedId, setSelectedId] = useState(projectId || 'p1');
+  useEffect(() => {
+    if (projectId) setSelectedId(projectId);
+  }, [projectId]);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [groupFilter, setGroupFilter] = useState('全部小组');
@@ -155,6 +161,11 @@ export default function ProjectCenter() {
     });
 
   const selectedPlanet = planets.find((p) => p.id === selectedId) || planets[0];
+
+  const selectProject = (id: string) => {
+    setSelectedId(id);
+    navigate(`/projects/${id}`);
+  };
 
   const toggleStatus = (s: ProjectStatus) => {
     setStatusFilters((prev) =>
@@ -209,7 +220,7 @@ export default function ProjectCenter() {
 
         <div className="relative grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
           <div className="lg:col-span-7">
-            <div className="flex items-center gap-4 mb-3">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-3">
               <div className="relative">
                 <div className="absolute inset-0 rounded-2xl bg-mission-400/30 blur-lg animate-pulse" />
                 <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-mission-500 via-mission-400 to-nova-500 flex items-center justify-center shadow-glowMission relative">
@@ -227,7 +238,7 @@ export default function ProjectCenter() {
                 </h1>
               </div>
             </div>
-            <p className="text-ink-600 font-medium leading-relaxed max-w-2xl">6 颗项目行星在各自轨道上运行，实时监控里程碑节点、技术风险与奖励进度。 每颗行星都代表一次通往星辰大海的远征。</p>
+            <p className="text-ink-600 font-medium leading-relaxed max-w-2xl">{planets.length} 个项目正在推进。查看里程碑、技术风险与奖励进度，选择项目进入任务中心。</p>
             <div className="flex flex-wrap gap-2.5 mt-5">
               <span className="chip-mission !py-1.5 !px-3">
                 <Rocket size={12} /> 进行中 {stats.progress}
@@ -244,7 +255,7 @@ export default function ProjectCenter() {
             </div>
           </div>
 
-          <div className="lg:col-span-5 flex justify-end gap-3">
+          <div className="lg:col-span-5 hidden lg:flex justify-end gap-3">
             {['planning', 'progress', 'review', 'done', 'frozen'].map((s, i) => {
               const stat = s as keyof typeof stats;
               const cfg = STATUS_CONFIG[s as ProjectStatus];
@@ -342,7 +353,7 @@ export default function ProjectCenter() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         <section className="lg:col-span-8 glass-card p-8 rounded-[20px] relative overflow-hidden min-h-[680px]">
           <div className="absolute inset-0 bg-grid-fine opacity-30 pointer-events-none" />
-          <div className="relative grid grid-cols-3 gap-y-12 gap-x-8">
+          <div className="relative grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-y-12 gap-x-8">
             {filteredPlanets.map((planet, idx) => {
               const cfg = STATUS_CONFIG[planet.status];
               const StatusIcon = STATUS_ICONS[planet.status];
@@ -359,7 +370,7 @@ export default function ProjectCenter() {
                   className="relative flex flex-col items-center"
                   onMouseEnter={() => setHoveredId(planet.id)}
                   onMouseLeave={() => setHoveredId(null)}
-                  onClick={() => setSelectedId(planet.id)}
+                  onClick={() => selectProject(planet.id)}
                 >
                   <div className="relative w-[160px] h-[160px] flex items-center justify-center cursor-pointer group">
                     <div className={cn('absolute inset-[-60px] rounded-full blur-3xl opacity-50', cfg.halo)} />
@@ -463,7 +474,7 @@ export default function ProjectCenter() {
                               className="btn-mission !py-1.5 !px-3 !text-[11px] !rounded-xl"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                setSelectedId(planet.id);
+                                selectProject(planet.id);
                                 setMissionTab('milestones');
                                 setTimeout(() => {
                                   const el = document.getElementById('mission-focus-panel');

@@ -49,5 +49,6 @@ cd backend
 ## 文档
 
 - [docs/DESIGN.md](docs/DESIGN.md) —— 权威设计文档（架构、数据流、路由、API、设计系统）
+- [docs/refactoring/README.md](docs/refactoring/README.md) —— 分阶段重构计划、当前进展与 UI 截图
 - [CLAUDE.md](CLAUDE.md) —— 面向 AI 助手的开发约定与易踩坑清单
 - [DEPLOY.md](DEPLOY.md) —— Docker 部署与运维

@@ -1,3 +1,4 @@
+import { applyAvatarFallback } from '@/lib/imageFallback';
 import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -8,16 +9,10 @@ import {
   Sparkles,
   Rocket,
   Zap,
-  Orbit,
-  Target,
-  FlaskConical,
-  Brain,
-  CheckCircle2,
   ShieldCheck,
-  Crown,
   ArrowRight,
   Users,
-  Atom,
+  BookOpen,
   Mail,
   UserPlus,
   Info,
@@ -27,37 +22,6 @@ import { useGroupStore } from '@/store/groupStore';
 import { apiEnabled } from '@/lib/apiClient';
 import { classesApi } from '@/lib/apiService';
 import { bootstrapFromApi } from '@/lib/bootstrap';
-
-const LEARNING_PATH_MINI = [
-  { name: 'AI学习', icon: Brain, done: true },
-  { name: '知识整理', icon: Sparkles, done: true },
-  { name: 'AI检测', icon: Target, done: true },
-  { name: '强化训练', icon: FlaskConical, done: true },
-  { name: '80%通过', icon: CheckCircle2, done: true },
-  { name: '创作题库', icon: Atom, done: false, active: true },
-  { name: '挑战小组', icon: Orbit, done: false },
-  { name: '获得能量', icon: Zap, done: false },
-  { name: '项目研发', icon: Rocket, done: false },
-  { name: '实验', icon: FlaskConical, done: false },
-  { name: '成果展示', icon: Crown, done: false },
-];
-
-function useCountUp(target: number, duration = 1600) {
-  const [value, setValue] = useState(0);
-  useEffect(() => {
-    let raf = 0;
-    const start = performance.now();
-    const tick = (now: number) => {
-      const p = Math.min(1, (now - start) / duration);
-      const eased = 1 - Math.pow(1 - p, 3);
-      setValue(Math.round(target * eased));
-      if (p < 1) raf = requestAnimationFrame(tick);
-    };
-    const t = setTimeout(() => { raf = requestAnimationFrame(tick); }, 300);
-    return () => { clearTimeout(t); cancelAnimationFrame(raf); };
-  }, [target, duration]);
-  return value;
-}
 
 export default function Login() {
   const navigate = useNavigate();
@@ -76,7 +40,6 @@ export default function Login() {
   const [teacherErr, setTeacherErr] = useState('');
   const [selectedGroupId, setSelectedGroupId] = useState<string>('');
   const [selectedUserId, setSelectedUserId] = useState<string>('');
-  const [studentPwd, setStudentPwd] = useState('123456');
   const [studentErr, setStudentErr] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
@@ -95,10 +58,6 @@ export default function Login() {
   const [credId, setCredId] = useState('');
   const [credPwd, setCredPwd] = useState('');
   const [credErr, setCredErr] = useState('');
-
-  const energyTotal = useCountUp(22400, 2200);
-  const teamsCount = useCountUp(6, 1400);
-  const projects = useCountUp(13, 1600);
 
   const groupUsers = useMemo(
     () => (selectedGroupId ? users.filter((u) => u.groupId === selectedGroupId) : []),
@@ -149,28 +108,12 @@ export default function Login() {
     setTimeout(() => navigate('/teacher/overview'), 0);
   };
 
-  const handleStudentLogin = async () => {
+  const handleStudentLogin = () => {
     if (!selectedGroupId || !selectedUserId) {
       setStudentErr('请先选择小组和成员');
       return;
     }
-    if (apiEnabled) {
-      setSubmitting(true);
-      try {
-        // 后端模式：学生用户名即其姓名（批量导入已把 username 设为姓名），初始密码 123456
-        const su = groupUsers.find((x) => x.id === selectedUserId);
-        await loginWithApi(su?.name || selectedUserId, studentPwd.trim() || '123456');
-        await bootstrapFromApi(true);
-        setStudentErr('');
-        navigate('/dashboard');
-      } catch (err: any) {
-        setStudentErr(err?.message || '登录失败，请检查密码');
-      } finally {
-        setSubmitting(false);
-      }
-      return;
-    }
-    // 离线模式
+    // 离线演示入口通过小组与成员选择身份；在线模式使用上方账号表单。
     setStudentErr('');
     loginStudent({ userId: selectedUserId, groupId: selectedGroupId });
     setTimeout(() => navigate('/dashboard'), 0);
@@ -233,18 +176,9 @@ export default function Login() {
   };
 
   return (
-    <div className="relative min-h-screen w-full overflow-hidden">
+    <div className="login-stage relative min-h-screen w-full overflow-hidden">
       {/* Background layers */}
-      <div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          background:
-            'radial-gradient(ellipse 55% 45% at 8% 8%, rgba(79,124,255,0.10), transparent 55%),' +
-            'radial-gradient(ellipse 45% 40% at 92% 12%, rgba(139,92,246,0.09), transparent 55%),' +
-            'radial-gradient(ellipse 50% 45% at 50% 100%, rgba(255,138,52,0.08), transparent 60%),' +
-            'linear-gradient(180deg, #F8FAFC 0%, #F1F5F9 100%)',
-        }}
-      />
+      <div className="login-atmosphere absolute inset-0 pointer-events-none" />
       <div className="absolute inset-0 pointer-events-none opacity-80 bg-grid-fine"
         style={{ maskImage: 'radial-gradient(ellipse at center, #000 35%, transparent 85%)' }} />
 
@@ -257,52 +191,30 @@ export default function Login() {
         </div>
       </div>
 
-      {/* Floating energy coins bottom-left */}
-      <div className="absolute bottom-20 left-16 pointer-events-none opacity-70 hidden lg:block">
-        <div className="flex flex-col gap-3">
-          {[80, 40, 120, 60].map((v, i) => (
-            <div
-              key={i}
-              className="animate-floatY"
-              style={{ animationDelay: `${i * 0.35}s`, animationDuration: `${3.5 + (i % 3)}s` }}
-            >
-              <div className="chip-energy !py-1 !px-2.5 !text-[11px] font-bold shadow-soft">
-                <Zap size={11} /> +{v}⚡
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="relative mx-auto max-w-[1400px] px-6 py-10 md:py-14 lg:py-20">
+      <div className="relative mx-auto max-w-[1400px] px-4 py-5 md:px-6 md:py-8">
+      <div className="login-shell px-5 py-7 md:px-8 lg:px-10 lg:py-10">
         {/* Header LOGO */}
-        <div className="flex items-center gap-3 mb-10 lg:mb-14">
+        <div className="flex items-center gap-3 mb-8 lg:mb-10">
           <div className="relative w-12 h-12 flex items-center justify-center">
             <div className="orbit-ring w-14 h-14 animate-spin" style={{ animationDuration: '18s' }} />
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-mission-400 via-mission-500 to-mission-600 shadow-glowMission flex items-center justify-center relative z-10">
-              <div className="w-3 h-3 rounded-full bg-white/90 animate-pulseRing" />
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-mission-400 via-mission-500 to-nova-500 shadow-glowMission flex items-center justify-center relative z-10">
+              <Rocket size={19} className="text-white" />
             </div>
           </div>
           <div className="leading-tight">
-            <div className="text-[17px] font-extrabold text-ink-900 tracking-tight">Physics Mission Control</div>
-            <div className="text-[11px] text-ink-500 font-semibold tracking-wider">PHYSICS · PBL LEARNING PLATFORM v2.6</div>
+            <div className="text-[17px] font-extrabold text-ink-900 tracking-tight">物理任务指挥中心</div>
+            <div className="text-[11px] text-ink-500 font-semibold tracking-wider">PBL 高中物理探究平台</div>
           </div>
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
+        <div className="grid lg:grid-cols-2 gap-8 lg:gap-10 items-center">
           {/* ============== LEFT SIDE: Hero ============== */}
           {/* min-w-0：网格子项默认 min-width:auto，不收缩就会被下方 11 步流程图顶宽 */}
-          <div className="order-2 lg:order-1 min-w-0">
-            <div className="inline-flex items-center gap-2 chip-mission mb-6">
-              <Sparkles size={13} />
-              <span className="font-bold">NASA Command Center · 创新探究 · 实验驱动 · 小组协作</span>
-            </div>
+          <div className="login-hero-panel order-2 lg:order-1 min-w-0">
 
-            <h1 className="font-sans font-black leading-[1.08] tracking-tight text-[48px] md:text-[56px] mb-6">
+            <h1 className="font-sans font-black leading-[1.08] tracking-tight text-[40px] md:text-[44px] lg:text-[48px] mb-6">
               <span className="block text-ink-900">进入物理研究基地</span>
-              <span className="block bg-clip-text text-transparent bg-gradient-to-r from-mission-500 via-mission-600 to-nova-500">
-                Launch Your Mission
-              </span>
+              <span className="block bg-clip-text text-transparent bg-gradient-to-r from-mission-500 via-mission-600 to-nova-500">开启你的探索之旅</span>
             </h1>
 
             <p className="text-[17px] text-ink-500 leading-[1.75] mb-9 max-w-[560px] font-medium">
@@ -311,87 +223,49 @@ export default function Login() {
               与真实实验项目，构建沉浸式高中物理创新指挥中心。
             </p>
 
-            {/* Quick stats */}
-            <div className="grid grid-cols-3 gap-3 mb-10 max-w-[460px]">
-              <div className="glass-card glass-card-hover p-4 rounded-2xl text-center">
-                <div className="text-[26px] font-black text-gradient-mission tabular-nums leading-none">{teamsCount}</div>
+            <div className="grid grid-cols-3 gap-3 mb-10 max-w-[460px]" aria-label="平台能力">
+              <div className="glass-card glass-card-hover p-2 sm:p-4 rounded-2xl text-center">
+                <div className="text-[20px] sm:text-[24px] font-black text-gradient-mission leading-none whitespace-nowrap">11 步</div>
+                <div className="mt-1 text-[11px] font-bold text-ink-500 uppercase tracking-wide flex items-center justify-center gap-1">
+                  <BookOpen size={10} />学习路径
+                </div>
+              </div>
+              <div className="glass-card glass-card-hover p-2 sm:p-4 rounded-2xl text-center">
+                <div className="text-[20px] sm:text-[24px] font-black text-gradient-energy leading-none whitespace-nowrap">协作</div>
                 <div className="mt-1 text-[11px] font-bold text-ink-500 uppercase tracking-wide flex items-center justify-center gap-1">
                   <Users size={10} />研究小组
                 </div>
               </div>
-              <div className="glass-card glass-card-hover p-4 rounded-2xl text-center">
-                <div className="text-[26px] font-black text-gradient-energy tabular-nums leading-none">{energyTotal}</div>
+              <div className="glass-card glass-card-hover p-2 sm:p-4 rounded-2xl text-center">
+                <div className="text-[20px] sm:text-[24px] font-black text-growth-600 leading-none whitespace-nowrap">实验</div>
                 <div className="mt-1 text-[11px] font-bold text-ink-500 uppercase tracking-wide flex items-center justify-center gap-1">
-                  <Zap size={10} />能量流通
-                </div>
-              </div>
-              <div className="glass-card glass-card-hover p-4 rounded-2xl text-center">
-                <div className="text-[26px] font-black text-growth-600 tabular-nums leading-none">{projects}</div>
-                <div className="mt-1 text-[11px] font-bold text-ink-500 uppercase tracking-wide flex items-center justify-center gap-1">
-                  <ShieldCheck size={10} />累计项目
+                  <ShieldCheck size={10} />安全准入
                 </div>
               </div>
             </div>
 
-            {/* Mini Learning Path */}
-            <div className="glass-card p-5 rounded-[28px] relative overflow-hidden">
-              <div className="absolute -right-10 -top-10 w-40 h-40 rounded-full bg-gradient-to-br from-mission-400/15 via-nova-400/10 to-transparent blur-3xl pointer-events-none" />
-              <div className="relative flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <span className="mission-label !text-[10px]">Learning Path</span>
-                  <span className="text-[13px] font-extrabold text-ink-800">11 步全周期学习路径</span>
-                </div>
-                <span className="chip-growth !py-0.5 !px-2 !text-[10px]">
-                  <CheckCircle2 size={9} className="mr-0.5" />已完成 5/11
-                </span>
-              </div>
-              {/* 11 个节点各 shrink-0 + minWidth34，加起来约 436px；窄屏内横向滚动，
-                  否则会把整个左侧栏顶宽、右侧内容被裁掉 */}
-              <div className="relative flex items-center justify-between gap-0.5 py-1 overflow-x-auto scroll-thin">
-                <svg className="absolute inset-0 w-full h-full pointer-events-none" preserveAspectRatio="none">
-                  <line x1="3%" y1="50%" x2="97%" y2="50%" stroke="#CBD5E1" strokeWidth="1.5" strokeDasharray="4 4" opacity="0.6" />
-                </svg>
-                {LEARNING_PATH_MINI.map((node, i) => {
-                  const Icon = node.icon;
-                  return (
-                    <div key={node.name} className="flex flex-col items-center gap-1 shrink-0 relative z-10" style={{ minWidth: 34 }}>
-                      <div className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all ${
-                        node.done
-                          ? 'bg-gradient-to-br from-growth-400 to-growth-600 text-white shadow-md'
-                          : node.active
-                            ? 'bg-gradient-to-br from-mission-400 to-nova-500 text-white shadow-glowMission ring-2 ring-mission-200/60 animate-pulse'
-                            : 'bg-ink-100 text-ink-400'
-                      }`}>
-                        <Icon size={13} strokeWidth={node.done || node.active ? 2.4 : 2} />
-                      </div>
-                      <div className={`text-[8.5px] font-bold leading-tight text-center ${
-                        node.done ? 'text-growth-700' : node.active ? 'text-mission-700' : 'text-ink-400'
-                      }`}>
-                        {node.name}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+            <div className="login-journey glass-card p-5 rounded-[24px] relative overflow-hidden">
+              <p className="text-xs font-bold text-mission-700">从问题出发，走向真实研究</p>
+              <p className="mt-2 text-sm font-semibold text-ink-700">理论探索 <span aria-hidden="true">→</span> 小组协作 <span aria-hidden="true">→</span> 实验项目 <span aria-hidden="true">→</span> 成果展示</p>
             </div>
           </div>
 
           {/* ============== RIGHT SIDE: Login Card ============== */}
           <div className="order-1 lg:order-2 flex justify-center lg:justify-end">
-            <div className="w-full max-w-[480px]">
-              <div className="glass-card glass-card-hover p-7 md:p-8 rounded-[28px] relative overflow-hidden shadow-2xl">
+            <div className="w-full max-w-[460px]">
+              <div className="login-form-card glass-card p-7 md:p-8 rounded-[28px] relative overflow-hidden shadow-2xl">
                 {/* Decorative blobs */}
                 <div className="absolute -top-20 -right-20 w-56 h-56 rounded-full bg-gradient-to-br from-mission-400/20 via-nova-400/15 to-transparent blur-3xl pointer-events-none" />
                 <div className="absolute -bottom-24 -left-20 w-60 h-60 rounded-full bg-gradient-to-tr from-energy-400/18 via-alert-400/10 to-transparent blur-3xl pointer-events-none" />
 
                 <div className="relative">
                   {/* Tabs */}
-                  <div className="p-1.5 rounded-2xl bg-gradient-to-r from-energy-50/60 to-alert-50/60 border border-energy-100/60 mb-7 flex gap-1.5">
+                  <div className="p-1.5 rounded-2xl bg-mission-50/70 border border-mission-100/70 mb-7 flex gap-1.5">
                     <button
                       onClick={() => setTab('student')}
                       className={`flex-1 py-2.5 rounded-xl text-[13px] font-extrabold transition-all flex items-center justify-center gap-1.5 ${
                         tab === 'student'
-                          ? 'bg-gradient-to-br from-energy-500 to-alert-500 text-white shadow-lg shadow-energy-500/25'
+                          ? 'bg-gradient-to-br from-energy-400 to-alert-500 text-white shadow-lg shadow-energy-500/25'
                           : 'text-ink-500 hover:text-ink-800'
                       }`}
                     >
@@ -488,11 +362,11 @@ export default function Login() {
                       <div className="flex items-center justify-between pt-2">
                         <div className="flex items-center gap-1.5 text-[11px] text-ink-500 font-medium">
                           <ShieldCheck size={12} className="text-growth-500" />
-                          权限等级：<span className="text-growth-700 font-bold">Administrator</span>
+                          入口：<span className="text-growth-700 font-bold">教师与管理员</span>
                         </div>
                         <div className="flex items-center gap-1.5 text-[11px] font-bold text-ink-500">
                           <span className="w-1.5 h-1.5 rounded-full bg-growth-500 animate-pulse" />
-                          系统在线
+                          准备就绪
                         </div>
                       </div>
                     </div>
@@ -618,7 +492,7 @@ export default function Login() {
                             <button
                               onClick={handleRegister}
                               disabled={submitting}
-                              className="btn-energy w-full !py-3.5 !text-[15px] shadow-glowEnergy disabled:opacity-60"
+                              className="btn-mission w-full !py-3.5 !text-[15px] shadow-glowMission disabled:opacity-60"
                             >
                               <UserPlus size={17} />
                               {submitting ? '注册中…' : '创建账号并进入'}
@@ -671,7 +545,7 @@ export default function Login() {
                             <button
                               onClick={handleCredentialLogin}
                               disabled={submitting}
-                              className="btn-energy w-full !py-3.5 !text-[15px] shadow-glowEnergy disabled:opacity-60"
+                              className="btn-mission w-full !py-3.5 !text-[15px] shadow-glowMission disabled:opacity-60"
                             >
                               <Rocket size={17} />
                               {submitting ? '登录中…' : '登录并进入指挥中心'}
@@ -690,7 +564,7 @@ export default function Login() {
                         <div className="p-3.5 rounded-2xl bg-mission-50/70 border border-mission-100/70 flex items-start gap-2.5">
                           <Info size={15} className="text-mission-600 mt-0.5 shrink-0" />
                           <div className="text-[12px] leading-relaxed text-ink-600 font-medium">
-                            请用上方「账号登录」进入：用户名填<span className="text-ink-900 font-bold">你的姓名</span>，初始密码<span className="text-ink-900 font-bold">123456</span>。登录不上请联系老师。
+                            请使用教师分配的用户名和初始密码登录；预置演示账号使用编号（例如 u-01），不是姓名。登录不上请联系老师。
                           </div>
                         </div>
                       ) : (
@@ -760,7 +634,7 @@ export default function Login() {
                             const u = groupUsers.find((x) => x.id === selectedUserId);
                             return u ? (
                               <>
-                                <img src={u.avatar} alt={u.name} className="w-11 h-11 rounded-xl ring-2 ring-white shadow-sm bg-white object-cover" />
+                                <img src={u.avatar} onError={applyAvatarFallback} alt={u.name} className="w-11 h-11 rounded-xl ring-2 ring-white shadow-sm bg-white object-cover" />
                                 <div className="flex-1 min-w-0">
                                   <div className="flex items-center gap-1.5">
                                     <span className="text-[14px] font-extrabold text-ink-900">{u.name}</span>
@@ -784,7 +658,7 @@ export default function Login() {
                         <button
                           onClick={handleStudentLogin}
                           disabled={!selectedGroupId || !selectedUserId}
-                          className="btn-energy w-full !py-3.5 !text-[15px] shadow-glowEnergy"
+                          className="btn-mission w-full !py-3.5 !text-[15px] shadow-glowMission"
                         >
                           <Rocket size={17} />
                           进入指挥中心
@@ -813,11 +687,12 @@ export default function Login() {
 
               {/* Footer tip */}
               <p className="mt-6 text-center text-[11.5px] text-ink-400 font-medium leading-relaxed">
-                © Physics Mission Control · 学生账号请先选组后选成员 · 教师密码请联系管理员获取
+                © Physics Mission Control · {apiEnabled ? '请使用分配的账号登录' : '学生请先选组后选成员'} · 教师密码请联系管理员获取
               </p>
             </div>
           </div>
         </div>
+      </div>
       </div>
     </div>
   );

@@ -1,3 +1,4 @@
+import { applyAvatarFallback } from '@/lib/imageFallback';
 /**
  * 班级构成管理 —— 管理员视图
  *
@@ -359,7 +360,7 @@ export default function ClassComposition() {
                               className="flex items-center gap-3 px-2 py-2 rounded-xl hover:bg-mission-50/40 transition group"
                             >
                               <img
-                                src={m.avatar}
+                                src={m.avatar} onError={applyAvatarFallback}
                                 alt={m.name}
                                 className="w-8 h-8 rounded-lg object-cover bg-gradient-to-br from-mission-100 to-nova-100 shrink-0"
                               />
@@ -431,7 +432,7 @@ export default function ClassComposition() {
                 className="flex items-center gap-3 px-2 py-2 rounded-xl hover:bg-mission-50/40 transition group"
               >
                 <img
-                  src={m.avatar}
+                  src={m.avatar} onError={applyAvatarFallback}
                   alt={m.name}
                   className="w-8 h-8 rounded-lg object-cover bg-gradient-to-br from-mission-100 to-nova-100 shrink-0"
                 />

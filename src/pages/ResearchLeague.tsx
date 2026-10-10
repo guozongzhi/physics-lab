@@ -15,7 +15,6 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts';
-import MissionShell from '@/components/layout/MissionShell';
 import AvatarStack from '@/components/ui/AvatarStack';
 import { useGroupStore } from '@/store/groupStore';
 import { useAuthStore } from '@/store/authStore';
@@ -90,7 +89,7 @@ export default function ResearchLeague() {
     const map: Record<string, { classId: string; className: string; rows: { groupId: string; name: string; coins: number; memberCount: number }[] }> = {};
     for (const g of memberedGroups) {
       const cid = g.classId || 'unknown';
-      if (!map[cid]) map[cid] = { classId: cid, className: classesById[cid] || cid, rows: [] };
+      if (!map[cid]) map[cid] = { classId: cid, className: cid === 'unknown' ? '未分班小组' : classesById[cid] || cid, rows: [] };
       map[cid].rows.push({ groupId: g.id, name: g.name, coins: coinOf(g), memberCount: g.memberCount });
     }
     return Object.values(map)
@@ -104,7 +103,7 @@ export default function ResearchLeague() {
     for (const u of users) {
       if (!inScope(u.classId)) continue;
       const cid = u.classId || 'unknown';
-      if (!map[cid]) map[cid] = { classId: cid, className: classesById[cid] || cid, rows: [] };
+      if (!map[cid]) map[cid] = { classId: cid, className: cid === 'unknown' ? '未分班小组' : classesById[cid] || cid, rows: [] };
       map[cid].rows.push({ userId: u.id, name: u.name, coins: u.personalCoins });
     }
     return Object.values(map)
@@ -182,7 +181,7 @@ export default function ResearchLeague() {
   const isPersonal = tab === 'personal';
 
   return (
-    <MissionShell>
+    <>
       <div className="space-y-6">
         <motion.section
           initial={{ opacity: 0, y: 16 }}
@@ -469,6 +468,6 @@ export default function ResearchLeague() {
           </div>
         </div>
       </div>
-    </MissionShell>
+    </>
   );
 }

@@ -1,0 +1,158 @@
+/* Shared visual language for the welcome screen and every mission workspace. */
+:root {
+  --pmc-navy: #102148;
+  --pmc-ink: #182847;
+  --pmc-muted: #65738e;
+  --pmc-line: rgba(112, 137, 199, .18);
+  --pmc-surface: rgba(255, 255, 255, .76);
+  --pmc-radius: 24px;
+}
+
+.login-stage,
+.mission-stage {
+  color: var(--pmc-ink);
+  background: radial-gradient(circle at 83% 9%, rgba(126, 139, 241, .22), transparent 28%),
+    radial-gradient(circle at 18% 83%, rgba(106, 215, 236, .18), transparent 35%),
+    linear-gradient(140deg, #ecf2ff 0%, #f8fbff 48%, #edefff 100%);
+}
+
+.login-atmosphere {
+  background-image: linear-gradient(rgba(71, 92, 156, .045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(71, 92, 156, .045) 1px, transparent 1px);
+  background-size: 64px 64px;
+  mask-image: linear-gradient(90deg, transparent, black 68%);
+}
+
+.login-stage .glass-card,
+.mission-stage :is(.glass-card, .card-base, .mission-page-intro) {
+  border: 1px solid rgba(255, 255, 255, .82);
+  background-color: var(--pmc-surface);
+  box-shadow: 0 16px 46px rgba(39, 61, 125, .09), inset 0 1px rgba(255, 255, 255, .9);
+  backdrop-filter: blur(24px) saturate(145%);
+  -webkit-backdrop-filter: blur(24px) saturate(145%);
+}
+
+.login-shell {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, .95);
+  border-radius: 30px;
+  background: linear-gradient(125deg, rgba(242, 248, 255, .96), rgba(229, 237, 255, .85) 62%, rgba(241, 240, 255, .98));
+  box-shadow: 0 28px 85px rgba(32, 55, 120, .13);
+}
+
+.login-shell::before {
+  content: '';
+  position: absolute;
+  inset: 0 38% 0 0;
+  z-index: -2;
+  background: url('/images/observatory-hero.jpg') 25% bottom / cover no-repeat;
+  opacity: 1;
+  mask-image: linear-gradient(to bottom, transparent 4%, rgba(0, 0, 0, .45) 32%, black 57%);
+}
+
+.login-shell::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(to bottom, rgba(250, 252, 255, .96), rgba(250, 252, 255, .88) 32%, rgba(250, 252, 255, .44) 56%, rgba(250, 252, 255, .06) 82%);
+  pointer-events: none;
+}
+
+.login-hero-panel {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  min-height: 560px;
+  padding: clamp(1.5rem, 3vw, 2.75rem);
+  border: 0;
+  border-radius: 30px;
+  background: transparent;
+  box-shadow: none;
+}
+
+.login-form-card {
+  border-radius: 28px;
+  background: rgba(255, 255, 255, .84);
+  box-shadow: 0 26px 64px rgba(30, 48, 103, .14);
+}
+
+.login-stage :is(button, a, input, select, textarea):focus-visible,
+.mission-stage :is(button, a, input, select, textarea, [role='link']):focus-visible {
+  outline: 2px solid #416ce6;
+  outline-offset: 3px;
+}
+
+.mission-stage main :is(h1, h2, h3),
+.login-stage :is(h1, h2, h3) {
+  text-wrap: balance;
+  letter-spacing: -.025em;
+}
+
+.mission-stage main :is(input, select, textarea):not([type='checkbox']):not([type='radio']),
+.login-stage :is(input, select, textarea):not([type='checkbox']):not([type='radio']) {
+  border-radius: 12px;
+}
+
+.mission-stage main table th {
+  color: #667897;
+  font-size: .72rem;
+  font-weight: 700;
+  letter-spacing: .02em;
+}
+
+.mission-stage main table td {
+  color: #263759;
+  line-height: 1.5;
+}
+
+.mission-stage main :is(.mission-page-intro, .mission-hero) {
+  border-radius: var(--pmc-radius);
+}
+
+.mission-stage main :is(.btn-mission, .btn-primary) {
+  background: linear-gradient(115deg, #4d72ed, #6874ec);
+  color: #fff;
+}
+
+.mission-stage main .btn-energy { background: linear-gradient(115deg, #f58132, #f2a04b); }
+
+.mission-page-context {
+  display: flex;
+  align-items: center;
+  gap: .45rem;
+  min-height: 1.75rem;
+  margin: -.15rem 0 1rem;
+  color: #607194;
+  font-size: .75rem;
+  font-weight: 650;
+}
+
+.mission-page-context a { color: #4169cb; }
+.mission-page-context a:hover { text-decoration: underline; }
+.mission-page-context span:last-child { color: #273b6d; }
+
+.dark .mission-stage :is(.glass-card, .card-base, .mission-page-intro) {
+  background-color: rgba(24, 35, 68, .8);
+  border-color: rgba(156, 184, 248, .18);
+}
+
+@media (max-width: 767px) {
+  .login-shell::before { inset: 48% 0 0; opacity: .9; }
+  .login-shell::after { background: linear-gradient(to bottom, rgba(246, 249, 255, .96), rgba(246, 249, 255, .82) 55%, rgba(246, 249, 255, .35) 78%, rgba(246, 249, 255, .08)); }
+  .login-hero-panel { min-height: 0; padding: 1.5rem; }
+  .login-stage h1 { font-size: clamp(2rem, 10vw, 3rem); }
+  .mission-page-context { margin-bottom: .75rem; }
+  .mission-stage main table td { white-space: nowrap; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .login-stage *,
+  .login-stage *::before,
+  .login-stage *::after {
+    animation-duration: .01ms !important;
+    transition-duration: .01ms !important;
+  }
+}

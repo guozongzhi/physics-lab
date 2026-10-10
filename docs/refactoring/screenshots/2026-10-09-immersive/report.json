@@ -1,0 +1,80 @@
+[
+  {
+    "scene": "student-dashboard",
+    "route": "http://127.0.0.1:5173/dashboard",
+    "viewport": "1440x900",
+    "headerCount": 1,
+    "asideCount": 1,
+    "h1": [
+      "张伟"
+    ],
+    "horizontalOverflow": 0,
+    "pageErrors": [],
+    "screenshot": "student-dashboard.png"
+  },
+  {
+    "scene": "student-energy",
+    "route": "http://127.0.0.1:5173/coins",
+    "viewport": "1440x900",
+    "headerCount": 1,
+    "asideCount": 1,
+    "h1": [
+      "Research League科研联赛榜"
+    ],
+    "horizontalOverflow": 0,
+    "pageErrors": [],
+    "screenshot": "student-energy.png"
+  },
+  {
+    "scene": "teacher-overview",
+    "route": "http://127.0.0.1:5173/teacher/overview",
+    "viewport": "1440x900",
+    "headerCount": 1,
+    "asideCount": 1,
+    "h1": [
+      "指挥总览"
+    ],
+    "horizontalOverflow": 0,
+    "pageErrors": [],
+    "screenshot": "teacher-overview.png"
+  },
+  {
+    "scene": "teacher-groups",
+    "route": "http://127.0.0.1:5173/teacher/groups",
+    "viewport": "1440x900",
+    "headerCount": 1,
+    "asideCount": 1,
+    "h1": [
+      "Fleet Management物理创新班 · 小组编组指挥台"
+    ],
+    "horizontalOverflow": 0,
+    "pageErrors": [],
+    "screenshot": "teacher-groups.png"
+  },
+  {
+    "scene": "admin-console",
+    "route": "http://127.0.0.1:5173/admin",
+    "viewport": "1440x900",
+    "headerCount": 1,
+    "asideCount": 1,
+    "h1": [
+      "管理控制台"
+    ],
+    "horizontalOverflow": 0,
+    "pageErrors": [],
+    "screenshot": "admin-console.png"
+  },
+  {
+    "scene": "student-mobile",
+    "route": "http://127.0.0.1:5173/dashboard",
+    "viewport": "390x844",
+    "headerCount": 1,
+    "asideCount": 1,
+    "h1": [
+      "张伟"
+    ],
+    "horizontalOverflow": 0,
+    "pageErrors": [],
+    "screenshot": "student-mobile.png"
+  }
+]

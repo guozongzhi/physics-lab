@@ -23,7 +23,7 @@ export const LearningPathBento: React.FC<LearningPathBentoProps> = ({
   onNavigate,
 }) => {
   return (
-    <BentoCard variant="default" padding="lg" className="h-full">
+    <BentoCard variant="default" padding="lg" className="lg:h-full">
       <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800/80 mb-4">
         <div className="flex items-center gap-2">
           <div className="p-2 rounded-xl bg-growth-50 dark:bg-growth-950/40 text-growth-600 dark:text-growth-400">

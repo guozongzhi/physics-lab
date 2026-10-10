@@ -1,3 +1,4 @@
+import { applyAvatarFallback } from '@/lib/imageFallback';
 import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
@@ -33,7 +34,6 @@ import {
   Tooltip,
   Legend,
 } from 'recharts';
-import MissionShell from '@/components/layout/MissionShell';
 import Checkbox from '@/components/ui/Checkbox';
 import { useGroupStore } from '@/store/groupStore';
 import { useAuthStore } from '@/store/authStore';
@@ -171,7 +171,7 @@ export default function ResearchProfile() {
   };
 
   return (
-    <MissionShell>
+    <>
       <div className="space-y-6">
         <motion.section
           initial={{ opacity: 0, y: 16 }}
@@ -198,7 +198,7 @@ export default function ResearchProfile() {
                   <div className="absolute -inset-2 rounded-[36px] bg-gradient-to-br from-mission-400/30 via-nova-400/20 to-energy-400/20 blur-lg" />
                   <div className="relative w-24 h-24 md:w-28 md:h-28 rounded-[32px] overflow-hidden ring-4 ring-white shadow-glowMission bg-gradient-to-br from-mission-100 to-nova-100">
                     {me.avatar ? (
-                      <img src={me.avatar} alt={me.name} className="w-full h-full object-cover" />
+                      <img src={me.avatar} onError={applyAvatarFallback} alt={me.name} className="w-full h-full object-cover" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
                         <User size={44} className="text-mission-600" />
@@ -547,7 +547,7 @@ export default function ResearchProfile() {
         </div>
       </div>
       {pwdOpen && <ChangePasswordModal onClose={() => setPwdOpen(false)} />}
-    </MissionShell>
+    </>
   );
 }
 

@@ -1,6 +1,7 @@
+import { applyAvatarFallback, avatarFallback } from '@/lib/imageFallback';
 import type { ReactNode } from 'react';
-import { Navigate, useLocation, useNavigate } from 'react-router-dom';
-import { AnimatePresence, motion } from 'framer-motion';
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { useEffect, useRef, useState } from 'react';
 import {
   LayoutDashboard,
@@ -28,6 +29,8 @@ import {
   Menu,
   FileCheck,
   KeyRound,
+  UserRound,
+  ChevronRight,
 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { useGroupStore } from '@/store/groupStore';
@@ -88,15 +91,17 @@ const STUDENT_NAV_ITEMS: NavItem[] = [
   { id: 'market', label: '悬赏市场', subLabel: '招募投标', icon: ShoppingCart, to: '/recruit/market' },
   { id: 'league', label: '能量天梯', subLabel: '积分榜单', icon: Trophy, to: '/coins' },
   { id: 'achievement', label: '成果殿堂', subLabel: '结题展示', icon: Medal, to: '/showcase' },
+  { id: 'profile', label: '个人档案', subLabel: '学习成果', icon: UserRound, to: '/profile' },
 ];
 
 const TEACHER_NAV_ITEMS: NavItem[] = [
-  { id: 't-overview', label: '指挥总揽', subLabel: '全局数据', icon: Gauge, to: '/teacher/overview' },
+  { id: 't-overview', label: '指挥总览', subLabel: '全局数据', icon: Gauge, to: '/teacher/overview' },
   { id: 't-groups', label: '分组调度', subLabel: '班级编制', icon: Users, to: '/teacher/groups' },
   { id: 't-projects', label: '课题治理', subLabel: '立项审核', icon: FolderKanban, to: '/teacher/projects' },
   { id: 't-roster', label: '学生名册', subLabel: '档案名录', icon: ClipboardList, to: '/teacher/roster' },
   { id: 't-questions', label: '题库审核', subLabel: '提题审批', icon: FileCheck, to: '/teacher/question-bank' },
   { id: 't-safety', label: '安全考评', subLabel: '题库与任务', icon: Shield, to: '/teacher/safety' },
+  { id: 't-showcase', label: '成果审核', subLabel: '作品审批', icon: Medal, to: '/teacher/showcase' },
 ];
 
 const ADMIN_NAV_ITEMS: NavItem[] = [
@@ -180,13 +185,13 @@ function MissionHeader({ onOpenNav }: { onOpenNav: () => void }) {
 
   return (
     <>
-      <header className="fixed top-0 left-0 right-0 z-50 h-16 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-slate-200/80 dark:border-slate-800/80 flex items-center justify-between px-4 md:px-8">
+      <header className="mission-header fixed top-0 left-0 right-0 z-50 h-16 flex items-center justify-between px-4 md:px-8">
         {/* 左侧：菜单开关与品牌 */}
         <div className="flex items-center gap-3">
           <button
             onClick={onOpenNav}
             aria-label="打开导航菜单"
-            className="md:hidden shrink-0 w-9 h-9 rounded-xl flex items-center justify-center text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            className="mission-menu-button md:hidden shrink-0 w-9 h-9 rounded-xl flex items-center justify-center transition-colors"
           >
             <Menu size={20} />
           </button>
@@ -196,10 +201,11 @@ function MissionHeader({ onOpenNav }: { onOpenNav: () => void }) {
               <Rocket size={18} />
             </div>
             <div className="leading-tight">
-              <div className="text-[14px] font-bold text-slate-900 dark:text-slate-100 tracking-tight">
-                物理任务指挥中心
+              <div className="mission-brand-title text-[14px] font-bold tracking-tight">
+                <span className="sm:hidden">物理任务</span>
+                <span className="hidden sm:inline">物理任务指挥中心</span>
               </div>
-              <div className="hidden sm:block text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+              <div className="mission-brand-subtitle hidden sm:block text-[11px] font-medium">
                 PBL 高中物理探究平台
               </div>
             </div>
@@ -221,14 +227,14 @@ function MissionHeader({ onOpenNav }: { onOpenNav: () => void }) {
           <div className="relative">
             <button
               onClick={() => setUserMenuOpen(!userMenuOpen)}
-              className="flex items-center gap-2 p-1 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              className="mission-profile-button flex items-center gap-2 p-1 rounded-xl transition-colors"
             >
               <img
-                src={currentUser?.avatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix'}
+                src={currentUser?.avatar || avatarFallback} onError={applyAvatarFallback}
                 alt={currentUser?.name || '用户头像'}
                 className="w-8 h-8 rounded-lg object-cover border border-slate-200 dark:border-slate-700"
               />
-              <span className="hidden sm:inline text-xs font-semibold text-slate-700 dark:text-slate-300 max-w-[90px] truncate">
+              <span className="mission-profile-name hidden sm:inline text-xs font-semibold max-w-[90px] truncate">
                 {currentUser?.name || '研究员'}
               </span>
             </button>
@@ -248,6 +254,18 @@ function MissionHeader({ onOpenNav }: { onOpenNav: () => void }) {
                       <p className="font-bold text-slate-900 dark:text-slate-100">{currentUser?.name}</p>
                       <p className="text-[11px] text-slate-400 capitalize">角色：{role}</p>
                     </div>
+
+                    {role === 'student' && (
+                      <button
+                        onClick={() => {
+                          setUserMenuOpen(false);
+                          navigate('/profile');
+                        }}
+                        className="w-full text-left px-3 py-2 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-2"
+                      >
+                        <UserRound size={14} /> 个人档案
+                      </button>
+                    )}
 
                     <button
                       onClick={() => {
@@ -309,7 +327,7 @@ function MissionHeader({ onOpenNav }: { onOpenNav: () => void }) {
                       : 'border-transparent hover:border-mission-200'
                   )}
                 >
-                  <img src={avatar} alt={`头像 ${idx + 1}`} className="w-full h-full object-cover" />
+                  <img src={avatar} onError={applyAvatarFallback} alt={`头像 ${idx + 1}`} className="w-full h-full object-cover" />
                   {selectedAvatar === avatar && (
                     <div className="absolute inset-0 bg-mission-500/20 flex items-center justify-center">
                       <CheckCircle2 size={18} className="text-mission-500" />
@@ -387,7 +405,7 @@ function NavRail({ open, onClose }: { open: boolean; onClose: () => void }) {
 
       <aside
         className={cn(
-          'fixed z-40 flex flex-col transition-transform duration-300 ease-out',
+          'mission-nav fixed z-40 flex flex-col transition-transform duration-300 ease-out',
           // 桌面端：紧凑型常驻面板
           'md:left-4 md:top-20 md:w-52 md:h-[calc(100vh-96px)] md:rounded-2xl md:translate-x-0',
           'md:bg-white/80 md:dark:bg-slate-900/80 md:border md:border-slate-200/80 md:dark:border-slate-800/80 md:backdrop-blur-xl md:p-3',
@@ -408,11 +426,12 @@ function NavRail({ open, onClose }: { open: boolean; onClose: () => void }) {
                   onClose();
                 }}
                 className={cn(
-                  'w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all relative text-left',
+                  'mission-nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all relative text-left',
                   active
                     ? 'bg-mission-50 dark:bg-mission-950/50 text-mission-700 dark:text-mission-300 border border-mission-200/60 dark:border-mission-800/60 shadow-sm'
                     : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-slate-100'
                 )}
+                data-active={active}
               >
                 <Icon size={16} className={active ? 'text-mission-600 dark:text-mission-400 shrink-0' : 'text-slate-400 shrink-0'} />
                 <div className="truncate flex-1">
@@ -498,8 +517,13 @@ function ToastStack() {
 
 export default function MissionShell({ children, requireAuth = true }: MissionShellProps) {
   const location = useLocation();
-  const { userId, init } = useAuthStore();
+  const reduceMotion = useReducedMotion();
+  const { userId, role, init } = useAuthStore();
   const [navOpen, setNavOpen] = useState(false);
+  const homePath = role === 'teacher' ? '/teacher/overview' : role === 'admin' ? '/admin' : '/dashboard';
+  const homeLabel = role === 'teacher' ? '指挥总览' : role === 'admin' ? '管理控制台' : '主控看板';
+  const navItems = role === 'admin' ? [...TEACHER_NAV_ITEMS, ...ADMIN_NAV_ITEMS] : role === 'teacher' ? TEACHER_NAV_ITEMS : STUDENT_NAV_ITEMS;
+  const pageLabel = navItems.find((item) => location.pathname === item.to || location.pathname.startsWith(`${item.to}/`))?.label;
 
   useEffect(() => {
     init();
@@ -513,21 +537,33 @@ export default function MissionShell({ children, requireAuth = true }: MissionSh
 
   return (
     <RequireAuth allowRoles={allowRoles}>
-      <div className="min-h-screen w-full relative bg-slate-50/60 dark:bg-slate-950 text-slate-900 dark:text-slate-100">
+      <div className="mission-stage min-h-screen w-full relative text-slate-900 dark:text-slate-100">
+        <div className="mission-ambient" aria-hidden="true">
+          <span className="mission-ambient-orb mission-ambient-orb-a" />
+          <span className="mission-ambient-orb mission-ambient-orb-b" />
+          <span className="mission-ambient-orb mission-ambient-orb-c" />
+        </div>
         <MissionHeader onOpenNav={() => setNavOpen(true)} />
         <NavRail open={navOpen} onClose={() => setNavOpen(false)} />
         <ToastStack />
 
         {/* 桌面端常驻导航预留 220px 边距 */}
-        <main className="md:ml-[220px] px-4 md:px-8 pt-20 pb-12">
+        <main className="mission-content md:ml-[220px] px-4 md:px-8 pt-20 pb-12">
           <div className="max-w-[1440px] mx-auto w-full">
+            {pageLabel && location.pathname !== homePath && (
+              <nav className="mission-page-context" aria-label="当前位置">
+                <Link to={homePath}>{homeLabel}</Link>
+                <ChevronRight size={13} aria-hidden="true" />
+                <span aria-current="page">{pageLabel}</span>
+              </nav>
+            )}
             <AnimatePresence mode="wait">
               <motion.div
                 key={location.pathname}
-                initial={{ opacity: 0, y: 12 }}
+                initial={reduceMotion ? false : { opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8 }}
-                transition={{ duration: 0.25 }}
+                exit={reduceMotion ? undefined : { opacity: 0, y: -8 }}
+                transition={{ duration: reduceMotion ? 0 : 0.25 }}
               >
                 {children}
               </motion.div>

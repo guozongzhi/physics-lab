@@ -1,3 +1,4 @@
+import { applyAvatarFallback } from '@/lib/imageFallback';
 import { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { UsersRound, Crown, Zap, Trophy, FolderKanban, UserPlus, Sparkles, TrendingUp } from 'lucide-react';
@@ -191,7 +192,7 @@ export default function MyTeam() {
                 >
                   <div className="flex items-center gap-3">
                     <img
-                      src={m.avatar}
+                      src={m.avatar} onError={applyAvatarFallback}
                       alt={m.name}
                       className="w-11 h-11 rounded-xl ring-2 ring-white shadow-sm bg-white object-cover shrink-0"
                     />

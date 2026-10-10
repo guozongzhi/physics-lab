@@ -63,7 +63,7 @@ export const CommanderHeader: React.FC<CommanderHeaderProps> = ({
       )}
 
       {/* 指挥官全息档案卡 */}
-      <BentoCard variant="accent" padding="lg" className="relative overflow-hidden">
+      <BentoCard variant="accent" padding="lg" className="mission-hero relative overflow-hidden">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
           {/* 左侧：身份与所属编制 */}
           <div className="lg:col-span-7 flex flex-col sm:flex-row items-start sm:items-center gap-4">

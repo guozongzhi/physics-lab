@@ -18,7 +18,6 @@ import {
   Home,
   Globe,
 } from 'lucide-react';
-import MissionShell from '@/components/layout/MissionShell';
 import AvatarStack from '@/components/ui/AvatarStack';
 import RecruitDialog from '@/components/ui/RecruitDialog';
 import { useGroupStore } from '@/store/groupStore';
@@ -209,7 +208,7 @@ export default function ResearchMarketplace() {
   }, [groups, currentGroupId]);
 
   return (
-    <MissionShell>
+    <>
       <div className="space-y-6">
         <motion.section
           initial={{ opacity: 0, y: 16 }}
@@ -241,18 +240,18 @@ export default function ResearchMarketplace() {
               </div>
             </div>
             <div className="col-span-12 lg:col-span-7 space-y-4">
-              <div className="glass-card !shadow-none p-2.5 rounded-2xl border-mission-100/80 flex items-center gap-2">
-                <div className="pl-3">
+              <div className="glass-card !shadow-none p-2.5 rounded-2xl border-mission-100/80 flex flex-col sm:flex-row sm:items-center gap-2">
+                <div className="hidden sm:block pl-3">
                   <Search size={18} className="text-ink-400" />
                 </div>
                 <input
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="搜索项目名、角色名…"
-                  className="flex-1 bg-transparent outline-none py-2 text-[14px] text-ink-800 placeholder:text-ink-400"
+                  className="w-full min-w-0 flex-1 bg-transparent outline-none py-2 px-2 sm:px-0 text-[14px] text-ink-800 placeholder:text-ink-400"
                 />
-                <div className="h-7 w-px bg-ink-200/60 mx-1" />
-                <div className="flex items-center gap-2 pr-1">
+                <div className="hidden sm:block h-7 w-px bg-ink-200/60 mx-1" />
+                <div className="flex items-center gap-2 px-2 sm:pr-1 w-full sm:w-auto border-t border-ink-100 sm:border-0 pt-2 sm:pt-0">
                   <SlidersHorizontal size={16} className="text-ink-400" />
                   <select
                     value={sort}
@@ -491,7 +490,7 @@ export default function ResearchMarketplace() {
       </div>
 
       <RecruitDialog open={recruitOpen} onClose={() => setRecruitOpen(false)} projectId={myGroupProject?.id || ''} projectTitle={myGroupProject?.title || ''} />
-    </MissionShell>
+    </>
   );
 }
 

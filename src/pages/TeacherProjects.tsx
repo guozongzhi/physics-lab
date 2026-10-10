@@ -145,25 +145,49 @@ export default function TeacherProjects() {
   return (
     <div className="w-full space-y-6">
       <section className="glass-card p-6 md:p-8 rounded-[28px] relative overflow-hidden">
-        <div className="flex items-center justify-between gap-4">
-          <div>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="min-w-0">
             <span className="mission-label"><Target size={12} /> PROJECTS & RECRUITMENT</span>
             <h1 className="mt-2 text-[28px] md:text-[32px] font-extrabold text-ink-900 leading-tight">项目 & 招募管理</h1>
             <p className="mt-1.5 text-[14px] text-ink-500">创建项目给各小组、编辑进度、删除项目，并为任意小组发布跨组招募。</p>
           </div>
-          <button className="btn-mission flex items-center gap-2 !py-2.5" onClick={openCreate}>
+          <button className="btn-mission flex items-center gap-2 !py-2.5 shrink-0 self-start sm:self-auto" onClick={openCreate}>
             <Plus size={16} /> 新建项目
           </button>
         </div>
       </section>
 
       <section className="glass-card p-5 md:p-6 rounded-[24px]">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
           <h3 className="flex items-center gap-2 text-[16px] font-bold text-ink-800"><Target size={18} className="text-mission-500" />全部项目 · {sortedProjects.length}</h3>
           <span className="text-[11px] text-ink-400">教师可编辑/删除任意项目、发布招募</span>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-[13px]">
+        <div className="space-y-3 md:hidden">
+          {sortedProjects.length === 0 ? (
+            <p className="py-8 text-center text-ink-500">暂无项目，点击「新建项目」开始。</p>
+          ) : sortedProjects.map((p) => (
+            <article key={p.id} className="rounded-2xl border border-mission-100/70 bg-white/75 p-4 space-y-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <h4 className="font-bold text-ink-800 break-words">{p.title}</h4>
+                  <p className="mt-1 text-xs text-ink-500">{groupNameOf(p.ownerGroupId)} · {memberCountOf(p.ownerGroupId)} 人</p>
+                </div>
+                <span className={cn(STATUS_CHIP[p.status], '!py-0.5 !px-2 text-[11px] shrink-0')}>{STATUS_LABEL[p.status]}</span>
+              </div>
+              <div className="flex items-center justify-between text-xs text-ink-600 border-t border-ink-100 pt-3">
+                <span>进度 <strong className="text-ink-800">{p.progress}%</strong></span>
+                <span className="flex items-center gap-1 text-energy-600 font-bold"><Zap size={13} />{p.rewardCoins} 能量</span>
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                <button className="btn-ghost !px-2 !py-2 text-xs" onClick={() => openEdit(p)}><Pencil size={13} />编辑</button>
+                <button className="btn-ghost !px-2 !py-2 text-xs" onClick={() => openRecruit(p)}><Megaphone size={13} />招募</button>
+                <button className="btn-ghost !px-2 !py-2 text-xs text-danger-600" onClick={() => setDeleteTarget(p)}><Trash2 size={13} />删除</button>
+              </div>
+            </article>
+          ))}
+        </div>
+        <div className="hidden md:block overflow-x-auto">
+          <table className="w-full min-w-[720px] text-[13px]">
             <thead>
               <tr className="text-[11px] text-ink-400 font-semibold uppercase tracking-wider">
                 <th className="text-left py-3 px-3 font-medium">项目</th>

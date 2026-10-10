@@ -62,7 +62,7 @@ export const MissionActionCards: React.FC<MissionActionCardsProps> = ({
   ];
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="mission-action-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
       {cards.map((c) => {
         const Icon = c.icon;
         return (
@@ -71,6 +71,15 @@ export const MissionActionCards: React.FC<MissionActionCardsProps> = ({
             variant="interactive"
             padding="md"
             onClick={() => onNavigate(c.path)}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                onNavigate(c.path);
+              }
+            }}
+            role="link"
+            tabIndex={0}
+            aria-label={`进入${c.title}`}
             className="flex flex-col justify-between group"
           >
             <div>

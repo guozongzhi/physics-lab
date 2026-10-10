@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useUIStore } from '../store/uiStore';
 import { useAuthStore } from '../store/authStore';
 import { useGroupStore } from '../store/groupStore';
@@ -16,7 +16,7 @@ import {
 } from '@/lib/apiService';
 import { apiEnabled, getToken } from '@/lib/apiClient';
 import type { User, Project, ProjectStatus } from '@/data/mockData';
-import { X, UserPlus, AlertTriangle, Megaphone } from 'lucide-react';
+import { X, UserPlus, AlertTriangle, Megaphone, ArrowRight, BookOpen, FlaskConical, Zap } from 'lucide-react';
 import { CommanderHeader } from '@/features/dashboard/components/CommanderHeader';
 import { MissionActionCards } from '@/features/dashboard/components/MissionActionCards';
 import { ActiveProjectBento } from '@/features/dashboard/components/ActiveProjectBento';
@@ -25,6 +25,7 @@ import { LeaderboardBento, type TeamRankItem, type LabNewsItem } from '@/feature
 import { ClassStatsBento, type ClassStatItem } from '@/features/dashboard/components/ClassStatsBento';
 import { Button } from '@/design-system/components/Button';
 import { BentoCard } from '@/design-system/components/BentoCard';
+import { PortalCard } from '@/design-system/components/PortalCard';
 
 const LEARNING_PATH_CONFIG = [
   { id: 'ai_learn', name: 'AI学习', badge: false },
@@ -42,6 +43,8 @@ const LEARNING_PATH_CONFIG = [
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const showOverview = searchParams.get('view') === 'overview';
   const pushToast = useUIStore((s) => s.pushToast);
   const { userId, role, groupId, classId } = useAuthStore();
   const isDefaultPassword = useAuthStore((s) => s.isDefaultPassword);
@@ -389,45 +392,101 @@ export default function Dashboard() {
         onDismissPwdHint={dismissPwdHint}
       />
 
-      {/* 2. 四大核心任务入口 */}
-      <MissionActionCards
-        onNavigate={navigate}
-        theoryProgress={pathProgress}
-        projectCount={myProjects.length}
-        safetyPassed={safetyRecords.some((r) => r.passed)}
-        challengeCount={challenges.length}
-      />
-
-      {/* 3. 核心 Bento 混合主区 */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
-        {/* 左侧 8 列：本组项目 + 学习星系图谱 */}
-        <div className="lg:col-span-8 flex flex-col gap-6">
-          <ActiveProjectBento
-            projects={myProjects}
-            hasGroup={Boolean(groupId)}
+      {showOverview ? (
+        <div className="space-y-6">
+          <button type="button" className="portal-back-link" onClick={() => setSearchParams({})}>
+            返回聚焦首页 <ArrowRight size={15} className="rotate-180" />
+          </button>
+          <MissionActionCards
             onNavigate={navigate}
-            onCreateProject={openCreateProject}
+            theoryProgress={pathProgress}
+            projectCount={myProjects.length}
+            safetyPassed={safetyRecords.some((r) => r.passed)}
+            challengeCount={challenges.length}
           />
-          <LearningPathBento
-            steps={pathSteps}
-            completedCount={completedSteps}
-            onNavigate={navigate}
-          />
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+            <div className="lg:col-span-8 flex flex-col gap-6">
+              <ActiveProjectBento
+                projects={myProjects}
+                hasGroup={Boolean(groupId)}
+                onNavigate={navigate}
+                onCreateProject={openCreateProject}
+              />
+              <LearningPathBento
+                steps={pathSteps}
+                completedCount={completedSteps}
+                onNavigate={navigate}
+              />
+            </div>
+            <div className="lg:col-span-4 flex flex-col gap-6">
+              <LeaderboardBento
+                rankings={teamRanking}
+                news={labNews}
+                myGroupId={groupId}
+                onNavigate={navigate}
+              />
+            </div>
+          </div>
+          <ClassStatsBento stats={classStats} />
         </div>
+      ) : (
+        <div className="dashboard-focused space-y-8">
+          <section aria-labelledby="dashboard-next-step" className="space-y-4">
+            <div className="portal-section-heading">
+              <div>
+                <p className="portal-kicker">MISSION / 01</p>
+                <h2 id="dashboard-next-step">从这里继续</h2>
+                <p>先完成眼前的研究任务，其余内容随时从卡片进入。</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <PortalCard
+                to="/projects"
+                eyebrow="正在进行 · 科研项目"
+                title={myProjects[0]?.title || (groupId ? '开启第一个科研项目' : '加入小组，开启科研项目')}
+                description={myProjects[0]?.topic ? `课题方向：${myProjects[0].topic}` : '进入项目中心，查看课题、组队与实验进度。'}
+                icon={FlaskConical}
+                tone="blue"
+                detail={myProjects[0] ? `项目进度 ${myProjects[0].progress}%` : '进入项目中心'}
+                featured
+                visualSrc={myProjects[0]?.title.includes('电动机') ? '/images/electric-motor-hero.webp' : undefined}
+              />
+              <PortalCard
+                to="/theory/topics"
+                eyebrow="学习路径 · 下一步"
+                title={pathSteps.find((step) => !step.done)?.name || '继续探索知识星系'}
+                description="在知识星系中完成下一个阶段，积累物理研究能力。"
+                icon={BookOpen}
+                tone="violet"
+                detail={`已完成 ${completedSteps}/${LEARNING_PATH_CONFIG.length} 阶段`}
+              />
+            </div>
+          </section>
 
-        {/* 右侧 4 列：天梯榜单与资讯 */}
-        <div className="lg:col-span-4 flex flex-col gap-6">
-          <LeaderboardBento
-            rankings={teamRanking}
-            news={labNews}
-            myGroupId={groupId}
-            onNavigate={navigate}
-          />
+          <section aria-labelledby="dashboard-explore" className="space-y-4">
+            <div className="portal-section-heading">
+              <div>
+                <p className="portal-kicker">EXPLORE / 02</p>
+                <h2 id="dashboard-explore">探索任务</h2>
+                <p>按目标选择入口，每张卡片通向对应的完整工作区。</p>
+              </div>
+            </div>
+            <MissionActionCards
+              onNavigate={navigate}
+              theoryProgress={pathProgress}
+              projectCount={myProjects.length}
+              safetyPassed={safetyRecords.some((r) => r.passed)}
+              challengeCount={challenges.length}
+            />
+          </section>
+
+          <button type="button" className="portal-overview-link" onClick={() => setSearchParams({ view: 'overview' })}>
+            <span className="portal-overview-icon"><Zap size={20} /></span>
+            <span><strong>查看完整总览</strong><small>学习路径、研究小组榜单、实验室动态与班级统计</small></span>
+            <ArrowRight size={19} className="ml-auto" />
+          </button>
         </div>
-      </div>
-
-      {/* 4. 班级全景宏观指标 */}
-      <ClassStatsBento stats={classStats} />
+      )}
 
       {/* 同班同学弹窗 */}
       {showClassmates && (

@@ -1,6 +1,6 @@
 # PhysicsClass 完整重构计划
 
-状态：待执行；日期：2026-10-08；代码基线：`ba8ae35`。事实与验证见 [AUDIT](AUDIT.md)，实施任务与回归见 [BACKLOG](BACKLOG.md)。
+状态：实施中；初版日期：2026-10-08；初版基线：`ba8ae35`。第一批进展见 [PROGRESS](PROGRESS.md)，初始事实见 [AUDIT](AUDIT.md)，实施任务与回归见 [BACKLOG](BACKLOG.md)。
 
 ## 1. 目标与范围
 

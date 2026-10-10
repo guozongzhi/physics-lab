@@ -1,3 +1,4 @@
+import { applyAvatarFallback } from '@/lib/imageFallback';
 import { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -24,7 +25,6 @@ import {
   LogIn,
   RotateCcw,
 } from 'lucide-react';
-import MissionShell from '@/components/layout/MissionShell';
 import { useGroupStore } from '@/store/groupStore';
 import { useCoinStore } from '@/store/coinStore';
 import { windowState, formatCloseTime } from '@/lib/activityWindow';
@@ -416,7 +416,7 @@ export default function TeacherGroups() {
   };
 
   return (
-    <MissionShell>
+    <>
       <div className="space-y-6">
         <motion.section
           initial={{ opacity: 0, y: 18 }}
@@ -449,7 +449,7 @@ export default function TeacherGroups() {
                 <b className="text-alert-600">{unassigned.length} 名</b> 待分配
               </p>
             </div>
-            <div className="flex items-center gap-4 shrink-0">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 w-full lg:w-auto [&>*:last-child]:col-span-2 sm:[&>*:last-child]:col-span-1">
               <FleetStat label="总小组" val={groups.length} unit="个" grad="from-mission-400 to-nova-500" icon={Rocket} />
               <FleetStat label="已分组" val={totalMembers} unit="人" grad="from-energy-400 to-alert-500" icon={Users} />
               <FleetStat label="能量池" val={energyPool} unit="⚡" grad="from-growth-400 to-mission-500" icon={Coins} />
@@ -628,7 +628,7 @@ export default function TeacherGroups() {
                   <div className="flex flex-wrap gap-3">
                     {bucket.students.map((u) => (
                       <div key={u.id} className="flex items-center gap-2.5 bg-white/70 border border-ink-100 rounded-2xl px-3 py-2">
-                        <img src={u.avatar} alt={u.name} className="w-9 h-9 rounded-xl border border-white shadow-sm bg-white object-cover" />
+                        <img src={u.avatar} onError={applyAvatarFallback} alt={u.name} className="w-9 h-9 rounded-xl border border-white shadow-sm bg-white object-cover" />
                         <div className="min-w-0">
                           <div className="text-[13px] font-bold text-ink-800 truncate max-w-[110px]">{u.name}</div>
                           <div className="text-[10.5px] text-ink-400">⚡ {u.personalCoins}</div>
@@ -1040,7 +1040,7 @@ export default function TeacherGroups() {
                                     : 'bg-white/60 border-ink-100 hover:border-mission-200 hover:bg-mission-50/40'
                                 )}
                               >
-                                <img src={u.avatar} alt={u.name} className="w-10 h-10 mx-auto rounded-xl border-2 border-white shadow-sm object-cover" />
+                                <img src={u.avatar} onError={applyAvatarFallback} alt={u.name} className="w-10 h-10 mx-auto rounded-xl border-2 border-white shadow-sm object-cover" />
                                 <div className="mt-1.5 text-[10.5px] font-bold text-ink-700 truncate leading-tight">{u.name}</div>
                                 {selected && (
                                   <div className="absolute top-1 right-1 rounded-full bg-gradient-to-br from-mission-500 to-nova-500 flex items-center justify-center text-white shadow-md" style={{ width: 18, height: 18 }}>
@@ -1268,7 +1268,7 @@ export default function TeacherGroups() {
                       <div className="space-y-2">
                         {activeMembers.map((u) => (
                           <div key={u.id} className="flex items-center gap-3 bg-white/70 border border-ink-100 rounded-2xl px-3 py-2">
-                            <img src={u.avatar} alt={u.name} className="w-9 h-9 rounded-xl border border-white shadow-sm object-cover" />
+                            <img src={u.avatar} onError={applyAvatarFallback} alt={u.name} className="w-9 h-9 rounded-xl border border-white shadow-sm object-cover" />
                             <div className="min-w-0 flex-1">
                               <div className="flex items-center gap-1.5">
                                 <span className="text-[13px] font-bold text-ink-800 truncate">{u.name}</span>
@@ -1319,7 +1319,7 @@ export default function TeacherGroups() {
                             onClick={() => addMemberToActive(u.id)}
                             className="relative p-2.5 rounded-2xl border-2 border-ink-100 bg-white/60 hover:border-growth-300 hover:bg-growth-50/40 transition-all text-center"
                           >
-                            <img src={u.avatar} alt={u.name} className="w-10 h-10 mx-auto rounded-xl border-2 border-white shadow-sm object-cover" />
+                            <img src={u.avatar} onError={applyAvatarFallback} alt={u.name} className="w-10 h-10 mx-auto rounded-xl border-2 border-white shadow-sm object-cover" />
                             <div className="mt-1.5 text-[10.5px] font-bold text-ink-700 truncate leading-tight">{u.name}</div>
                             <div className="absolute top-1 right-1 rounded-full bg-growth-500 flex items-center justify-center text-white shadow-md" style={{ width: 18, height: 18 }}>
                               <Plus size={11} />
@@ -1509,14 +1509,14 @@ export default function TeacherGroups() {
           </div>
         </div>
       )}
-    </MissionShell>
+    </>
   );
 }
 
 function FleetStat({ label, val, unit, grad, icon: Icon }: { label: string; val: number; unit: string; grad: string; icon: any }) {
   const v = useTicker(val, 1000);
   return (
-    <div className="glass-card !shadow-none !border-mission-100/50 px-4 py-3 rounded-2xl min-w-[130px]">
+    <div className="glass-card !shadow-none !border-mission-100/50 px-4 py-3 rounded-2xl min-w-0 sm:min-w-[130px]">
       <div className="flex items-center gap-2.5">
         <div className={cn('w-9 h-9 rounded-xl flex items-center justify-center text-white shadow-md bg-gradient-to-br', grad)}>
           <Icon size={16} />

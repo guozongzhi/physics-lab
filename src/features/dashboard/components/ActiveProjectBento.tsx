@@ -3,7 +3,7 @@ import { Project } from "@/data/mockData";
 import { BentoCard } from "@/design-system/components/BentoCard";
 import { Badge } from "@/design-system/components/Badge";
 import { Button } from "@/design-system/components/Button";
-import { FlaskConical, Plus, ArrowRight, ShieldCheck, CheckCircle2, Clock } from "lucide-react";
+import { FlaskConical, Plus, ArrowRight, ShieldCheck, Clock } from "lucide-react";
 
 interface ActiveProjectBentoProps {
   projects: Project[];
@@ -24,7 +24,7 @@ export const ActiveProjectBento: React.FC<ActiveProjectBentoProps> = ({
     <BentoCard
       variant="default"
       padding="lg"
-      className="flex flex-col justify-between h-full"
+      className="flex flex-col justify-between lg:h-full"
     >
       <div>
         <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800/80 mb-4">

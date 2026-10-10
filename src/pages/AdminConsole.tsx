@@ -1,3 +1,4 @@
+import { applyAvatarFallback } from '@/lib/imageFallback';
 import { useEffect, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -35,7 +36,7 @@ type Tab = 'composition' | 'roster' | 'classes' | 'teachers';
 
 export default function AdminConsole() {
   const pushToast = useUIStore((s) => s.pushToast);
-  const [tab, setTab] = useState<Tab>('classes');
+  const [tab, setTab] = useState<Tab | null>(null);
 
   // ---- 班级管理 ----
   const [classes, setClasses] = useState<SchoolClass[]>([]);
@@ -174,44 +175,50 @@ export default function AdminConsole() {
   return (
     <div className="w-full space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-4">
+      <div className="mission-page-intro flex items-center gap-4">
         <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-ink-700 via-mission-700 to-nova-700 flex items-center justify-center text-white shadow-lg">
           <Shield size={28} strokeWidth={2.2} />
         </div>
         <div>
           <span className="chip-nova !py-0.5 !px-2 !text-[10px]">SUPER ADMIN</span>
           <h1 className="mt-1 text-[24px] font-extrabold text-ink-900 tracking-tight">管理控制台</h1>
-          <p className="text-[13px] text-ink-500 font-medium">班级管理 · 教师账号 · 系统配置</p>
+          <p className="text-[13px] text-ink-500 font-medium">选择一个管理工作区，集中处理对应事务。</p>
         </div>
       </div>
 
-      {/* Tab switcher */}
-      <div className="flex items-center gap-2">
+      {/* 工作区入口 */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         {[
-          { key: 'composition' as Tab, label: '班级构成', icon: Layers },
-          { key: 'roster' as Tab, label: '学生名单', icon: ClipboardList },
-          { key: 'classes' as Tab, label: '班级管理', icon: School },
-          { key: 'teachers' as Tab, label: '教师管理', icon: Users },
+          { key: 'composition' as Tab, label: '班级构成', description: '查看各班小组与成员分布', icon: Layers },
+          { key: 'roster' as Tab, label: '学生名单', description: '检索研究员与归属信息', icon: ClipboardList },
+          { key: 'classes' as Tab, label: '班级管理', description: '创建、重命名与维护班级', icon: School },
+          { key: 'teachers' as Tab, label: '教师管理', description: '配置教师账号与权限', icon: Users },
         ].map((t) => {
           const Icon = t.icon;
           const active = tab === t.key;
           return (
             <button
               key={t.key}
+              type="button"
               onClick={() => setTab(t.key)}
-              className={cn(
-                'inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-[14px] font-semibold transition-all',
-                active
-                  ? 'bg-gradient-to-br from-mission-500 to-nova-600 text-white shadow-glowMission'
-                  : 'glass-card text-ink-500 hover:text-mission-600'
-              )}
+              aria-pressed={active}
+              className={cn('admin-portal-card', active && 'admin-portal-card-active')}
             >
-              <Icon size={16} />
-              {t.label}
+              <span className="admin-portal-icon"><Icon size={20} /></span>
+              <strong>{t.label}</strong>
+              <small>{t.description}</small>
             </button>
           );
         })}
       </div>
+
+      {!tab && (
+        <div className="admin-portal-hint">
+          <Shield size={24} />
+          <strong>选择一个工作区开始管理</strong>
+          <span>班级、学生与教师信息将分别在对应卡片中展开。</span>
+        </div>
+      )}
 
       <AnimatePresence mode="wait">
         <motion.div
@@ -334,7 +341,7 @@ export default function AdminConsole() {
                       className="glass-card glass-card-hover p-4 rounded-[20px] flex items-center gap-4"
                     >
                       <img
-                        src={t.avatar}
+                        src={t.avatar} onError={applyAvatarFallback}
                         alt={t.name}
                         className="w-11 h-11 rounded-xl object-cover bg-gradient-to-br from-mission-100 to-nova-100"
                       />

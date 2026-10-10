@@ -1,7 +1,7 @@
 # 物理实验室（Physics Mission Control）设计文档
 
 > 本文档是项目的**唯一权威设计文档**，供后续 Agent / 开发者快速理解全貌并继续开发。
-> 最后更新：2026-09-10。如代码与本文档冲突，以代码为准并请同步更新本文档。
+> 最后局部更新：2026-10-09。布局与路由入口已迁入 `src/app/App.tsx`、`src/app/layouts/AppShell.tsx`，`src/App.tsx` 只保留兼容转发；其余模块仍在分批重构，状态见 [重构进展](refactoring/PROGRESS.md)。如代码与本文档冲突，以代码为准并请同步更新本文档。
 
 ---
 
@@ -51,7 +51,9 @@
 ```
 Physics_lab/
 ├── src/
-│   ├── App.tsx                  # 路由表 + 角色守卫 + 全局 Toast 桥
+│   ├── App.tsx                  # 指向 app/App.tsx 的兼容转发
+│   ├── app/App.tsx              # 路由表 + 角色守卫 + 数据初始化
+│   ├── app/layouts/AppShell.tsx # 父布局 Outlet，统一包裹 MissionShell
 │   ├── main.tsx                 # 入口（bootstrapFromApi() 恢复状态）
 │   ├── index.css                # Tailwind + 设计 token + 动画/玻璃卡片等组件类
 │   ├── data/
@@ -168,7 +170,7 @@ cd backend
 
 ---
 
-## 6. 路由与页面清单（src/App.tsx）
+## 6. 路由与页面清单（src/app/App.tsx）
 
 学生端（默认登录后进入）：
 
@@ -432,8 +434,8 @@ HarmonyOS Sans、Inter、PingFang SC（font-family 栈见 index.css）。
 6. **进度/状态写死**导致 UI 联动断裂：一切进度由 completedTasks/projects 状态实时计算。
 7. **后端测试缺依赖**：务必用 `backend/.venv/bin/python`。
 8. **重启后端**会使旧 token 失效（jwt_secret 变更时）；改 schemas/models 后需重启 uvicorn（未开 --reload）。
-9. **两个 challenge 路由别混淆**：`/theory/challenge`（无 s）渲染 `KnowledgeGalaxy`；`/theory/challenges`（带 s）渲染 `TheoryChallenge`（挑战大厅）。两者都在使用。改路由前读 `src/App.tsx`。
-10. **判断页面是否被使用别只看 `src/App.tsx`**：页面之间会互相引用（`ClassComposition.tsx` 由 `AdminConsole.tsx` 内嵌为 tab，不占路由）。删页面前全仓库 grep 组件名。
+9. **两个 challenge 路由别混淆**：`/theory/challenge`（无 s）渲染 `KnowledgeGalaxy`；`/theory/challenges`（带 s）渲染 `TheoryChallenge`（挑战大厅）。两者都在使用。改路由前读 `src/app/App.tsx`。
+10. **判断页面是否被使用别只看 `src/app/App.tsx`**：页面之间会互相引用（`ClassComposition.tsx` 由 `AdminConsole.tsx` 内嵌为 tab，不占路由）。删页面前全仓库 grep 组件名。
 11. **图片资源**：需要生成图片时使用内置 text_to_image API URL，不用占位图。
 12. **主题 id 只有一套**：`topic-N`（N 从 1 起，不补零）。`mockTopics.ts`、`LearningHub` 的 `TOPIC_META`、store 的 `topics`、后端 seed 必须一致——历史上前两者用 `topic-0N`、后两者用 `topic-N`，导致按主题抽题永远抽到 0 道。
 13. **测验会话属于个人**：`quizSessions` 在线时由后端按 `user_id` 返回、**正序**存（有消费方做 `reverse().slice(0,4)`），且**不写 localStorage**；退出登录时会清。别把它当成 org 级缓存用。

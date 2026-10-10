@@ -1,3 +1,4 @@
+import { applyAvatarFallback } from '@/lib/imageFallback';
 import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
@@ -31,7 +32,6 @@ import {
   ResponsiveContainer,
   Legend,
 } from 'recharts';
-import MissionShell from '@/components/layout/MissionShell';
 import AvatarStack from '@/components/ui/AvatarStack';
 import { useGroupStore } from '@/store/groupStore';
 import { useProjectStore } from '@/store/projectStore';
@@ -41,6 +41,15 @@ import { User, ShowcaseCategory } from '@/data/mockData';
 import { cn } from '@/lib/utils';
 
 type GalleryTab = ShowcaseCategory;
+
+const showcaseFallback = '/images/showcase-fallback.jpg';
+
+function useShowcaseFallback(event: React.SyntheticEvent<HTMLImageElement>) {
+  const image = event.currentTarget;
+  if (!image.src.endsWith(showcaseFallback)) {
+    image.src = showcaseFallback;
+  }
+}
 
 const GALLERY_TABS: Array<{ key: GalleryTab; label: string; icon: any }> = [
   { key: 'photo', label: '照片展', icon: ImageIcon },
@@ -267,7 +276,7 @@ export default function AchievementHall() {
   const columns3 = distributeByWaterfall(visibleCards, 3);
 
   return (
-    <MissionShell>
+    <>
       <div className="space-y-6">
         <motion.section
           initial={{ opacity: 0, y: 16 }}
@@ -379,18 +388,13 @@ export default function AchievementHall() {
                         className="glass-card glass-card-hover rounded-[22px] overflow-hidden relative group cursor-pointer"
                       >
                         <div className="relative w-full overflow-hidden h-44">
-                          {/* 图片兜底：coverImage 为空、或加载失败（种子里的 Unsplash 地址在
-                              国内常加载不出来）时露出底层占位图标，避免出现裂图 */}
-                          <ImageIcon size={34} className="absolute inset-0 m-auto text-white/45" />
-                          {card.imageUrl && (
-                            <img
-                              src={card.imageUrl}
-                              alt={card.title}
-                              loading="lazy"
-                              onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                              className="relative w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                            />
-                          )}
+                          <img
+                            src={card.imageUrl || showcaseFallback}
+                            alt={card.title}
+                            loading="lazy"
+                            onError={useShowcaseFallback}
+                            className="relative w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                          />
                           <div className="absolute inset-0 bg-gradient-to-t from-ink-900/80 via-ink-900/20 to-transparent" />
                           <div className="absolute top-3 left-3 flex items-center gap-1.5">
                             <span className={cn(groupChipColor, '!py-0.5 !px-2 !text-[10px] backdrop-blur-md bg-opacity-80')}>
@@ -494,23 +498,20 @@ export default function AchievementHall() {
                         #{hof.rank}
                       </div>
                       <div className="rounded-xl overflow-hidden aspect-[16/10] mb-3 ring-1 ring-white/60 shadow-sm relative bg-gradient-to-br from-mission-400/30 via-nova-400/20 to-energy-400/20 flex items-center justify-center">
-                        <ImageIcon size={26} className="absolute text-white/60" />
-                        {hof.imageUrl && (
-                          <img
-                            src={hof.imageUrl}
-                            alt={hof.title}
-                            loading="lazy"
-                            onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                            className="relative w-full h-full object-cover"
-                          />
-                        )}
+                        <img
+                          src={hof.imageUrl || showcaseFallback}
+                          alt={hof.title}
+                          loading="lazy"
+                          onError={useShowcaseFallback}
+                          className="relative w-full h-full object-cover"
+                        />
                       </div>
                       <h4 className="font-bold text-[13px] text-ink-800 leading-snug mb-1">{hof.title}</h4>
                       <div className="flex items-center justify-between text-[11px] text-ink-500 mb-2">
                         <span className="flex items-center gap-1.5">
                           {author && (
                             <img
-                              src={author.avatar}
+                              src={author.avatar} onError={applyAvatarFallback}
                               alt={author.name}
                               className="w-4 h-4 rounded-full ring-1 ring-white"
                             />
@@ -780,17 +781,12 @@ export default function AchievementHall() {
               <X size={18} />
             </button>
             <div className="relative w-full min-h-[240px] bg-ink-100 flex items-center justify-center">
-              {/* 图片兜底：加载失败时（种子里的 Unsplash 地址在国内常加载不出来）
-                  露出底层占位图标，不要留一块空白 */}
-              <ImageIcon size={48} className="absolute inset-0 m-auto text-ink-300" />
-              {lightbox.imageUrl && (
-                <img
-                  src={lightbox.imageUrl}
-                  alt={lightbox.title}
-                  className="relative w-full max-h-[62vh] object-contain"
-                  onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                />
-              )}
+              <img
+                src={lightbox.imageUrl || showcaseFallback}
+                alt={lightbox.title}
+                className="relative w-full max-h-[62vh] object-contain"
+                onError={useShowcaseFallback}
+              />
             </div>
             <div className="p-6">
               <div className="flex items-center gap-2 flex-wrap mb-2">
@@ -832,6 +828,6 @@ export default function AchievementHall() {
           </div>
         </div>
       )}
-    </MissionShell>
+    </>
   );
 }

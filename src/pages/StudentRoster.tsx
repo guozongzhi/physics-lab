@@ -1,3 +1,4 @@
+import { applyAvatarFallback } from '@/lib/imageFallback';
 /**
  * 学生名单管理 —— 教师/管理员视图
  *
@@ -383,7 +384,7 @@ export default function StudentRoster() {
                         <td className="px-5 py-3 text-[13px] text-ink-400 font-mono">{i + 1}</td>
                         <td className="px-5 py-3">
                           <div className="flex items-center gap-2.5">
-                            <img src={s.avatar} alt={s.name} className="w-7 h-7 rounded-lg object-cover bg-mission-100" />
+                            <img src={s.avatar} onError={applyAvatarFallback} alt={s.name} className="w-7 h-7 rounded-lg object-cover bg-mission-100" />
                             <span className="text-[13px] font-semibold text-ink-800">{s.name}</span>
                           </div>
                         </td>
