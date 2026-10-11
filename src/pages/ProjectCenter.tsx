@@ -197,12 +197,12 @@ export default function ProjectCenter() {
 
   return (
     <div className="w-full space-y-6">
-      <section className="glass-card glass-card-hover p-7 rounded-[20px] relative overflow-hidden">
+      <section className="student-project-hero glass-card glass-card-hover p-7 rounded-[20px] relative overflow-hidden">
         <div className="absolute -right-24 -top-24 w-96 h-96 rounded-full bg-gradient-to-br from-mission-300/25 via-nova-300/15 to-growth-300/10 blur-3xl pointer-events-none" />
         <div className="absolute -left-16 -bottom-20 w-72 h-72 rounded-full bg-gradient-to-br from-energy-300/15 via-mission-300/10 to-transparent blur-3xl pointer-events-none" />
 
-        <div className="relative grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
-          <div className="lg:col-span-7">
+        <div className="student-project-hero-grid relative grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+          <div className="student-project-hero-copy lg:col-span-7">
             <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-3">
               <div className="relative">
                 <div className="absolute inset-0 rounded-2xl bg-mission-400/30 blur-lg animate-pulse" />
@@ -216,8 +216,8 @@ export default function ProjectCenter() {
                   MISSION CONTROL CENTER
                 </div>
                 <h1 className="text-3xl font-black tracking-tight">
-                  <span className="text-gradient-mission">Project Center</span>
-                  <span className="text-ink-800"> · 项目指挥中心</span>
+                  <span className="student-project-title text-ink-800">项目指挥中心</span>
+                  <span className="student-project-subtitle text-gradient-mission">Project Center</span>
                 </h1>
               </div>
             </div>
@@ -238,7 +238,7 @@ export default function ProjectCenter() {
             </div>
           </div>
 
-          <div className="lg:col-span-5 hidden lg:flex justify-end gap-3">
+          <div className="student-project-stats lg:col-span-5 hidden lg:flex justify-end gap-3">
             {['planning', 'progress', 'review', 'done', 'frozen'].map((s, i) => {
               const stat = s as keyof typeof stats;
               const cfg = STATUS_CONFIG[s as ProjectStatus];

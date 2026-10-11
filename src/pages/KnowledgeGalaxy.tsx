@@ -1,10 +1,10 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type CSSProperties } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheoryStore } from '@/store/theoryStore';
 import { useAuthStore } from '@/store/authStore';
 import { useUIStore } from '@/store/uiStore';
 import { useLearningProgressStore } from '@/store/learningProgressStore';
-import { Search, Star, BookOpen, ChevronRight, CheckCircle2, Zap, X, Orbit, Magnet, Sun, Thermometer, Atom, Waves, ChartNoAxesColumn, ArrowLeft } from 'lucide-react';
+import { Search, Star, BookOpen, ChevronRight, CheckCircle2, Zap, X, Orbit, Magnet, Sun, Thermometer, Atom, Waves, ChartNoAxesColumn, ArrowLeft, Pause, Play } from 'lucide-react';
 import { mockTopics } from '@/data/mockTopics';
 import { cn } from '@/lib/utils';
 
@@ -29,6 +29,7 @@ export default function KnowledgeGalaxy() {
   const masteredNodes = useLearningProgressStore((state) => state.masteredNodes);
   const toggleMastered = useLearningProgressStore((state) => state.toggleMastered);
   const pushToast = useUIStore((state) => state.pushToast);
+  const [motionPaused, setMotionPaused] = useState(false);
   const [topicId, setTopicId] = useState(SYSTEMS[0].id);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
@@ -92,20 +93,37 @@ export default function KnowledgeGalaxy() {
         <div><h1>知识星河</h1><p>按主题探索，逐个点亮知识。</p></div>
         <div className="galaxy-progress"><div><span>自评已掌握 <strong>{masteredCount}</strong> / {ALL_NODES.length} 个知识点</span><strong>{progress}%</strong></div><progress aria-label="知识点自评掌握进度" value={masteredCount} max={ALL_NODES.length} /></div>
       </section>
+      <section className={cn('galaxy-constellation', motionPaused && 'is-paused')} aria-label="知识主题星图">
+        <div className="galaxy-map-toolbar">
+          <p>选择一片星域，开启知识探索</p>
+          <div>
+            <button className={cn('galaxy-map-all', topicId === 'all' && 'is-active')} aria-pressed={topicId === 'all'} onClick={() => selectTopic('all')}><Star size={15} aria-hidden="true" />全部主题</button>
+            <button aria-label={motionPaused ? '播放星图动画' : '暂停星图动画'} aria-pressed={motionPaused} onClick={() => setMotionPaused((paused) => !paused)}>{motionPaused ? <Play size={15} aria-hidden="true" /> : <Pause size={15} aria-hidden="true" />}<span>{motionPaused ? '播放动画' : '暂停动画'}</span></button>
+          </div>
+        </div>
+        <div className="galaxy-map-stage">
+          <svg className="galaxy-trails" viewBox="0 0 1000 280" preserveAspectRatio="none" aria-hidden="true">
+            <path className="galaxy-trail-base" d="M100 55 L370 82 L625 52 L895 80 M100 210 L365 235 L630 205 L895 230 M100 55 L100 210 M370 82 L365 235 M625 52 L630 205 M895 80 L895 230" />
+            <path className="galaxy-trail-light" d="M100 55 L370 82 L625 52 L895 80 M100 210 L365 235 L630 205 L895 230" />
+            <path className="galaxy-trail-light galaxy-trail-cross" d="M100 55 L100 210 M370 82 L365 235 M625 52 L630 205 M895 80 L895 230" />
+          </svg>
+          <div className="galaxy-starfields" aria-label="学科主题">{SYSTEMS.map((topic, index) => {
+            const Icon = topic.icon;
+            const completed = topic.nodes.filter((node) => mastered[node.id]).length;
+            return <button key={topic.id} className={cn('galaxy-starfield', topicId === topic.id && 'is-active')} style={{ '--star-delay': `${index * -0.7}s`, '--entry-delay': `${index * 45}ms` } as CSSProperties} aria-label={`探索${topic.title}`} aria-pressed={topicId === topic.id} onClick={() => selectTopic(topic.id)}>
+              <span className="galaxy-starfield-icon"><Icon size={30} aria-hidden="true" /></span>
+              <span className="galaxy-starfield-copy"><strong>{topic.title}</strong><small>{topic.nodes.length} 个知识点 · {topic.outline.length} 个章节</small></span>
+              <span className="galaxy-starfield-progress"><span style={{ width: `${completed / topic.nodes.length * 100}%` }} /></span>
+              <span className="galaxy-starfield-footer"><span>自评掌握 {completed}/{topic.nodes.length}</span><ChevronRight size={15} aria-hidden="true" /></span>
+            </button>;
+          })}</div>
+        </div>
+      </section>
       <div className="galaxy-tools">
         <label className="galaxy-search"><Search size={18} aria-hidden="true" /><input aria-label="搜索知识点或章节" placeholder="搜索知识点或章节" value={searchQuery} onChange={(event) => { setSearchQuery(event.target.value); setDetailsOpen(false); }} />{searchQuery && <button aria-label="清空搜索" onClick={() => setSearchQuery('')}><X size={16} /></button>}</label>
         <select aria-label="知识点难度" value={difficulty} onChange={(event) => { setDifficulty(Number(event.target.value)); setDetailsOpen(false); }}>{DIFFICULTIES.map((label, index) => <option key={label} value={index}>{label}</option>)}</select>
       </div>
       <div className="galaxy-workspace">
-        <nav className="galaxy-topics" aria-label="学科主题">
-          <h2>学科主题</h2>
-          <div className="galaxy-topic-list"><button className={cn('galaxy-topic', topicId === 'all' && 'is-active')} aria-pressed={topicId === 'all'} onClick={() => selectTopic('all')}><Star size={22} aria-hidden="true" /><span><strong>全部主题</strong><small>{ALL_NODES.filter(matches).length} 个知识点</small></span></button>{SYSTEMS.map((topic) => {
-            const Icon = topic.icon;
-            const completed = topic.nodes.filter((node) => mastered[node.id]).length;
-            const count = topic.nodes.filter(matches).length;
-            return <button key={topic.id} className={cn('galaxy-topic', topicId === topic.id && 'is-active')} aria-pressed={topicId === topic.id} onClick={() => selectTopic(topic.id)}><Icon size={22} aria-hidden="true" /><span><strong>{topic.title}</strong><small>{query || difficulty ? `${count} 个匹配` : `${completed} / ${topic.nodes.length} 已掌握`}</small></span><ChevronRight size={15} aria-hidden="true" /></button>;
-          })}</div>
-        </nav>
         <section className="galaxy-path" aria-label={`${topicId === 'all' ? '全部主题' : system.title}知识点`}>
           <header className="galaxy-path-heading"><system.icon size={26} aria-hidden="true" /><div><h2>{topicId === 'all' ? '全部主题' : system.title}</h2><p>{visibleNodes.length} 个知识点{query || difficulty ? '匹配筛选' : ` · ${displaySystems.reduce((sum, topic) => sum + topic.outline.length, 0)} 个章节`}</p></div><span>{displaySystems.flatMap((topic) => topic.nodes).filter((node) => mastered[node.id]).length} / {displaySystems.reduce((sum, topic) => sum + topic.nodes.length, 0)}</span></header>
           {!visibleNodes.length ? <div className="galaxy-empty" role="status"><Search size={28} aria-hidden="true" /><h3>没有匹配的知识点</h3><p>可切换左侧主题，或清空当前搜索与难度筛选。</p><button className="btn-outline" onClick={() => { setSearchQuery(''); setDifficulty(0); }}>重置筛选</button></div> : displaySystems.flatMap((listedSystem) => listedSystem.outline.map((chapter, chapterIdx) => {

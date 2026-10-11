@@ -393,3 +393,84 @@
 .knowledge-explorer .btn-outline { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 10px 12px; border: 1px solid #84adf0; border-radius: 12px; color: #245bd2; background: #fff; font-weight: 600; }
 .knowledge-explorer .btn-outline:hover { background: #eaf3ff; }
 .knowledge-explorer button:disabled { opacity: .55; cursor: not-allowed; }
+
+/* Animated subject constellations: readable tiles instead of circular dot rings. */
+.galaxy-constellation { position: relative; isolation: isolate; margin-bottom: 20px; padding: 18px 20px 24px; border: 1px solid #6daaff66; border-radius: 20px; background: linear-gradient(135deg, #071d43e6, #12365dcc); overflow: hidden; }
+.galaxy-constellation::before { content: ''; position: absolute; inset: 0; z-index: -1; background: radial-gradient(ellipse at 72% 20%, #408dff33, transparent 50%), radial-gradient(ellipse at 20% 90%, #70d8ff22, transparent 40%); }
+.galaxy-map-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+.galaxy-map-toolbar p { font-size: 13px; color: #bed8fc; }
+.galaxy-map-toolbar > div { display: flex; gap: 8px; }
+.galaxy-map-toolbar button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 40px; padding: 8px 12px; color: #e5f1ff; border: 1px solid #88b7ff55; border-radius: 10px; background: #16355d; font-size: 12px; }
+.galaxy-map-toolbar button:hover, .galaxy-map-all.is-active { background: #2759a5; border-color: #8ebdff; }
+.galaxy-map-stage { position: relative; padding: 8px 0; }
+.galaxy-trails { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
+.galaxy-trails path { fill: none; stroke-linecap: round; }
+.galaxy-trail-base { stroke: #68bfff55; stroke-width: 1; }
+.galaxy-trail-light { stroke: #9de8ff; stroke-width: 2; stroke-dasharray: 7 90; filter: drop-shadow(0 0 4px #4dbbff); animation: galaxy-stream 12s linear infinite; }
+.galaxy-trail-cross { animation-duration: 9s; animation-direction: reverse; opacity: .65; }
+.galaxy-starfields { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 32px 28px; position: relative; }
+.galaxy-starfield { position: relative; display: grid; grid-template-columns: 38px minmax(0, 1fr); gap: 10px 8px; min-width: 0; padding: 18px 16px 12px; text-align: left; color: #eaf5ff; border: 1px solid #69adff99; border-radius: 14px; background: linear-gradient(125deg, #174779ed, #142d55ed); box-shadow: inset 0 1px 0 #d8eeff22, 0 8px 22px #02132944; animation: galaxy-arrive .45s both, galaxy-drift 7s ease-in-out infinite; animation-delay: var(--entry-delay), var(--star-delay); transition: background .2s, border-color .2s, box-shadow .2s; }
+.galaxy-starfield:nth-child(even) { margin-top: 12px; margin-bottom: -12px; }
+.galaxy-starfield:hover { border-color: #b9ebff; background: linear-gradient(125deg, #205d9d, #214978); box-shadow: 0 0 18px #57baff55; }
+.galaxy-starfield.is-active { border-color: #b5e8ff; background: linear-gradient(125deg, #215fd2, #153b83); box-shadow: 0 0 0 1px #66bdff, 0 0 26px #408fff66, inset 0 1px 0 #eff9ff55; }
+.galaxy-starfield-icon { display: flex; align-items: center; justify-content: center; color: #a5daff; }
+.galaxy-starfield-copy { min-width: 0; }
+.galaxy-starfield-copy strong { display: block; font-size: 17px; font-weight: 750; line-height: 1.4; overflow-wrap: anywhere; }
+.galaxy-starfield-copy small { display: block; font-size: 11px; color: #c0d6f4; margin-top: 5px; line-height: 1.6; }
+.galaxy-starfield-progress { grid-column: 1/-1; height: 5px; border-radius: 4px; background: #d2e8ff33; overflow: hidden; }
+.galaxy-starfield-progress > span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #4ecfff, #b2f3ff); transition: width .4s; }
+.galaxy-starfield-footer { grid-column: 1/-1; display: flex; align-items: center; justify-content: space-between; gap: 8px; color: #c9dff9; font-size: 11px; }
+.galaxy-constellation.is-paused :is(.galaxy-starfield,.galaxy-trail-light) { animation-play-state: paused; }
+.galaxy-workspace { grid-template-columns: minmax(0, 1fr) minmax(280px, 340px); }
+.galaxy-node-index { border-radius: 8px; }
+.galaxy-node.is-selected .galaxy-node-index { color: white; background: #2865d8; border-color: #2865d8; }
+.galaxy-detail-mobile { animation: galaxy-arrive .25s both; }
+@keyframes galaxy-stream { to { stroke-dashoffset: -388; } }
+@keyframes galaxy-drift { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+@keyframes galaxy-arrive { from { opacity: 0; translate: 0 8px; } to { opacity: 1; translate: 0 0; } }
+.student-project-hero-grid { grid-template-columns: minmax(0, 1fr) !important; align-items: start !important; }
+.student-project-hero-copy { grid-column: auto !important; min-width: 0; }
+.student-project-title { display: block; font-size: 30px; line-height: 1.35; }
+.student-project-subtitle { display: block; font-size: 15px; line-height: 1.5; margin-top: 3px; }
+.student-project-stats { grid-column: auto !important; display: grid !important; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; min-width: 0; }
+.student-project-stats > div { min-width: 0 !important; }
+@media (min-width: 1600px) {
+ .student-project-hero-grid { grid-template-columns: minmax(0, 1fr) minmax(420px, .85fr) !important; }
+}
+@media (max-width: 1199px) {
+ .galaxy-starfields { gap: 24px 16px; }
+ .galaxy-starfield { padding: 14px 12px 10px; grid-template-columns: 30px minmax(0, 1fr); }
+ .galaxy-starfield-copy strong { font-size: 15px; }
+ .galaxy-starfield-copy small { font-size: 10px; }
+ .galaxy-detail-desktop { grid-column: auto; position: sticky; }
+}
+@media (max-width: 900px) {
+ .galaxy-starfields { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+ .galaxy-starfield:nth-child(even) { margin-top: 0; margin-bottom: 0; }
+ .galaxy-trails { display: none; }
+ .galaxy-map-stage::before { content: ''; position: absolute; inset: 12px 8px; border-left: 1px solid #75bfff55; border-right: 1px solid #75bfff55; pointer-events: none; }
+ .galaxy-workspace { grid-template-columns: minmax(0, 1fr); }
+ .galaxy-detail-desktop { position: static; }
+}
+@media (max-width: 767px) {
+ .galaxy-constellation { padding: 12px; margin-bottom: 14px; border-radius: 16px; }
+ .galaxy-map-toolbar { align-items: start; margin-bottom: 10px; gap: 8px; }
+ .galaxy-map-toolbar p { display: none; }
+ .galaxy-map-toolbar > div { width: 100%; justify-content: space-between; }
+ .galaxy-map-toolbar button { min-height: 44px; font-size: 12px; }
+ .galaxy-starfields { gap: 10px; }
+ .galaxy-starfield { padding: 12px 10px 10px; gap: 7px; grid-template-columns: 24px minmax(0, 1fr); }
+ .galaxy-starfield-icon svg { width: 23px; height: 23px; }
+ .galaxy-starfield-copy strong { font-size: 13px; line-height: 1.6; }
+ .galaxy-starfield-copy small { font-size: 10px; }
+ .galaxy-starfield-footer { font-size: 10px; }
+ .student-project-title { font-size: 24px; }
+ .student-project-hero .mission-label { font-size: 10px; letter-spacing: .08em; }
+ .student-project-stats { gap: 6px; }
+ .student-project-stats > div { padding: 10px 4px !important; border-radius: 12px; }
+ .student-project-stats > div > div:first-child { font-size: 24px; }
+ .student-project-stats > div > div:last-child { font-size: 10px; }
+}
+@media (prefers-reduced-motion: reduce) {
+ .knowledge-explorer :is(.galaxy-starfield,.galaxy-trail-light,.galaxy-detail-mobile) { animation: none !important; transition: none !important; }
+}
