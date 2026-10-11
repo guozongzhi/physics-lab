@@ -67,8 +67,8 @@ function ChallengeCard({ challenge, onAccept, onView }: { challenge: Challenge; 
             {challenge.questionIds?.length || 10} 道题目 · {challenge.submissions?.length || 0} 支队伍已参战
           </p>
         </div>
-        <div className="text-right">
-          <p className="text-[10px] text-ink-400 mb-1">悬赏</p>
+        <div className="student-communication-reward">
+          <p className="text-xs text-ink-500">悬赏</p>
           <CoinBadge amount={challenge.reward} size="lg" />
         </div>
       </div>
@@ -132,8 +132,8 @@ function RecruitmentCard({ recruitment, project, onBid, onResolve }: { recruitme
             ))}
           </div>
         </div>
-        <div className="text-right">
-          <p className="text-[10px] text-ink-400 mb-1">奖励</p>
+        <div className="student-communication-reward">
+          <p className="text-xs text-ink-500">奖励</p>
           <CoinBadge amount={recruitment.reward} size="lg" />
         </div>
       </div>
@@ -492,8 +492,8 @@ export default function GroupCommunicator() {
                               准确率: {mySubmission ? Math.round(mySubmission.accuracy * 100) : 0}%
                             </p>
                           </div>
-                          <div className="text-right">
-                            <p className="text-[10px] text-ink-400 mb-1">获得奖励</p>
+                          <div className="student-communication-reward">
+                            <p className="text-xs text-ink-500">获得奖励</p>
                             <CoinBadge amount={mySubmission?.earned || 0} size="lg" />
                           </div>
                         </div>

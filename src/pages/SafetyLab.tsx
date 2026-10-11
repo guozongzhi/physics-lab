@@ -356,7 +356,7 @@ export default function SafetyLab() {
             </div>
           </div>
 
-          <div className="lg:col-span-7 grid grid-cols-3 gap-4">
+          <div className="student-safety-stats lg:col-span-7 grid grid-cols-3 gap-4">
             {[
               { label: '已通过认证', value: passedCount, total: SAFETY_DOMAINS.length, icon: CheckCircle2, color: 'growth', grad: 'from-growth-400 via-growth-500 to-growth-600' },
               { label: '待参加考核', value: pendingCount, total: SAFETY_DOMAINS.length, icon: PlayCircle, color: 'energy', grad: 'from-energy-400 via-alert-500 to-energy-600' },
@@ -369,7 +369,7 @@ export default function SafetyLab() {
                   initial={{ opacity: 0, y: 16 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: idx * 0.08 }}
-                  className="glass-card !p-5 !rounded-2xl text-center relative overflow-hidden group"
+                  className="student-safety-stat glass-card !p-5 !rounded-2xl text-center relative overflow-hidden group"
                 >
                   <div className={cn('absolute -top-6 -right-6 w-24 h-24 rounded-full blur-2xl opacity-30 bg-gradient-to-br', stat.grad)} />
                   <div className="relative">
@@ -379,7 +379,7 @@ export default function SafetyLab() {
                     )}>
                       <Icon size={22} className="text-white" />
                     </div>
-                    <div className="flex items-baseline justify-center gap-1 mb-1">
+                    <div className="student-safety-stat-value flex items-baseline justify-center gap-1 mb-1">
                       <TickerNumber value={stat.value} />
                       <span className={cn('text-2xl font-black text-ink-300', '')}>/ {stat.total}</span>
                     </div>
