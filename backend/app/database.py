@@ -64,6 +64,9 @@ def _run_lightweight_migrations() -> None:
     if "showcase_items" in inspector.get_table_names():
         sc_columns = {col["name"] for col in inspector.get_columns("showcase_items")}
         with engine.begin() as conn:
+            for column in ("author_user_id", "demo_kind"):
+                if column not in sc_columns:
+                    conn.execute(text(f"ALTER TABLE showcase_items ADD COLUMN {column} VARCHAR DEFAULT ''"))
             if "status" not in sc_columns:
                 conn.execute(text("ALTER TABLE showcase_items ADD COLUMN status VARCHAR DEFAULT 'pending'"))
                 conn.execute(text("CREATE INDEX IF NOT EXISTS ix_showcase_items_status ON showcase_items (status)"))

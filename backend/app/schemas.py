@@ -459,6 +459,7 @@ ShowcaseCategory = Literal["photo", "video", "paper", "model", "award"]
 
 
 class ShowcaseCreate(BaseModel):
+    demoKind: Literal["", "optics", "motor"] = ""
     projectId: str | None = ""
     title: str
     coverImage: str
@@ -468,6 +469,8 @@ class ShowcaseCreate(BaseModel):
 
 
 class ShowcaseOut(CamelModel):
+    author_user_id: str = ""
+    demo_kind: str = ""
     id: str
     project_id: str
     title: str

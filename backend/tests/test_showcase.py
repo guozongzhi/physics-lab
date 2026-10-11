@@ -164,3 +164,68 @@ def test_student_edit_can_change_category_and_resets_status(client, auth):
     assert resp.status_code == 200
     assert resp.json()["category"] == "model"
     assert resp.json()["status"] == "pending"  # 学生改仍需重新审批
+
+# ---------- 平台公共 Demo ----------
+def _admin(auth, db):
+    from app.models import User
+    from conftest import TEACHER_HASH
+    db.add(User(id="admin", username="admin", password_hash=TEACHER_HASH, account_role="admin", name="管理员"))
+    db.commit()
+    return auth("admin", "teacher123")
+
+
+def test_public_demo_admin_ownership_and_visibility(client, auth, db):
+    headers = _admin(auth, db)
+    r = client.post("/api/showcase", headers=headers, json={"title": "光学公共 Demo", "groupId": "", "coverImage": "/images/showcase-fallback.jpg", "demoKind": "optics"})
+    assert r.status_code == 200, r.text
+    item = r.json()
+    assert item["authorUserId"] == "admin" and item["groupId"] == "" and item["demoKind"] == "optics"
+    sid = item["id"]
+    for student in ("u-1", "u-3", "u-4", "u-5"):
+        assert not any(x["id"] == sid for x in client.get("/api/showcase", headers=auth(student)).json())
+    _approve(client, auth, sid)
+    for student in ("u-1", "u-3", "u-4", "u-5"):
+        assert any(x["id"] == sid for x in client.get("/api/showcase", headers=auth(student)).json())
+        assert client.put(f"/api/showcase/{sid}", json={"title": "篡改"}, headers=auth(student)).status_code == 403
+        assert client.delete(f"/api/showcase/{sid}", headers=auth(student)).status_code == 403
+
+
+def test_public_demo_rejects_non_admin_creation_and_group_reward(client, auth, db):
+    payload = {"title": "公共电机", "groupId": "", "coverImage": "", "demoKind": "motor"}
+    for headers in (auth("u-1"), auth("u-4"), teacher(auth)):
+        assert client.post("/api/showcase", json=payload, headers=headers).status_code == 403
+    sid = client.post("/api/showcase", json=payload, headers=_admin(auth, db)).json()["id"]
+    r = client.post(f"/api/showcase/{sid}/review", json={"action": "approve", "coins": 50}, headers=teacher(auth))
+    assert r.status_code == 400
+    item = next(x for x in client.get("/api/showcase", headers=teacher(auth)).json() if x["id"] == sid)
+    assert item["status"] == "pending" and item["awardedCoins"] == 0
+    _approve(client, auth, sid)
+
+
+def test_public_demo_metadata_validation(client, auth, db):
+    headers = _admin(auth, db)
+    payload = {"title": "Demo", "groupId": "", "coverImage": ""}
+    assert client.post("/api/showcase", json={**payload, "demoKind": "arbitrary"}, headers=headers).status_code == 422
+    assert client.post("/api/showcase", json={**payload, "projectId": "p-1"}, headers=headers).status_code == 400
+    assert client.post("/api/showcase", json={**payload, "groupId": "g-1", "demoKind": "motor"}, headers=headers).status_code == 400
+    sid = _create(client, auth)
+    item = next(x for x in client.get("/api/showcase", headers=auth("u-1")).json() if x["id"] == sid)
+    assert item["authorUserId"] == "" and item["demoKind"] == "" and item["groupId"] == "g-1"
+
+
+def test_showcase_upgrade_preserves_existing_records_and_is_idempotent(monkeypatch):
+    from sqlalchemy import create_engine, text
+    from app import database
+    legacy = create_engine("sqlite://")
+    with legacy.begin() as conn:
+        conn.execute(text("CREATE TABLE users (id TEXT PRIMARY KEY, email TEXT, class_id TEXT)"))
+        conn.execute(text("CREATE TABLE showcase_items (id TEXT PRIMARY KEY, group_id TEXT, status TEXT, reject_reason TEXT, awarded_coins INTEGER, category TEXT)"))
+        conn.execute(text("INSERT INTO showcase_items VALUES ('old', 'g-1', 'approved', '', 50, 'photo')"))
+    monkeypatch.setattr(database, "engine", legacy)
+    database._run_lightweight_migrations()
+    database._run_lightweight_migrations()
+    with legacy.connect() as conn:
+        row = conn.execute(text("SELECT * FROM showcase_items")).mappings().one()
+        assert dict(row) == {"id": "old", "group_id": "g-1", "status": "approved", "reject_reason": "", "awarded_coins": 50, "category": "photo", "author_user_id": "", "demo_kind": ""}
+        assert conn.execute(text("PRAGMA integrity_check")).scalar() == "ok"
+    legacy.dispose()

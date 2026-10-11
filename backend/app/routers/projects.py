@@ -398,21 +398,31 @@ def list_showcase(db: Session = Depends(get_db), current: User = Depends(get_cur
 
 @router.post("/showcase", response_model=ShowcaseOut)
 def create_showcase(payload: ShowcaseCreate, db: Session = Depends(get_db), current: User = Depends(get_current_user)):
-    group = db.get(Group, payload.groupId)
-    if not group:
-        raise HTTPException(status_code=404, detail="小组不存在")
-    if current.account_role == "student" and current.group_id != group.id:
-        raise HTTPException(status_code=403, detail="只能以本组名义提交作品")
-    if payload.projectId:
-        project = db.get(Project, payload.projectId)
-        if not project or project.owner_group_id != group.id:
-            raise HTTPException(status_code=400, detail="项目与作品小组不匹配")
+    if not payload.groupId:
+        if current.account_role != "admin":
+            raise HTTPException(status_code=403, detail="只有管理员可以发布平台公共作品")
+        if payload.projectId:
+            raise HTTPException(status_code=400, detail="平台公共作品不关联小组项目")
+    else:
+        group = db.get(Group, payload.groupId)
+        if not group:
+            raise HTTPException(status_code=404, detail="小组不存在")
+        if current.account_role == "student" and current.group_id != group.id:
+            raise HTTPException(status_code=403, detail="只能以本组名义提交作品")
+        if payload.demoKind:
+            raise HTTPException(status_code=400, detail="交互 Demo 仅用于平台公共作品")
+        if payload.projectId:
+            project = db.get(Project, payload.projectId)
+            if not project or project.owner_group_id != group.id:
+                raise HTTPException(status_code=400, detail="项目与作品小组不匹配")
     item = ShowcaseItem(
         id=services.gen_id("showcase_"),
         project_id=payload.projectId or "",
         title=payload.title,
         cover_image=payload.coverImage,
         group_id=payload.groupId,
+        author_user_id=current.id if not payload.groupId else "",
+        demo_kind=payload.demoKind,
         description=payload.description or "",
         loves=0,
         loved_by=[],
@@ -445,7 +455,7 @@ def update_showcase(
     if not item:
         raise HTTPException(status_code=404, detail="展示不存在")
     is_teacher = current.account_role in ("teacher", "admin")
-    if not is_teacher and current.group_id != item.group_id:
+    if not is_teacher and (not item.group_id or current.group_id != item.group_id):
         raise HTTPException(status_code=403, detail="只能修改本组的作品")
 
     if payload.title is not None:
@@ -498,6 +508,8 @@ def review_showcase(
         raise HTTPException(status_code=404, detail="展示不存在")
 
     if payload.action == "approve":
+        if not item.group_id and (payload.coins or 0) > 0:
+            raise HTTPException(status_code=400, detail="平台公共作品不参与小组能量币奖励")
         # 状态转换在数据库中原子执行；并发重试只能有一个请求拿到发奖资格。
         changed = (
             db.query(ShowcaseItem)

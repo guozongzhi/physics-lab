@@ -55,7 +55,7 @@ export default function TeacherShowcaseReview() {
 
   const doApprove = () => {
     if (!approveTarget) return;
-    reviewShowcaseItem(approveTarget.id, 'approve', Math.max(0, coins));
+    reviewShowcaseItem(approveTarget.id, 'approve', approveTarget.groupId ? Math.max(0, coins) : 0);
     pushToast(
       coins > 0
         ? `已通过「${approveTarget.title}」，奖励 ${coins}⚡`
@@ -193,7 +193,7 @@ export default function TeacherShowcaseReview() {
                     <h3 className="text-[14.5px] font-extrabold text-ink-900 leading-snug">{item.title}</h3>
                     <span className={cn(meta.chip, '!py-0 !px-1.5 !text-[10px]')}>{meta.label}</span>
                   </div>
-                  <div className="text-[12px] text-ink-500 mt-1">{groupNameOf(item.groupId)}</div>
+                  <div className="text-[12px] text-ink-500 mt-1">{item.authorUserId || groupNameOf(item.groupId)}</div>
                   {item.description && (
                     <p className="text-[12px] text-ink-400 mt-1 line-clamp-2 leading-relaxed">{item.description}</p>
                   )}
@@ -212,7 +212,7 @@ export default function TeacherShowcaseReview() {
                     {item.status === 'pending' && (
                       <>
                         <button
-                          onClick={() => { setApproveTarget(item); setCoins(50); }}
+                          onClick={() => { setApproveTarget(item); setCoins(item.groupId ? 50 : 0); }}
                           className="px-3.5 py-1.5 rounded-xl text-[12.5px] font-bold text-white bg-gradient-to-br from-growth-400 to-growth-600 inline-flex items-center gap-1"
                         >
                           <Check size={13} />通过
@@ -269,11 +269,13 @@ export default function TeacherShowcaseReview() {
             </div>
 
             <p className="text-[12.5px] text-ink-600 mb-3">
-              奖励给 <b className="text-ink-800">{groupNameOf(approveTarget.groupId)}</b> 的能量币（填 0 表示只通过不奖励）：
+              奖励给 <b className="text-ink-800">{approveTarget.authorUserId || groupNameOf(approveTarget.groupId)}</b> 的能量币（填 0 表示只通过不奖励）：
             </p>
             <input
               type="number"
               min={0}
+              disabled={!approveTarget.groupId}
+              aria-label="奖励能量币"
               value={coins}
               onChange={(e) => setCoins(Math.max(0, Number(e.target.value) || 0))}
               className="input w-full mb-5"
@@ -348,7 +350,7 @@ export default function TeacherShowcaseReview() {
               </div>
               <div className="min-w-0">
                 <h3 className="font-extrabold text-[17px] text-ink-900">编辑作品</h3>
-                <p className="text-[12px] text-ink-500 truncate">{groupNameOf(editTarget.groupId)}</p>
+                <p className="text-[12px] text-ink-500 truncate">{editTarget.authorUserId || groupNameOf(editTarget.groupId)}</p>
               </div>
               <button
                 onClick={() => setEditTarget(null)}

@@ -1,6 +1,8 @@
 import type { LucideIcon } from 'lucide-react';
 import { applyAvatarFallback } from '@/lib/imageFallback';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import PhysicsDemo from '@/components/showcase/PhysicsDemo';
 import { motion } from 'framer-motion';
 import { Trophy, Heart, Image as ImageIcon, Video, FileText, Box, Medal, Sparkles, MessageSquare, LineChart, BarChart3, Activity, BookOpen, Upload, X, Plus, Pencil } from 'lucide-react';
 import { LineChart as ReLineChart, Line, BarChart, Bar, XAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
@@ -36,6 +38,8 @@ const CATEGORY_LABEL: Record<ShowcaseCategory, string> = Object.fromEntries(
 ) as Record<ShowcaseCategory, string>;
 
 interface ShowcaseCard {
+  authorUserId?: string;
+  demoKind?: "" | "optics" | "motor";
   id: string;
   imageUrl: string;
   title: string;
@@ -69,7 +73,7 @@ export default function AchievementHall() {
           rank: i + 1,
           imageUrl: s.coverImage,
           title: s.title || '优秀成果',
-          author: groups.find((g) => g.id === s.groupId)?.name || '学生团队',
+          author: s.authorUserId || groups.find((g) => g.id === s.groupId)?.name || '学生团队',
           authorId: '',
           groupId: s.groupId,
           comment: `本学期优秀作品 · ${s.loves} 人点赞`,
@@ -96,6 +100,7 @@ export default function AchievementHall() {
   
   const [tab, setTab] = useState<GalleryTab>('photo');
   // 点卡片放大看图（原先卡片上根本没有 onClick，整个文件也没有预览状态）
+  const previewRef = useRef<HTMLDivElement>(null);
   const [lightbox, setLightbox] = useState<ShowcaseCard | null>(null);
   const [lovedCards, setLovedCards] = useState<Set<string>>(new Set());
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
@@ -123,11 +128,26 @@ export default function AchievementHall() {
 
   useEffect(() => {
     if (!lightbox) return;
+    const previousFocus = document.activeElement as HTMLElement | null;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    previewRef.current?.querySelector<HTMLButtonElement>('button')?.focus();
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setLightbox(null);
+      if (e.key === 'Tab') {
+        const controls = previewRef.current?.querySelectorAll<HTMLElement>('button, input, [tabindex="0"]');
+        if (!controls?.length) return;
+        const first = controls[0], last = controls[controls.length - 1];
+        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+        if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+      }
     };
     window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      document.body.style.overflow = previousOverflow;
+      previousFocus?.focus();
+    };
   }, [lightbox]);
 
   const toggleLove = (id: string) => {
@@ -197,6 +217,8 @@ export default function AchievementHall() {
       imageUrl: item.coverImage,
       title: item.title,
       groupId: item.groupId,
+      authorUserId: item.authorUserId,
+      demoKind: item.demoKind,
       loves: item.loves,
       description: item.description,
       category: item.category,
@@ -313,7 +335,7 @@ export default function AchievementHall() {
                     const loved = lovedCards.has(card.id);
                     // 只有本组的作品才显示审批状态、才允许修改
                     const isMine = !!groupId && card.groupId === groupId;
-                    const groupChipColor = ['chip-mission', 'chip-energy', 'chip-growth', 'chip-nova', 'chip-alert', 'chip-ink'][gi % 6];
+                    const groupChipColor = card.authorUserId ? 'chip-mission' : ['chip-mission', 'chip-energy', 'chip-growth', 'chip-nova', 'chip-alert', 'chip-ink'][gi % 6];
                     return (
                       <motion.article
                         key={card.id}
@@ -334,8 +356,9 @@ export default function AchievementHall() {
                           <div className="absolute inset-0 bg-gradient-to-t from-ink-900/80 via-ink-900/20 to-transparent" />
                           <div className="absolute top-3 left-3 flex items-center gap-1.5">
                             <span className={cn(groupChipColor, '!py-0.5 !px-2 !text-[10px] backdrop-blur-md bg-opacity-80')}>
-                              {(group?.name || '未知小组').slice(0, 6)}
+                              {card.authorUserId || (group?.name || '未知小组').slice(0, 6)}
                             </span>
+                            {card.demoKind && <span className="chip-growth !py-0.5 !px-2 !text-[10px]">交互 Demo · 公共展示</span>}
                             {isMine && card.status !== 'approved' && (
                               <span className={cn(
                                 card.status === 'pending' ? 'chip-energy' : 'chip-danger',
@@ -375,7 +398,7 @@ export default function AchievementHall() {
                               </span>
                             </button>
                             <div className="flex items-center gap-1 text-[12px] text-ink-500 font-semibold">
-                              <span className="text-[11px]">{CATEGORY_LABEL[card.category]}</span>
+                              <span className="text-[11px]">{card.demoKind ? '打开交互演示 →' : CATEGORY_LABEL[card.category]}</span>
                             </div>
                           </div>
                           <div className="flex items-center gap-2">
@@ -700,13 +723,14 @@ export default function AchievementHall() {
         </motion.div>
       )}
       {/* 点作品放大：大图 + 作者小组 + 说明（原先点卡片没有任何反应） */}
-      {lightbox && (
+      {lightbox && createPortal(
         <div
           className="fixed inset-0 z-[200] flex items-center justify-center bg-ink-900/80 backdrop-blur-sm p-4"
           onClick={() => setLightbox(null)}
         >
           <div
-            className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-[24px] bg-white shadow-2xl"
+            ref={previewRef} role="dialog" aria-modal="true" aria-label={lightbox.title}
+            className="relative w-full max-w-5xl max-h-[90vh] overflow-y-auto rounded-[24px] bg-white shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             <button
@@ -716,21 +740,21 @@ export default function AchievementHall() {
             >
               <X size={18} />
             </button>
-            <div className="relative w-full min-h-[240px] bg-ink-100 flex items-center justify-center">
+            {lightbox.demoKind ? <PhysicsDemo kind={lightbox.demoKind} /> : <div className="relative w-full min-h-[240px] bg-ink-100 flex items-center justify-center">
               <img
                 src={lightbox.imageUrl || showcaseFallback}
                 alt={lightbox.title}
                 className="relative w-full max-h-[62vh] object-contain"
                 onError={useShowcaseFallback}
               />
-            </div>
+            </div>}
             <div className="p-6">
               <div className="flex items-center gap-2 flex-wrap mb-2">
                 <span className="chip-mission !py-0.5 !px-2 !text-[10px]">
                   {CATEGORY_LABEL[lightbox.category]}
                 </span>
                 <span className="chip-ink !py-0.5 !px-2 !text-[10px]">
-                  {groups.find((g) => g.id === lightbox.groupId)?.name || '未知小组'}
+                  {lightbox.authorUserId || groups.find((g) => g.id === lightbox.groupId)?.name || '未知小组'}
                 </span>
                 {lightbox.status !== 'approved' && (
                   <span className={cn(
@@ -762,7 +786,7 @@ export default function AchievementHall() {
               </div>
             </div>
           </div>
-        </div>
+        </div>, document.body
       )}
     </>
   );
