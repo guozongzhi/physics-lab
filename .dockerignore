@@ -6,6 +6,11 @@ dist
 
 # 后端与文档不属于前端构建产物
 backend
+!backend/
+backend/*
+!backend/app/
+backend/app/*
+!backend/app/physics_questions.json
 docs
 *.md
 

@@ -1,0 +1,992 @@
+[
+  {
+    "id": "q-001",
+    "type": "single",
+    "stem": "研究地球绕太阳公转时，把地球看作质点的依据是？",
+    "options": [
+      "地球质量很小",
+      "地球尺寸相对轨道尺度可忽略",
+      "地球没有自转",
+      "地球是球形"
+    ],
+    "answer": 1,
+    "knowledgePoint": "质点",
+    "difficulty": 2,
+    "topicId": "topic-1"
+  },
+  {
+    "id": "q-002",
+    "type": "single",
+    "stem": "列车匀速向东行驶，乘客坐在座位上。以列车为参考系，乘客的速度是？",
+    "options": [
+      "向东",
+      "向西",
+      "零",
+      "无法确定"
+    ],
+    "answer": 2,
+    "knowledgePoint": "参考系",
+    "difficulty": 1,
+    "topicId": "topic-1"
+  },
+  {
+    "id": "q-003",
+    "type": "single",
+    "stem": "某人先向东走5m再向西走3m，位移大小和路程分别是？",
+    "options": [
+      "8m，2m",
+      "2m，8m",
+      "8m，8m",
+      "2m，2m"
+    ],
+    "answer": 1,
+    "knowledgePoint": "位移",
+    "difficulty": 1,
+    "topicId": "topic-1"
+  },
+  {
+    "id": "q-004",
+    "type": "single",
+    "stem": "汽车沿直线在2s内前进10m，这段时间的平均速度大小为？",
+    "options": [
+      "2m/s",
+      "5m/s",
+      "10m/s",
+      "20m/s"
+    ],
+    "answer": 1,
+    "knowledgePoint": "速度",
+    "difficulty": 2,
+    "topicId": "topic-1"
+  },
+  {
+    "id": "q-005",
+    "type": "single",
+    "stem": "汽车沿正方向的速度在3s内由0增至15m/s，加速度为？",
+    "options": [
+      "3m/s²",
+      "15m/s²",
+      "5m/s²",
+      "45m/s²"
+    ],
+    "answer": 2,
+    "knowledgePoint": "加速度",
+    "difficulty": 1,
+    "topicId": "topic-1"
+  },
+  {
+    "id": "q-006",
+    "type": "single",
+    "stem": "物体以2m/s初速度做加速度3m/s²的匀加速直线运动，2s后速度为？",
+    "options": [
+      "5m/s",
+      "6m/s",
+      "7m/s",
+      "8m/s"
+    ],
+    "answer": 3,
+    "knowledgePoint": "速度公式",
+    "difficulty": 1,
+    "topicId": "topic-1"
+  },
+  {
+    "id": "q-007",
+    "type": "single",
+    "stem": "物体从静止开始以2m/s²匀加速直线运动，3s内位移为？",
+    "options": [
+      "3m",
+      "6m",
+      "9m",
+      "18m"
+    ],
+    "answer": 2,
+    "knowledgePoint": "位移公式",
+    "difficulty": 2,
+    "topicId": "topic-1"
+  },
+  {
+    "id": "q-008",
+    "type": "single",
+    "stem": "速度—时间图像中，图线与时间轴围成的有向面积表示？",
+    "options": [
+      "加速度",
+      "位移",
+      "质量",
+      "力"
+    ],
+    "answer": 1,
+    "knowledgePoint": "v-t图像",
+    "difficulty": 1,
+    "topicId": "topic-1"
+  },
+  {
+    "id": "q-009",
+    "type": "single",
+    "stem": "物体由静止自由下落，忽略空气阻力，g=10m/s²，2s后速度大小为？",
+    "options": [
+      "10m/s",
+      "20m/s",
+      "30m/s",
+      "40m/s"
+    ],
+    "answer": 1,
+    "knowledgePoint": "自由落体",
+    "difficulty": 1,
+    "topicId": "topic-1"
+  },
+  {
+    "id": "q-010",
+    "type": "single",
+    "stem": "质量2kg的物体在g=10m/s²处所受重力大小为？",
+    "options": [
+      "2N",
+      "5N",
+      "10N",
+      "20N"
+    ],
+    "answer": 3,
+    "knowledgePoint": "重力",
+    "difficulty": 2,
+    "topicId": "topic-1"
+  },
+  {
+    "id": "q-011",
+    "type": "single",
+    "stem": "弹簧在弹性限度内劲度系数100N/m，伸长0.02m，弹力大小为？",
+    "options": [
+      "2N",
+      "5N",
+      "20N",
+      "50N"
+    ],
+    "answer": 0,
+    "knowledgePoint": "弹力",
+    "difficulty": 1,
+    "topicId": "topic-1"
+  },
+  {
+    "id": "q-012",
+    "type": "single",
+    "stem": "物体沿水平桌面滑动，动摩擦因数0.2，桌面支持力10N，滑动摩擦力大小为？",
+    "options": [
+      "0.2N",
+      "2N",
+      "10N",
+      "50N"
+    ],
+    "answer": 1,
+    "knowledgePoint": "摩擦力",
+    "difficulty": 1,
+    "topicId": "topic-1"
+  },
+  {
+    "id": "q-013",
+    "type": "single",
+    "stem": "两个互相垂直的力大小为3N和4N，其合力大小为？",
+    "options": [
+      "1N",
+      "5N",
+      "7N",
+      "12N"
+    ],
+    "answer": 1,
+    "knowledgePoint": "力的合成与分解",
+    "difficulty": 2,
+    "topicId": "topic-1"
+  },
+  {
+    "id": "q-014",
+    "type": "single",
+    "stem": "物体所受合力为零，依据牛顿第一定律，其运动状态是？",
+    "options": [
+      "一定静止",
+      "一定加速",
+      "静止或匀速直线运动",
+      "一定做圆周运动"
+    ],
+    "answer": 2,
+    "knowledgePoint": "牛顿第一定律",
+    "difficulty": 1,
+    "topicId": "topic-1"
+  },
+  {
+    "id": "q-015",
+    "type": "single",
+    "stem": "质量2kg的物体受到6N合力，其加速度大小为？",
+    "options": [
+      "2m/s²",
+      "3m/s²",
+      "6m/s²",
+      "12m/s²"
+    ],
+    "answer": 1,
+    "knowledgePoint": "牛顿第二定律",
+    "difficulty": 1,
+    "topicId": "topic-1"
+  },
+  {
+    "id": "q-016",
+    "type": "single",
+    "stem": "一对作用力和反作用力的特点是？",
+    "options": [
+      "作用在同一物体上",
+      "大小相等方向相反且作用在不同物体上",
+      "可以相互抵消",
+      "大小随两物体质量比变化"
+    ],
+    "answer": 1,
+    "knowledgePoint": "牛顿第三定律",
+    "difficulty": 2,
+    "topicId": "topic-1"
+  },
+  {
+    "id": "q-017",
+    "type": "single",
+    "stem": "质量60kg的人随电梯以2m/s²加速上升，g=10m/s²，支持力为？",
+    "options": [
+      "480N",
+      "600N",
+      "720N",
+      "120N"
+    ],
+    "answer": 2,
+    "knowledgePoint": "超重失重",
+    "difficulty": 1,
+    "topicId": "topic-1"
+  },
+  {
+    "id": "q-018",
+    "type": "single",
+    "stem": "真空中两点电荷间距离加倍，电荷量不变，库仑力变为原来的？",
+    "options": [
+      "2倍",
+      "4倍",
+      "一半",
+      "四分之一"
+    ],
+    "answer": 3,
+    "knowledgePoint": "库仑定律",
+    "difficulty": 1,
+    "topicId": "topic-2"
+  },
+  {
+    "id": "q-019",
+    "type": "single",
+    "stem": "试探电荷电荷量为2×10⁻⁶C，受到电场力0.01N，该处电场强度大小为？",
+    "options": [
+      "5000N/C",
+      "200N/C",
+      "2×10⁻⁸N/C",
+      "0.005N/C"
+    ],
+    "answer": 0,
+    "knowledgePoint": "电场强度",
+    "difficulty": 2,
+    "topicId": "topic-2"
+  },
+  {
+    "id": "q-020",
+    "type": "single",
+    "stem": "正电荷沿电场线方向移动，其电势能通常如何变化？",
+    "options": [
+      "增大",
+      "减小",
+      "恒定",
+      "一定先增后减"
+    ],
+    "answer": 1,
+    "knowledgePoint": "电势",
+    "difficulty": 1,
+    "topicId": "topic-2"
+  },
+  {
+    "id": "q-021",
+    "type": "single",
+    "stem": "电容器电容2μF，电压3V，所带电荷量为？",
+    "options": [
+      "1.5μC",
+      "5μC",
+      "6μC",
+      "0.67μC"
+    ],
+    "answer": 2,
+    "knowledgePoint": "电容",
+    "difficulty": 1,
+    "topicId": "topic-2"
+  },
+  {
+    "id": "q-022",
+    "type": "single",
+    "stem": "电阻6Ω两端电压12V，通过电流为？",
+    "options": [
+      "0.5A",
+      "2A",
+      "6A",
+      "72A"
+    ],
+    "answer": 1,
+    "knowledgePoint": "欧姆定律",
+    "difficulty": 2,
+    "topicId": "topic-2"
+  },
+  {
+    "id": "q-023",
+    "type": "single",
+    "stem": "2Ω和3Ω电阻串联，总电阻为？",
+    "options": [
+      "1.2Ω",
+      "1Ω",
+      "5Ω",
+      "6Ω"
+    ],
+    "answer": 2,
+    "knowledgePoint": "串并联电路",
+    "difficulty": 1,
+    "topicId": "topic-2"
+  },
+  {
+    "id": "q-024",
+    "type": "single",
+    "stem": "纯电阻用电器两端电压10V，通过电流2A，电功率为？",
+    "options": [
+      "5W",
+      "10W",
+      "20W",
+      "100W"
+    ],
+    "answer": 2,
+    "knowledgePoint": "电功与电功率",
+    "difficulty": 1,
+    "topicId": "topic-2"
+  },
+  {
+    "id": "q-025",
+    "type": "single",
+    "stem": "磁感应强度1T的匀强磁场中，垂直于磁场的0.2m导线通过3A电流，安培力为？",
+    "options": [
+      "0.2N",
+      "0.6N",
+      "3N",
+      "15N"
+    ],
+    "answer": 1,
+    "knowledgePoint": "磁感应强度",
+    "difficulty": 2,
+    "topicId": "topic-2"
+  },
+  {
+    "id": "q-026",
+    "type": "single",
+    "stem": "通电导线受到的安培力方向由哪个方法判断？",
+    "options": [
+      "右手螺旋定则",
+      "左手定则",
+      "楞次定律",
+      "牛顿第一定律"
+    ],
+    "answer": 1,
+    "knowledgePoint": "安培力",
+    "difficulty": 1,
+    "topicId": "topic-2"
+  },
+  {
+    "id": "q-027",
+    "type": "single",
+    "stem": "匀强磁场对垂直入射的带电粒子施加洛伦兹力，该力做功为？",
+    "options": [
+      "正功",
+      "负功",
+      "零",
+      "随电荷正负变化"
+    ],
+    "answer": 2,
+    "knowledgePoint": "洛伦兹力",
+    "difficulty": 1,
+    "topicId": "topic-2"
+  },
+  {
+    "id": "q-028",
+    "type": "single",
+    "stem": "面积0.5m²线圈平面垂直于0.2T匀强磁场，磁通量大小为？",
+    "options": [
+      "0.1Wb",
+      "0.4Wb",
+      "0.7Wb",
+      "2.5Wb"
+    ],
+    "answer": 0,
+    "knowledgePoint": "磁通量",
+    "difficulty": 2,
+    "topicId": "topic-2"
+  },
+  {
+    "id": "q-029",
+    "type": "single",
+    "stem": "100匝线圈每匝磁通量在0.1s内均匀变化0.02Wb，感应电动势大小为？",
+    "options": [
+      "0.2V",
+      "2V",
+      "20V",
+      "200V"
+    ],
+    "answer": 2,
+    "knowledgePoint": "法拉第电磁感应定律",
+    "difficulty": 1,
+    "topicId": "topic-2"
+  },
+  {
+    "id": "q-030",
+    "type": "single",
+    "stem": "依据楞次定律，感应电流产生的磁场总是？",
+    "options": [
+      "与原磁场反向",
+      "阻碍引起感应的磁通量变化",
+      "增强原磁场",
+      "使磁通量立即为零"
+    ],
+    "answer": 1,
+    "knowledgePoint": "楞次定律",
+    "difficulty": 1,
+    "topicId": "topic-2"
+  },
+  {
+    "id": "q-031",
+    "type": "single",
+    "stem": "光射到平面镜，入射光与法线夹角30°，反射角为？",
+    "options": [
+      "15°",
+      "30°",
+      "60°",
+      "90°"
+    ],
+    "answer": 1,
+    "knowledgePoint": "光的反射",
+    "difficulty": 2,
+    "topicId": "topic-3"
+  },
+  {
+    "id": "q-032",
+    "type": "single",
+    "stem": "光从空气斜射入玻璃，通常折射角与入射角的关系是？",
+    "options": [
+      "折射角较小",
+      "折射角较大",
+      "总相等",
+      "折射角总为零"
+    ],
+    "answer": 0,
+    "knowledgePoint": "光的折射",
+    "difficulty": 1,
+    "topicId": "topic-3"
+  },
+  {
+    "id": "q-033",
+    "type": "single",
+    "stem": "发生全反射的必要条件是？",
+    "options": [
+      "从光疏到光密且大角度",
+      "从光密到光疏且入射角大于临界角",
+      "任意界面垂直入射",
+      "光速不变"
+    ],
+    "answer": 1,
+    "knowledgePoint": "全反射",
+    "difficulty": 1,
+    "topicId": "topic-3"
+  },
+  {
+    "id": "q-034",
+    "type": "single",
+    "stem": "凸透镜焦距10cm，物距30cm，所成像是？",
+    "options": [
+      "正立放大虚像",
+      "倒立缩小实像",
+      "倒立放大实像",
+      "正立缩小实像"
+    ],
+    "answer": 1,
+    "knowledgePoint": "透镜成像",
+    "difficulty": 2,
+    "topicId": "topic-3"
+  },
+  {
+    "id": "q-035",
+    "type": "single",
+    "stem": "稳定光的干涉要求两束光满足？",
+    "options": [
+      "频率不同且相位任意",
+      "频率相同且相位差恒定",
+      "光强完全相同即可",
+      "必须来自不同颜色激光"
+    ],
+    "answer": 1,
+    "knowledgePoint": "光的干涉",
+    "difficulty": 1,
+    "topicId": "topic-3"
+  },
+  {
+    "id": "q-036",
+    "type": "single",
+    "stem": "单缝衍射实验中，缝宽逐渐减小，中央亮纹通常如何变化？",
+    "options": [
+      "变窄",
+      "变宽",
+      "宽度恒定",
+      "立即消失"
+    ],
+    "answer": 1,
+    "knowledgePoint": "光的衍射",
+    "difficulty": 1,
+    "topicId": "topic-3"
+  },
+  {
+    "id": "q-037",
+    "type": "single",
+    "stem": "光的偏振现象说明光是？",
+    "options": [
+      "纵波",
+      "横波",
+      "机械波",
+      "声波"
+    ],
+    "answer": 1,
+    "knowledgePoint": "光的偏振",
+    "difficulty": 2,
+    "topicId": "topic-3"
+  },
+  {
+    "id": "q-038",
+    "type": "single",
+    "stem": "温度升高时，分子的热运动通常？",
+    "options": [
+      "更加剧烈",
+      "停止",
+      "更加缓慢",
+      "变成定向运动"
+    ],
+    "answer": 0,
+    "knowledgePoint": "分子热运动",
+    "difficulty": 1,
+    "topicId": "topic-4"
+  },
+  {
+    "id": "q-039",
+    "type": "single",
+    "stem": "分子间距很小时，分子间作用力总体表现为？",
+    "options": [
+      "只有引力",
+      "斥力占优势",
+      "没有作用力",
+      "只有重力"
+    ],
+    "answer": 1,
+    "knowledgePoint": "分子力",
+    "difficulty": 1,
+    "topicId": "topic-4"
+  },
+  {
+    "id": "q-040",
+    "type": "single",
+    "stem": "一定量理想气体内能只取决于哪个物理量？",
+    "options": [
+      "体积",
+      "压强",
+      "温度",
+      "容器形状"
+    ],
+    "answer": 2,
+    "knowledgePoint": "内能",
+    "difficulty": 2,
+    "topicId": "topic-4"
+  },
+  {
+    "id": "q-041",
+    "type": "single",
+    "stem": "一定质量理想气体温度不变，体积减半，压强变为原来的？",
+    "options": [
+      "一半",
+      "不变",
+      "2倍",
+      "4倍"
+    ],
+    "answer": 2,
+    "knowledgePoint": "玻意耳定律",
+    "difficulty": 1,
+    "topicId": "topic-4"
+  },
+  {
+    "id": "q-042",
+    "type": "single",
+    "stem": "一定质量理想气体体积不变，绝对温度由300K升到600K，压强变为原来的？",
+    "options": [
+      "一半",
+      "不变",
+      "2倍",
+      "4倍"
+    ],
+    "answer": 2,
+    "knowledgePoint": "查理定律",
+    "difficulty": 1,
+    "topicId": "topic-4"
+  },
+  {
+    "id": "q-043",
+    "type": "single",
+    "stem": "一定质量理想气体压强不变，绝对温度加倍，体积变为原来的？",
+    "options": [
+      "一半",
+      "不变",
+      "2倍",
+      "4倍"
+    ],
+    "answer": 2,
+    "knowledgePoint": "盖-吕萨克定律",
+    "difficulty": 2,
+    "topicId": "topic-4"
+  },
+  {
+    "id": "q-044",
+    "type": "single",
+    "stem": "一定量理想气体的状态方程是？",
+    "options": [
+      "pV=nRT",
+      "p+V=T",
+      "pV=T²",
+      "p/V=nRT"
+    ],
+    "answer": 0,
+    "knowledgePoint": "理想气体状态方程",
+    "difficulty": 1,
+    "topicId": "topic-4"
+  },
+  {
+    "id": "q-045",
+    "type": "single",
+    "stem": "汤姆孙通过阴极射线实验发现的是？",
+    "options": [
+      "质子",
+      "电子",
+      "中子",
+      "光子"
+    ],
+    "answer": 1,
+    "knowledgePoint": "电子的发现",
+    "difficulty": 1,
+    "topicId": "topic-5"
+  },
+  {
+    "id": "q-046",
+    "type": "single",
+    "stem": "α粒子散射实验中少数粒子大角度偏转，说明？",
+    "options": [
+      "正电荷均匀分布",
+      "原子正电荷和绝大部分质量集中于很小的原子核",
+      "原子不可分",
+      "电子质量大于原子核"
+    ],
+    "answer": 1,
+    "knowledgePoint": "α粒子散射实验",
+    "difficulty": 2,
+    "topicId": "topic-5"
+  },
+  {
+    "id": "q-047",
+    "type": "single",
+    "stem": "按玻尔模型，原子从高能级跃迁到低能级时？",
+    "options": [
+      "吸收任意能量光子",
+      "发射能量等于能级差的光子",
+      "电子质量增加",
+      "不交换能量"
+    ],
+    "answer": 1,
+    "knowledgePoint": "玻尔模型",
+    "difficulty": 1,
+    "topicId": "topic-5"
+  },
+  {
+    "id": "q-048",
+    "type": "single",
+    "stem": "某放射性样品半衰期为2天，4天后未衰变原子核数约为原来的？",
+    "options": [
+      "一半",
+      "四分之一",
+      "八分之一",
+      "全部"
+    ],
+    "answer": 1,
+    "knowledgePoint": "天然放射现象",
+    "difficulty": 1,
+    "topicId": "topic-5"
+  },
+  {
+    "id": "q-049",
+    "type": "single",
+    "stem": "核反应方程必须遵守？",
+    "options": [
+      "只守恒质量数",
+      "只守恒电荷数",
+      "电荷数和质量数都守恒",
+      "核的个数总相同"
+    ],
+    "answer": 2,
+    "knowledgePoint": "核反应方程",
+    "difficulty": 2,
+    "topicId": "topic-5"
+  },
+  {
+    "id": "q-050",
+    "type": "single",
+    "stem": "质量亏损Δm对应释放的能量为？",
+    "options": [
+      "Δmc",
+      "Δmc²",
+      "Δm/c²",
+      "Δm²c"
+    ],
+    "answer": 1,
+    "knowledgePoint": "质能方程",
+    "difficulty": 1,
+    "topicId": "topic-5"
+  },
+  {
+    "id": "q-051",
+    "type": "single",
+    "stem": "做简谐运动的物体经过平衡位置时？",
+    "options": [
+      "速度最大、加速度为零",
+      "速度为零、加速度最大",
+      "速度和加速度都最大",
+      "速度和加速度都为零"
+    ],
+    "answer": 0,
+    "knowledgePoint": "简谐运动",
+    "difficulty": 1,
+    "topicId": "topic-6"
+  },
+  {
+    "id": "q-052",
+    "type": "single",
+    "stem": "小振幅单摆摆长增至原来的4倍，其周期变为原来的？",
+    "options": [
+      "一半",
+      "不变",
+      "2倍",
+      "4倍"
+    ],
+    "answer": 2,
+    "knowledgePoint": "单摆",
+    "difficulty": 2,
+    "topicId": "topic-6"
+  },
+  {
+    "id": "q-053",
+    "type": "single",
+    "stem": "受迫振动达到稳定后，振动频率等于？",
+    "options": [
+      "固有频率且永不改变",
+      "驱动力频率",
+      "驱动力频率的一半",
+      "零"
+    ],
+    "answer": 1,
+    "knowledgePoint": "受迫振动与共振",
+    "difficulty": 1,
+    "topicId": "topic-6"
+  },
+  {
+    "id": "q-054",
+    "type": "single",
+    "stem": "机械波传播时，介质中的质点通常？",
+    "options": [
+      "随波一直向前迁移",
+      "在平衡位置附近振动",
+      "保持静止",
+      "必须沿传播方向振动"
+    ],
+    "answer": 1,
+    "knowledgePoint": "波的形成",
+    "difficulty": 1,
+    "topicId": "topic-6"
+  },
+  {
+    "id": "q-055",
+    "type": "single",
+    "stem": "波长2m、频率5Hz的机械波，波速为？",
+    "options": [
+      "0.4m/s",
+      "2.5m/s",
+      "7m/s",
+      "10m/s"
+    ],
+    "answer": 3,
+    "knowledgePoint": "波长频率波速",
+    "difficulty": 2,
+    "topicId": "topic-6"
+  },
+  {
+    "id": "q-056",
+    "type": "single",
+    "stem": "两列频率相同、相位差恒定的相干机械波叠加，可以形成？",
+    "options": [
+      "稳定干涉",
+      "只有反射",
+      "只有折射",
+      "只有直线传播"
+    ],
+    "answer": 0,
+    "knowledgePoint": "波的干涉衍射",
+    "difficulty": 1,
+    "topicId": "topic-6"
+  },
+  {
+    "id": "q-057",
+    "type": "single",
+    "stem": "伽利略相对性原理适用于？",
+    "options": [
+      "所有加速参考系",
+      "经典力学的惯性参考系",
+      "只有地面参考系",
+      "只有静止物体"
+    ],
+    "answer": 1,
+    "knowledgePoint": "伽利略相对性原理",
+    "difficulty": 1,
+    "topicId": "topic-7"
+  },
+  {
+    "id": "q-058",
+    "type": "single",
+    "stem": "狭义相对论的光速不变原理指？",
+    "options": [
+      "真空光速在各惯性系中相同",
+      "光在所有介质中速度相同",
+      "光速取决于光源速度",
+      "所有物体速度相同"
+    ],
+    "answer": 0,
+    "knowledgePoint": "光速不变原理",
+    "difficulty": 2,
+    "topicId": "topic-7"
+  },
+  {
+    "id": "q-059",
+    "type": "single",
+    "stem": "在惯性观察者看来，相对其运动的理想时钟与自身静止时钟相比？",
+    "options": [
+      "走得快",
+      "走得慢",
+      "永远相同",
+      "停止运转"
+    ],
+    "answer": 1,
+    "knowledgePoint": "时间膨胀",
+    "difficulty": 1,
+    "topicId": "topic-7"
+  },
+  {
+    "id": "q-060",
+    "type": "single",
+    "stem": "沿运动方向，相对观察者运动的杆长与其固有长度相比？",
+    "options": [
+      "更长",
+      "更短",
+      "总相同",
+      "变为零"
+    ],
+    "answer": 1,
+    "knowledgePoint": "长度收缩",
+    "difficulty": 1,
+    "topicId": "topic-7"
+  },
+  {
+    "id": "q-061",
+    "type": "single",
+    "stem": "仪器零点未校准造成的测量偏差主要属于？",
+    "options": [
+      "系统误差",
+      "偶然误差",
+      "有效数字",
+      "真实值"
+    ],
+    "answer": 0,
+    "knowledgePoint": "系统误差",
+    "difficulty": 2,
+    "topicId": "topic-8"
+  },
+  {
+    "id": "q-062",
+    "type": "single",
+    "stem": "在相同条件下重复测量取平均值主要有助于减小？",
+    "options": [
+      "系统误差",
+      "偶然误差",
+      "单位误差",
+      "理论误差"
+    ],
+    "answer": 1,
+    "knowledgePoint": "偶然误差",
+    "difficulty": 1,
+    "topicId": "topic-8"
+  },
+  {
+    "id": "q-063",
+    "type": "single",
+    "stem": "测量值10.2cm，真值10.0cm，绝对误差大小与相对误差分别为？",
+    "options": [
+      "0.2cm，2%",
+      "0.2cm，20%",
+      "2cm，2%",
+      "0.02cm，0.2%"
+    ],
+    "answer": 0,
+    "knowledgePoint": "绝对误差与相对误差",
+    "difficulty": 1,
+    "topicId": "topic-8"
+  },
+  {
+    "id": "q-064",
+    "type": "single",
+    "stem": "测量结果0.0200m有几位有效数字？",
+    "options": [
+      "1",
+      "2",
+      "3",
+      "4"
+    ],
+    "answer": 2,
+    "knowledgePoint": "有效数字",
+    "difficulty": 2,
+    "topicId": "topic-8"
+  },
+  {
+    "id": "q-065",
+    "type": "single",
+    "stem": "用直线图像求斜率时，应优先选择？",
+    "options": [
+      "两个尽量靠近的数据点",
+      "拟合直线上相距较远的两点",
+      "任意坐标轴刻度",
+      "只使用原点"
+    ],
+    "answer": 1,
+    "knowledgePoint": "图像法",
+    "difficulty": 1,
+    "topicId": "topic-8"
+  },
+  {
+    "id": "q-066",
+    "type": "single",
+    "stem": "逐差法用于等时间间隔的匀变速位移数据处理，主要优点是？",
+    "options": [
+      "消除全部误差",
+      "充分利用数据减小偶然误差影响",
+      "不需要时间间隔",
+      "把所有位移视为相等"
+    ],
+    "answer": 1,
+    "knowledgePoint": "逐差法",
+    "difficulty": 1,
+    "topicId": "topic-8"
+  }
+]

@@ -213,55 +213,10 @@ def build_topics(db: Session) -> list[Topic]:
 
 
 def build_questions(db: Session, topics: list[Topic]) -> list[Question]:
-    questions: list[Question] = []
-    q_idx = 1
-    types = ["single", "judge", "multiple"]
-    for t in topics:
-        kps = [p for c in t.outline for p in c["points"]]
-        for i, kp in enumerate(kps):
-            qtype = types[i % 3]
-            difficulty = (i % 3) + 1
-            if qtype == "single":
-                templates = [
-                    {
-                        "stem": f"关于{kp}的下列说法中，正确的是：",
-                        "opts": ["该概念仅适用于宏观低速场景", "在高中物理范围内有严格的数学表达", "与参考系选择无关", "属于标量运算不考虑方向"],
-                        "ans": 1,
-                    },
-                    {
-                        "stem": f"在{kp}相关实验中，下列操作或说法正确的是：",
-                        "opts": ["必须选用精度最高的仪器", "实验前无需校准", "多次测量取平均可减小系统误差", "数据记录保留任意位数越多越好"],
-                        "ans": 2,
-                    },
-                    {
-                        "stem": f"下列哪个公式或规律与{kp}直接相关？",
-                        "opts": ["F=ma", "PV=nRT", "E=mc²", "F=kx"],
-                        "ans": 0,
-                    },
-                ]
-                tpl = templates[i % 3]
-                stem, options, answer = tpl["stem"], tpl["opts"], tpl["ans"]
-            elif qtype == "multiple":
-                stem = f"关于{kp}，下列说法正确的是（多选）："
-                options = ["该知识点是高中物理核心考点", "可通过实验验证其正确性", "在任何条件下都严格成立", "与其他知识点存在密切联系"]
-                answer = [0, 1, 3]
-            else:
-                stem = f"{kp}是高中物理必须掌握的重要知识点。（判断对错）"
-                options = ["正确", "错误"]
-                answer = True
-            questions.append(
-                Question(
-                    id=f"q-{q_idx:03d}",
-                    type=qtype,
-                    stem=stem,
-                    options=options,
-                    answer=answer,
-                    knowledge_point=kp,
-                    difficulty=difficulty,
-                    topic_id=t.id,
-                )
-            )
-            q_idx += 1
+    from .physics_builtin import QUESTIONS, question_values
+    topic_ids = {topic.id for topic in topics}
+    questions = [Question(id=raw['id'], **question_values(raw))
+                 for raw in QUESTIONS if raw['topicId'] in topic_ids]
     db.add_all(questions)
     return questions
 

@@ -1,3 +1,4 @@
+import builtinPhysicsQuestions from '../../backend/app/physics_questions.json';
 export type UserRole = 'admin' | 'teacher' | 'student';
 export type MemberRole = 'leader' | 'member';
 
@@ -366,68 +367,8 @@ function buildTopics(): PhysicsTopic[] {
 }
 
 function buildQuestions(topics: PhysicsTopic[]): Question[] {
-  const questions: Question[] = [];
-  let qIdx = 1;
-  const types: QuestionType[] = ['single', 'judge', 'multiple'];
-  topics.forEach((t) => {
-    const topicId = t.id;
-    const kps = t.outline.flatMap((c) => c.points);
-    kps.forEach((kp, i) => {
-      const type = types[i % 3];
-      let stem = '';
-      let options: string[] = [];
-      let answer: number | number[] | boolean = 0;
-      const difficulty = ((i % 3) + 1) as 1 | 2 | 3;
-      if (type === 'single') {
-        const stemsOpts = [
-          {
-            stem: `关于${kp}的下列说法中，正确的是：`,
-            opts: ['该概念仅适用于宏观低速场景', '在高中物理范围内有严格的数学表达', '与参考系选择无关', '属于标量运算不考虑方向'],
-            ans: 1,
-          },
-          {
-            stem: `在${kp}相关实验中，下列操作或说法正确的是：`,
-            opts: ['必须选用精度最高的仪器', '实验前无需校准', '多次测量取平均可减小系统误差', '数据记录保留任意位数越多越好'],
-            ans: 2,
-          },
-          {
-            stem: `下列哪个公式或规律与${kp}直接相关？`,
-            opts: ['F=ma', 'PV=nRT', 'E=mc²', 'F=kx'],
-            ans: 0,
-          },
-        ];
-        const tpl = stemsOpts[i % 3];
-        stem = tpl.stem;
-        options = tpl.opts;
-        answer = tpl.ans;
-      } else if (type === 'multiple') {
-        stem = `关于${kp}，下列说法正确的是（多选）：`;
-        options = [
-          '该知识点是高中物理核心考点',
-          '可通过实验验证其正确性',
-          '在任何条件下都严格成立',
-          '与其他知识点存在密切联系',
-        ];
-        answer = [0, 1, 3];
-      } else {
-        stem = `${kp}是高中物理必须掌握的重要知识点。（判断对错）`;
-        options = ['正确', '错误'];
-        answer = true;
-      }
-      questions.push({
-        id: `q-${String(qIdx).padStart(3, '0')}`,
-        type,
-        stem,
-        options,
-        answer,
-        knowledgePoint: kp,
-        difficulty,
-        topicId,
-      });
-      qIdx++;
-    });
-  });
-  return questions;
+  const topicIds = new Set(topics.map((topic) => topic.id));
+  return (builtinPhysicsQuestions as Question[]).filter((question) => topicIds.has(question.topicId));
 }
 
 function buildChallenges(groups: Group[], topics: PhysicsTopic[]): Challenge[] {
