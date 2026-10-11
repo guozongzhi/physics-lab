@@ -24,7 +24,7 @@ export default function PhysicsDemo({ kind }: { kind: Kind }) {
   const [field, setField] = useState(0.5);
   const [reverse, setReverse] = useState(false);
   const [running, setRunning] = useState(false);
-  const [angle, setAngle] = useState(0);
+  const [angle, setAngle] = useState(90);
   const [normal, setNormal] = useState(true);
   const torque = motorTorque(current, field, angle);
   const refracted = refractionAngle(incident, index);
@@ -47,7 +47,7 @@ export default function PhysicsDemo({ kind }: { kind: Kind }) {
 
   const reset = () => {
     setIncident(45); setIndex(1.5); setDispersion(true); setNormal(true);
-    setCurrent(2); setField(0.5); setReverse(false); setRunning(false); setAngle(0);
+    setCurrent(2); setField(0.5); setReverse(false); setRunning(false); setAngle(90);
   };
 
   return <section className="bg-slate-950 text-white p-5 sm:p-8 rounded-t-[24px]">
