@@ -2,7 +2,7 @@ import type { LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Coins, Target, Trophy, Swords, Rocket, Plus, X, Clock, Zap, ChevronDown, Calendar, Sparkles, Users, BookOpenText, AlertCircle, UserCircle2 } from 'lucide-react';
+import { Coins, Target, Trophy, Swords, Rocket, Plus, X, Clock, Zap, ChevronDown, Calendar, Sparkles, Users, BookOpenText, AlertCircle, UserCircle2, ArrowRight } from 'lucide-react';
 import { useTheoryStore } from '@/store/theoryStore';
 import { useAuthStore } from '@/store/authStore';
 import { useGroupStore } from '@/store/groupStore';
@@ -312,10 +312,11 @@ export default function TheoryChallenge() {
                   <div className="px-5 pb-5">
                     <button
                       onClick={() => navigate(`/theory/challenge/${c.id}/accept`)}
-                      className="btn-primary w-full !py-3 text-base"
+                      className="btn-primary inline-flex items-center justify-center gap-2 min-h-11 w-full !py-3 text-base"
                     >
-                      <Swords size={18} />
-                      接受挑战 →
+                      <Swords size={18} className="shrink-0" aria-hidden="true" />
+                      <span>接受挑战</span>
+                      <ArrowRight size={18} className="shrink-0" aria-hidden="true" />
                     </button>
                   </div>
                 </div>
