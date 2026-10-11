@@ -196,12 +196,12 @@ export default function ResearchMarketplace() {
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="glass-card p-6 md:p-8 rounded-[28px] relative overflow-hidden"
+          className="student-market-intro glass-card p-6 md:p-8 rounded-[28px] relative overflow-hidden"
         >
           <div className="absolute -top-20 -right-20 w-80 h-80 rounded-full bg-mission-400/10 blur-3xl pointer-events-none" />
           <div className="absolute -bottom-24 -left-20 w-80 h-80 rounded-full bg-nova-400/10 blur-3xl pointer-events-none" />
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 relative z-10">
-            <div className="col-span-12 lg:col-span-5">
+            <div className="min-w-0 lg:col-span-5">
               <div className="flex items-start gap-4">
                 <div className="relative shrink-0">
                   <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-mission-400 via-mission-500 to-nova-500 flex items-center justify-center shadow-glowMission">
@@ -211,17 +211,17 @@ export default function ResearchMarketplace() {
                 </div>
                 <div>
                   <span className="mission-label">RECRUITMENT · OPEN CALL</span>
-                  <h1 className="mt-3 text-[30px] md:text-[34px] font-extrabold text-ink-900 leading-[1.15] tracking-tight">
+                  <h1 className="mt-3 text-[26px] md:text-[30px] font-extrabold text-ink-900 leading-tight tracking-tight">
                     人才招募大厅
-                    <span className="block text-gradient-mission mt-1">找到你的任务 · 贡献你的才华</span>
                   </h1>
+                  <p className="mt-2 text-base font-semibold text-mission-700">找到你的任务 · 贡献你的才华</p>
                   <p className="mt-3 text-[14px] text-ink-500 leading-relaxed max-w-md">
                     跨组协作市场：用你的专业技能为其他小组解决难题，赢取能量币 ⚡ 奖励与全基地认可。
                   </p>
                 </div>
               </div>
             </div>
-            <div className="col-span-12 lg:col-span-7 space-y-4">
+            <div className="min-w-0 lg:col-span-7 space-y-4">
               <div className="glass-card !shadow-none p-2.5 rounded-2xl border-mission-100/80 flex flex-col sm:flex-row sm:items-center gap-2">
                 <div className="hidden sm:block pl-3">
                   <Search size={18} className="text-ink-400" />
@@ -271,7 +271,7 @@ export default function ResearchMarketplace() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           <div className="col-span-12 lg:col-span-9 space-y-6">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-[12px] text-ink-500">
+              <div className="student-market-sort flex items-center gap-2 text-[12px] text-ink-500">
                 <TrendingDown size={14} className="text-energy-500" />
                 按{sort === 'reward' ? '酬劳' : '截止时间'}排序 · 共 {myGroupRecs.length + otherGroupRecs.length} 个可投
               </div>
@@ -279,7 +279,7 @@ export default function ResearchMarketplace() {
 
             {/* ===== 分类一：所属项目组任务 ===== */}
             <section>
-              <div className="flex items-center gap-3 mb-4">
+              <div className="student-market-section-heading flex items-center gap-3 mb-4">
                 <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-mission-400 to-mission-600 flex items-center justify-center text-white shadow-lg shadow-mission-500/20">
                   <Home size={18} />
                 </div>
@@ -314,7 +314,7 @@ export default function ResearchMarketplace() {
 
             {/* ===== 分类二：其他组任务 ===== */}
             <section>
-              <div className="flex items-center gap-3 mb-4">
+              <div className="student-market-section-heading flex items-center gap-3 mb-4">
                 <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-nova-400 to-nova-600 flex items-center justify-center text-white shadow-lg shadow-nova-500/20">
                   <Globe size={18} />
                 </div>
@@ -350,7 +350,7 @@ export default function ResearchMarketplace() {
                   <Award size={18} />
                 </div>
                 <div>
-                  <h3 className="font-bold text-ink-800 text-[15px]">My Bids</h3>
+                  <h3 className="font-bold text-ink-800 text-[15px]">我的投标</h3>
                   <p className="text-[11px] text-ink-400">我的投标记录</p>
                 </div>
               </div>

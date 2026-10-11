@@ -49,7 +49,7 @@ function ChallengeCard({ challenge, onAccept, onView }: { challenge: Challenge; 
   
   return (
     <div className="rounded-[20px] bg-gradient-to-br from-white/95 via-white to-ink-50/50 border border-ink-100/60 p-5 hover:shadow-lg hover:border-cyan-200/60 transition-all duration-300">
-      <div className="flex items-start justify-between gap-4">
+      <div className="student-communication-card-heading flex items-start justify-between gap-4">
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-2 flex-wrap">
             <span className={`chip ${isExpired ? 'chip-risk' : 'chip-lab'}`}>
@@ -72,7 +72,7 @@ function ChallengeCard({ challenge, onAccept, onView }: { challenge: Challenge; 
           <CoinBadge amount={challenge.reward} size="lg" />
         </div>
       </div>
-      <div className="flex items-center justify-between pt-3 border-t border-ink-100">
+      <div className="student-communication-card-footer flex items-center justify-between pt-3 border-t border-ink-100">
         <span className="text-xs text-ink-400 flex items-center gap-1">
           <Clock size={12} />
           截止: {new Date(challenge.deadline).toLocaleDateString('zh-CN')}
@@ -103,7 +103,7 @@ function RecruitmentCard({ recruitment, project, onBid, onResolve }: { recruitme
   
   return (
     <div className="rounded-[20px] bg-gradient-to-br from-white/95 via-white to-ink-50/50 border border-ink-100/60 p-5 hover:shadow-lg hover:border-purple-200/60 transition-all duration-300">
-      <div className="flex items-start justify-between gap-4">
+      <div className="student-communication-card-heading flex items-start justify-between gap-4">
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-2 flex-wrap">
             <span className={`chip ${
@@ -137,7 +137,7 @@ function RecruitmentCard({ recruitment, project, onBid, onResolve }: { recruitme
           <CoinBadge amount={recruitment.reward} size="lg" />
         </div>
       </div>
-      <div className="flex items-center justify-between pt-3 border-t border-ink-100">
+      <div className="student-communication-card-footer flex items-center justify-between pt-3 border-t border-ink-100">
         <span className="text-xs text-ink-400 flex items-center gap-1">
           <Clock size={12} />
           截止: {new Date(recruitment.deadline).toLocaleDateString('zh-CN')}
@@ -374,7 +374,7 @@ export default function GroupCommunicator() {
               与其他小组进行挑战对决、人才招募、能量币转账等互动
             </p>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="student-communication-identity flex items-center gap-4">
             <div className="glass-card rounded-xl px-4 py-2 flex items-center gap-2">
               <Coins size={18} className="text-energy-500" />
               <span className="font-bold text-ink-800">{myCoins}</span>
@@ -480,7 +480,7 @@ export default function GroupCommunicator() {
                     const mySubmission = c.submissions?.find(s => s.groupId === groupId);
                     return (
                       <div key={c.id} className="card-base card-hover p-5">
-                        <div className="flex items-start justify-between gap-4">
+                        <div className="student-communication-card-heading flex items-start justify-between gap-4">
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-2 flex-wrap">
                               <span className="chip chip-lab">已完成</span>

@@ -82,6 +82,78 @@
 .mission-stage[data-workspace-role='student'] .student-password-hint > div:last-child { flex-shrink: 0; }
 .student-topic-hint { display: none; }
 
+/* Blue/white controls and legacy badges share the student workspace theme. */
+.mission-stage[data-workspace-role='student'] :is(.btn-primary, .btn-energy) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding-inline: 16px;
+  color: #fff;
+  background: linear-gradient(110deg, #215bdd, #3979ef);
+  border: 1px solid #8dbbff;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px #1b55b826;
+}
+.mission-stage[data-workspace-role='student'] :is(.btn-primary, .btn-energy):hover { background: #184cc5; box-shadow: 0 4px 12px #1b55b826; }
+.mission-stage[data-workspace-role='student'] :is(.chip-physics, .chip-lab, .chip-risk) {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 9px;
+  font-size: 12px;
+  line-height: 1.4;
+  border: 1px solid #bdd3f3;
+  border-radius: 999px;
+  color: #24539e;
+  background: #edf5ff;
+}
+.mission-stage[data-workspace-role='student'] :is(.chip-physics, .chip-lab, .chip-risk) svg { flex-shrink: 0; }
+.mission-stage[data-workspace-role='student'] .chip-risk { color: #a92e39; background: #fff0f1; border-color: #f2c5ca; }
+.mission-stage[data-workspace-role='student'] :is(.chip-energy, .chip-alert) { color: #24539e; background: #edf5ff; border-color: #bdd3f3; }
+.mission-stage[data-workspace-role='student'] .text-gradient-energy { background-image: linear-gradient(110deg, #245bd2, #3979ef); }
+.mission-stage[data-workspace-role='student'] .student-market-intro .mission-label { font-size: 10px; letter-spacing: .1em; }
+.mission-stage[data-workspace-role='student'] .student-market-sort { color: #dcecff; padding: 8px 12px; background: #102e58d9; border: 1px solid #9ec7fc55; border-radius: 10px; }
+.mission-stage[data-workspace-role='student'] .student-market-sort svg { color: #a6cdff; }
+.mission-stage[data-workspace-role='student'] .student-market-section-heading { padding: 14px; background: var(--student-surface); border: 1px solid #e8f2ffe6; border-radius: 16px; flex-wrap: wrap; }
+.mission-stage[data-workspace-role='student'] .student-market-section-heading > div:nth-child(2) { flex: 1; min-width: 180px; }
+.mission-stage[data-workspace-role='student'] .student-market-section-heading h2 { font-size: 16px; line-height: 1.6; }
+.mission-stage[data-workspace-role='student'] .student-market-section-heading h2 span { display: inline-block; }
+.mission-stage[data-workspace-role='student'] .student-communication-identity { flex-wrap: wrap; gap: 12px; }
+.mission-stage[data-workspace-role='student'] .student-communication-card-heading { flex-wrap: wrap; gap: 12px; }
+.mission-stage[data-workspace-role='student'] .student-communication-card-heading > div:first-child { flex: 1 1 180px; min-width: 0; }
+.mission-stage[data-workspace-role='student'] .student-communication-card-heading h3 { font-family: inherit; line-height: 1.5; }
+.mission-stage[data-workspace-role='student'] .student-communication-card-footer { flex-wrap: wrap; gap: 8px; }
+.mission-stage[data-workspace-role='student'] .student-safety-title { font-size: 30px; }
+.mission-stage[data-workspace-role='student'] .student-safety-brand > div:last-child { min-width: 0; }
+.mission-stage[data-workspace-role='student'] .student-safety-brand > div:last-child > p { font-size: 15px; line-height: 1.75; }
+.mission-stage[data-workspace-role='student'] .student-safety-empty { line-height: 1.8; }
+.mission-stage[data-workspace-role='student'] .student-safety-tip :is(h4, p) { text-align: left; }
+.mission-stage[data-workspace-role='student'] .student-safety-tip .mission-label { margin-bottom: 6px; }
+
+/* Warm decorative utility colors resolve to the shared blue palette. */
+.mission-stage[data-workspace-role='student'] :is([class*="text-energy-"], [class*="text-alert-"], [class*="text-orange-"], [class*="text-amber-"]) { color: #2c5dab; }
+.mission-stage[data-workspace-role='student'] :is([class*="fill-energy-"], [class*="fill-alert-"], [class*="fill-orange-"], [class*="fill-amber-"]) { fill: #a4c8ff; }
+.mission-stage[data-workspace-role='student'] :is([class*="border-energy-"], [class*="border-alert-"], [class*="border-orange-"], [class*="border-amber-"]) { border-color: #b8cff1; }
+.mission-stage[data-workspace-role='student'] :is([class*="ring-energy-"], [class*="ring-alert-"], [class*="ring-orange-"], [class*="ring-amber-"]) { --tw-ring-color: #b8cff1; }
+.mission-stage[data-workspace-role='student'] :is([class*="bg-energy-"], [class*="bg-alert-"], [class*="bg-orange-"], [class*="bg-amber-"]) { background-color: #eaf3ff; }
+.mission-stage[data-workspace-role='student'] :is([class*="from-energy-"], [class*="from-alert-"], [class*="from-orange-"], [class*="from-amber-"]) { --tw-gradient-from: #eaf3ff var(--tw-gradient-from-position); }
+.mission-stage[data-workspace-role='student'] :is([class*="via-energy-"], [class*="via-alert-"], [class*="via-orange-"], [class*="via-amber-"]) { --tw-gradient-stops: var(--tw-gradient-from), #f4f8ff var(--tw-gradient-via-position), var(--tw-gradient-to); }
+.mission-stage[data-workspace-role='student'] :is([class*="to-energy-"], [class*="to-alert-"], [class*="to-orange-"], [class*="to-amber-"]) { --tw-gradient-to: #e0ecff var(--tw-gradient-to-position); }
+.mission-stage[data-workspace-role='student'] :is([class*="bg-energy-300"], [class*="bg-energy-400"], [class*="bg-energy-500"], [class*="bg-energy-600"], [class*="bg-energy-700"], [class*="bg-energy-800"], [class*="bg-energy-900"], [class*="bg-energy-950"], [class*="bg-alert-300"], [class*="bg-alert-400"], [class*="bg-alert-500"], [class*="bg-alert-600"], [class*="bg-alert-700"], [class*="bg-alert-800"], [class*="bg-alert-900"], [class*="bg-alert-950"], [class*="bg-orange-300"], [class*="bg-orange-400"], [class*="bg-orange-500"], [class*="bg-orange-600"], [class*="bg-orange-700"], [class*="bg-orange-800"], [class*="bg-orange-900"], [class*="bg-orange-950"], [class*="bg-amber-300"], [class*="bg-amber-400"], [class*="bg-amber-500"], [class*="bg-amber-600"], [class*="bg-amber-700"], [class*="bg-amber-800"], [class*="bg-amber-900"], [class*="bg-amber-950"]) { background-color: #3471de; }
+.mission-stage[data-workspace-role='student'] :is([class*="from-energy-300"], [class*="from-energy-400"], [class*="from-energy-500"], [class*="from-energy-600"], [class*="from-energy-700"], [class*="from-energy-800"], [class*="from-energy-900"], [class*="from-energy-950"], [class*="from-alert-300"], [class*="from-alert-400"], [class*="from-alert-500"], [class*="from-alert-600"], [class*="from-alert-700"], [class*="from-alert-800"], [class*="from-alert-900"], [class*="from-alert-950"], [class*="from-orange-300"], [class*="from-orange-400"], [class*="from-orange-500"], [class*="from-orange-600"], [class*="from-orange-700"], [class*="from-orange-800"], [class*="from-orange-900"], [class*="from-orange-950"], [class*="from-amber-300"], [class*="from-amber-400"], [class*="from-amber-500"], [class*="from-amber-600"], [class*="from-amber-700"], [class*="from-amber-800"], [class*="from-amber-900"], [class*="from-amber-950"]) { --tw-gradient-from: #3471de var(--tw-gradient-from-position); }
+.mission-stage[data-workspace-role='student'] :is([class*="via-energy-300"], [class*="via-energy-400"], [class*="via-energy-500"], [class*="via-energy-600"], [class*="via-energy-700"], [class*="via-energy-800"], [class*="via-energy-900"], [class*="via-energy-950"], [class*="via-alert-300"], [class*="via-alert-400"], [class*="via-alert-500"], [class*="via-alert-600"], [class*="via-alert-700"], [class*="via-alert-800"], [class*="via-alert-900"], [class*="via-alert-950"], [class*="via-orange-300"], [class*="via-orange-400"], [class*="via-orange-500"], [class*="via-orange-600"], [class*="via-orange-700"], [class*="via-orange-800"], [class*="via-orange-900"], [class*="via-orange-950"], [class*="via-amber-300"], [class*="via-amber-400"], [class*="via-amber-500"], [class*="via-amber-600"], [class*="via-amber-700"], [class*="via-amber-800"], [class*="via-amber-900"], [class*="via-amber-950"]) { --tw-gradient-stops: var(--tw-gradient-from), #4889ef var(--tw-gradient-via-position), var(--tw-gradient-to); }
+.mission-stage[data-workspace-role='student'] :is([class*="to-energy-300"], [class*="to-energy-400"], [class*="to-energy-500"], [class*="to-energy-600"], [class*="to-energy-700"], [class*="to-energy-800"], [class*="to-energy-900"], [class*="to-energy-950"], [class*="to-alert-300"], [class*="to-alert-400"], [class*="to-alert-500"], [class*="to-alert-600"], [class*="to-alert-700"], [class*="to-alert-800"], [class*="to-alert-900"], [class*="to-alert-950"], [class*="to-orange-300"], [class*="to-orange-400"], [class*="to-orange-500"], [class*="to-orange-600"], [class*="to-orange-700"], [class*="to-orange-800"], [class*="to-orange-900"], [class*="to-orange-950"], [class*="to-amber-300"], [class*="to-amber-400"], [class*="to-amber-500"], [class*="to-amber-600"], [class*="to-amber-700"], [class*="to-amber-800"], [class*="to-amber-900"], [class*="to-amber-950"]) { --tw-gradient-to: #2453bc var(--tw-gradient-to-position); }
+.mission-stage[data-workspace-role='student'] :is(.shadow-glowEnergy, [class*="shadow-energy-"], [class*="shadow-alert-"]) { --tw-shadow-color: #1b55b826; box-shadow: 0 4px 12px #1b55b826; }
+.mission-stage[data-workspace-role='student'] .portal-card-orange { --portal-accent: #3471de; --portal-wash: #d4e6ff; }
+
+/* Preserve pale badge washes when a warm utility includes opacity. */
+.mission-stage[data-workspace-role='student'] :is([class*="bg-energy-300/"], [class*="bg-energy-400/"], [class*="bg-energy-500/"], [class*="bg-energy-600/"], [class*="bg-energy-700/"], [class*="bg-energy-800/"], [class*="bg-energy-900/"], [class*="bg-energy-950/"], [class*="bg-alert-300/"], [class*="bg-alert-400/"], [class*="bg-alert-500/"], [class*="bg-alert-600/"], [class*="bg-alert-700/"], [class*="bg-alert-800/"], [class*="bg-alert-900/"], [class*="bg-alert-950/"], [class*="bg-orange-300/"], [class*="bg-orange-400/"], [class*="bg-orange-500/"], [class*="bg-orange-600/"], [class*="bg-orange-700/"], [class*="bg-orange-800/"], [class*="bg-orange-900/"], [class*="bg-orange-950/"], [class*="bg-amber-300/"], [class*="bg-amber-400/"], [class*="bg-amber-500/"], [class*="bg-amber-600/"], [class*="bg-amber-700/"], [class*="bg-amber-800/"], [class*="bg-amber-900/"], [class*="bg-amber-950/"]) { background-color: #eaf3ff; }
+.mission-stage[data-workspace-role='student'] :is([class*="from-energy-300/"], [class*="from-energy-400/"], [class*="from-energy-500/"], [class*="from-energy-600/"], [class*="from-energy-700/"], [class*="from-energy-800/"], [class*="from-energy-900/"], [class*="from-energy-950/"], [class*="from-alert-300/"], [class*="from-alert-400/"], [class*="from-alert-500/"], [class*="from-alert-600/"], [class*="from-alert-700/"], [class*="from-alert-800/"], [class*="from-alert-900/"], [class*="from-alert-950/"], [class*="from-orange-300/"], [class*="from-orange-400/"], [class*="from-orange-500/"], [class*="from-orange-600/"], [class*="from-orange-700/"], [class*="from-orange-800/"], [class*="from-orange-900/"], [class*="from-orange-950/"], [class*="from-amber-300/"], [class*="from-amber-400/"], [class*="from-amber-500/"], [class*="from-amber-600/"], [class*="from-amber-700/"], [class*="from-amber-800/"], [class*="from-amber-900/"], [class*="from-amber-950/"]) { --tw-gradient-from: #3471de26 var(--tw-gradient-from-position); }
+.mission-stage[data-workspace-role='student'] :is([class*="via-energy-300/"], [class*="via-energy-400/"], [class*="via-energy-500/"], [class*="via-energy-600/"], [class*="via-energy-700/"], [class*="via-energy-800/"], [class*="via-energy-900/"], [class*="via-energy-950/"], [class*="via-alert-300/"], [class*="via-alert-400/"], [class*="via-alert-500/"], [class*="via-alert-600/"], [class*="via-alert-700/"], [class*="via-alert-800/"], [class*="via-alert-900/"], [class*="via-alert-950/"], [class*="via-orange-300/"], [class*="via-orange-400/"], [class*="via-orange-500/"], [class*="via-orange-600/"], [class*="via-orange-700/"], [class*="via-orange-800/"], [class*="via-orange-900/"], [class*="via-orange-950/"], [class*="via-amber-300/"], [class*="via-amber-400/"], [class*="via-amber-500/"], [class*="via-amber-600/"], [class*="via-amber-700/"], [class*="via-amber-800/"], [class*="via-amber-900/"], [class*="via-amber-950/"]) { --tw-gradient-stops: var(--tw-gradient-from), #4889ef1a var(--tw-gradient-via-position), var(--tw-gradient-to); }
+.mission-stage[data-workspace-role='student'] :is([class*="to-energy-300/"], [class*="to-energy-400/"], [class*="to-energy-500/"], [class*="to-energy-600/"], [class*="to-energy-700/"], [class*="to-energy-800/"], [class*="to-energy-900/"], [class*="to-energy-950/"], [class*="to-alert-300/"], [class*="to-alert-400/"], [class*="to-alert-500/"], [class*="to-alert-600/"], [class*="to-alert-700/"], [class*="to-alert-800/"], [class*="to-alert-900/"], [class*="to-alert-950/"], [class*="to-orange-300/"], [class*="to-orange-400/"], [class*="to-orange-500/"], [class*="to-orange-600/"], [class*="to-orange-700/"], [class*="to-orange-800/"], [class*="to-orange-900/"], [class*="to-orange-950/"], [class*="to-amber-300/"], [class*="to-amber-400/"], [class*="to-amber-500/"], [class*="to-amber-600/"], [class*="to-amber-700/"], [class*="to-amber-800/"], [class*="to-amber-900/"], [class*="to-amber-950/"]) { --tw-gradient-to: #2453bc26 var(--tw-gradient-to-position); }
+
 @media (max-width: 767px) {
   .mission-stage[data-workspace-role='student']::before {
     background-image: linear-gradient(180deg, #03152d55, #03152d9c), url('/images/login-observatory-mobile.jpg');
@@ -128,7 +200,18 @@
   .mission-stage[data-workspace-role='student'] .student-safety-intro { padding: 22px; }
   .mission-stage[data-workspace-role='student'] .student-safety-brand { align-items: start; gap: 16px; }
   .mission-stage[data-workspace-role='student'] .student-safety-brand .shield-card.relative { width: 72px; height: 84px; }
-  .mission-stage[data-workspace-role='student'] .student-safety-intro h1 { font-size: 28px; }
+  .mission-stage[data-workspace-role='student'] .student-safety-intro h1 { font-size: 26px; }
+  .mission-stage[data-workspace-role='student'] .student-market-intro { padding: 18px; }
+  .mission-stage[data-workspace-role='student'] .student-market-intro > .grid > div:first-child > div { gap: 12px; }
+  .mission-stage[data-workspace-role='student'] .student-market-intro .w-16 { width: 44px; height: 44px; border-radius: 12px; }
+  .mission-stage[data-workspace-role='student'] .student-market-intro h1 { font-size: 24px; margin-top: 10px; }
+  .mission-stage[data-workspace-role='student'] .student-market-intro .mission-label { white-space: normal; line-height: 1.6; font-size: 9px; }
+  .mission-stage[data-workspace-role='student'] .student-market-section-heading { gap: 10px; padding: 12px; }
+  .mission-stage[data-workspace-role='student'] .student-market-section-heading > div:last-child { margin-left: 0; width: 100%; justify-content: flex-end; }
+  .mission-stage[data-workspace-role='student'] .student-communication-identity { gap: 8px; }
+  .mission-stage[data-workspace-role='student'] .student-communication-card-heading > div:first-child { flex-basis: 100%; }
+  .mission-stage[data-workspace-role='student'] .student-communication-card-heading > div:last-child { display: flex; align-items: center; justify-content: flex-end; gap: 8px; width: 100%; }
+  .mission-stage[data-workspace-role='student'] .student-communication-card-heading > div:last-child > p { margin-bottom: 0; }
   /* Keep the mobile dashboard compact without reducing its reading or tap areas. */
   .mission-stage[data-workspace-role='student'] .dashboard-focused > * + * { margin-top: 20px; }
   .mission-stage[data-workspace-role='student'] .dashboard-focused section > * + * { margin-top: 12px; }
