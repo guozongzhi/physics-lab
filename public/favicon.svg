@@ -1,4 +1,9 @@
-<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-<rect width="32" height="32" fill="#0A0B0D"/>
-<path d="M26.6677 23.7149H8.38057V20.6496H5.33301V8.38159H26.6677V23.7149ZM8.38057 20.6496H23.6201V11.4482H8.38057V20.6496ZM16.0011 16.0021L13.8461 18.1705L11.6913 16.0021L13.8461 13.8337L16.0011 16.0021ZM22.0963 16.0008L19.9414 18.1691L17.7865 16.0008L19.9414 13.8324L22.0963 16.0008Z" fill="#32F08C"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" fill="none">
+  <title>创新物理实验室</title>
+  <defs><linearGradient id="blue" x1="8" y1="4" x2="56" y2="60" gradientUnits="userSpaceOnUse"><stop stop-color="#4596FF"/><stop offset="1" stop-color="#2450D8"/></linearGradient></defs>
+  <rect x="2" y="2" width="60" height="60" rx="17" fill="url(#blue)"/>
+  <rect x="3" y="3" width="58" height="58" rx="16" stroke="#B9DAFF" stroke-opacity=".45" stroke-width="2"/>
+  <g stroke="white" stroke-width="3.2"><ellipse cx="32" cy="32" rx="22" ry="9" transform="rotate(-35 32 32)"/><ellipse cx="32" cy="32" rx="22" ry="9" transform="rotate(55 32 32)"/></g>
+  <path d="m32 23 2.8 6.2L41 32l-6.2 2.8L32 41l-2.8-6.2L23 32l6.2-2.8L32 23Z" fill="white"/>
+  <circle cx="50" cy="19" r="4.5" fill="#C6EEFF" stroke="#2450D8" stroke-width="2"/>
 </svg>
