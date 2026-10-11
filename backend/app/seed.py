@@ -189,25 +189,8 @@ def build_groups_and_users(db: Session) -> tuple[list[Group], list[User]]:
 
 
 def build_topics(db: Session) -> list[Topic]:
-    topics: list[Topic] = []
-    for i, title in enumerate(TOPIC_LIST):
-        outline = TOPIC_OUTLINES[title]
-        lines = [
-            f"# {title} - AI 自学路径",
-            "",
-            f'本主题涵盖高中物理中"{title}"的核心知识点。',
-            "",
-            "## 学习建议",
-            "1. 从基本概念出发，理解物理量的定义",
-            "2. 掌握核心公式及其适用条件",
-            "3. 结合生活实例加深理解",
-            "4. 通过例题和习题巩固解题技巧",
-            "",
-            "## 章节要点",
-        ]
-        for c in outline:
-            lines += [f"### {c['chapter']}", "- " + " / ".join(c["points"]), ""]
-        topics.append(Topic(id=f"topic-{i + 1}", title=title, outline=outline, ai_material="\n".join(lines)))
+    from .physics_curriculum import TOPICS
+    topics = [Topic(id=raw['id'], title=raw['title'], outline=raw['outline'], ai_material=raw['aiMaterial']) for raw in TOPICS]
     db.add_all(topics)
     return topics
 

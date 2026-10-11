@@ -10,6 +10,7 @@ import { useTheoryStore } from '@/store/theoryStore';
 import { useAuthStore } from '@/store/authStore';
 import { useUIStore } from '@/store/uiStore';
 import { mockTopics } from '@/data/mockTopics';
+import { getKnowledgeGuide } from '@/lib/knowledgeSystem';
 import { getLearningExamples } from '@/lib/learningExamples';
 import { cn } from '@/lib/utils';
 
@@ -237,9 +238,9 @@ export default function LearningHub() {
         <section className="lg:col-span-9">
           <div className="workspace-tabs flex flex-wrap items-center gap-2 mb-4">
             {([
-              { id: 'ai-study', label: 'AI Study Tabs', icon: Brain, color: 'mission' },
-              { id: 'knowledge', label: 'Knowledge Galaxy Mini', icon: Sparkles, color: 'nova' },
-              { id: 'quiz', label: 'Quiz Arena', icon: Trophy, color: 'energy' },
+              { id: 'ai-study', label: 'AI 自学', icon: Brain, color: 'mission' },
+              { id: 'knowledge', label: '知识体系', icon: Sparkles, color: 'nova' },
+              { id: 'quiz', label: '综合测验', icon: Trophy, color: 'energy' },
             ] as const).map((tab) => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.id;
@@ -341,6 +342,7 @@ export default function LearningHub() {
                     return (
                       <div key={cIdx} className="rounded-xl overflow-hidden">
                         <button
+                          aria-expanded={isExpanded}
                           onClick={() => setExpandedChapter(isExpanded ? null : chapter.chapter)}
                           className="w-full p-4 glass-card rounded-xl flex items-center justify-between hover:bg-mission-50/40 transition-colors"
                         >
@@ -374,10 +376,7 @@ export default function LearningHub() {
                                     : 'hover:bg-ink-50 border border-transparent'
                                 )}
                               >
-                                <div className={cn(
-                                  'node-badge !w-7 !h-7 !text-[11px]',
-                                  pIdx % 3 === 0 ? 'done' : pIdx % 3 === 1 ? 'active' : 'pending'
-                                )}>
+                                <div className="w-7 h-7 shrink-0 rounded-full bg-mission-100 text-mission-700 text-[11px] font-bold flex items-center justify-center">
                                   {pIdx + 1}
                                 </div>
                                 <span className={cn(
@@ -399,11 +398,13 @@ export default function LearningHub() {
               <div className="lg:col-span-5 space-y-4">
                 <div className="glass-card p-5 rounded-2xl">
                   <div className="chip-nova mb-3">
-                    <Lightbulb size={12} /> 典型例题卡
+                    <Lightbulb size={12} /> 知识要点与例题
                   </div>
                   {selectedPoint ? (
                     <div className="space-y-3">
                       <h4 className="font-bold text-ink-800">{selectedPoint}</h4>
+                      <p className="text-xs font-bold text-mission-600">{getKnowledgeGuide(activeTopicId, selectedPoint)?.level}</p>
+                      <p className="text-sm text-ink-700 leading-relaxed">{getKnowledgeGuide(activeTopicId, selectedPoint)?.summary}</p>
                       {selectedExamples.length ? selectedExamples.map((example, index) => (
                         <div key={`${selectedPoint}-${index}`} className="p-4 rounded-xl bg-gradient-to-br from-mission-50/60 to-nova-50/40 border border-mission-100">
                           <div className="text-xs font-bold text-mission-600 mb-2">例题 {index + 1}</div>

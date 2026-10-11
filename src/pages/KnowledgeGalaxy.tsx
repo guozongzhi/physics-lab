@@ -6,6 +6,8 @@ import { useUIStore } from '@/store/uiStore';
 import { useLearningProgressStore } from '@/store/learningProgressStore';
 import { Search, Star, BookOpen, ChevronRight, CheckCircle2, Zap, X, Orbit, Magnet, Sun, Thermometer, Atom, Waves, ChartNoAxesColumn, ArrowLeft, Pause, Play } from 'lucide-react';
 import { mockTopics } from '@/data/mockTopics';
+import { getKnowledgeGuide, getRelatedQuestions } from '@/lib/knowledgeSystem';
+import { getLearningExamples } from '@/lib/learningExamples';
 import { cn } from '@/lib/utils';
 
 const TOPIC_ICONS = [Orbit, Magnet, Sun, Thermometer, Atom, Waves, Orbit, ChartNoAxesColumn];
@@ -14,7 +16,7 @@ const DIFFICULTIES = ['全部难度', '入门', '进阶', '挑战'];
 const SYSTEMS = mockTopics.map((topic, topicIndex) => {
   const nodes = topic.outline.flatMap((chapter, chapterIdx) => chapter.points.map((label, pointIdx) => ({
     id: `${topic.id}-${chapterIdx}-${pointIdx}`, label, topicId: topic.id, chapterIdx, pointIdx,
-    chapter: chapter.chapter, difficulty: Math.min(chapterIdx + 1, 3),
+    chapter: chapter.chapter, difficulty: topic.id === 'topic-7' || getKnowledgeGuide(topic.id, label)?.level === '拓展了解' ? 3 : chapterIdx === 0 ? 1 : 2,
   })));
   return { ...topic, icon: TOPIC_ICONS[topicIndex % TOPIC_ICONS.length], nodes };
 });
@@ -46,9 +48,11 @@ export default function KnowledgeGalaxy() {
   const displaySystems = topicId === 'all' ? SYSTEMS : [system];
   const visibleNodes = displaySystems.flatMap((topic) => topic.nodes.filter(matches));
   const selectedNode = visibleNodes.find((node) => node.id === selectedId) ?? visibleNodes[0] ?? null;
-  const questionMap = useMemo(() => new Map(ALL_NODES.map((node) => [node.id, questions.filter((question) => question.topicId === node.topicId && question.knowledgePoint && (node.label.includes(question.knowledgePoint) || question.knowledgePoint.includes(node.label)))])), [questions]);
+  const questionMap = useMemo(() => new Map(ALL_NODES.map((node) => [node.id, getRelatedQuestions(node.topicId, node.label, questions)])), [questions]);
   const selectedSystem = SYSTEMS.find((topic) => topic.id === selectedNode?.topicId) ?? system;
   const selectedQuestions = selectedNode ? questionMap.get(selectedNode.id) ?? [] : [];
+  const selectedGuide = selectedNode ? getKnowledgeGuide(selectedNode.topicId, selectedNode.label) : null;
+  const selectedExamples = selectedNode ? getLearningExamples(selectedNode.topicId, selectedNode.label, questions) : [];
   const predecessor = selectedNode ? selectedSystem.nodes[selectedSystem.nodes.findIndex((node) => node.id === selectedNode.id) - 1] : undefined;
   const selectTopic = (id: string) => {
     setTopicId(id); setSelectedId(null); setDetailsOpen(false); setCollapsedChapters({});
@@ -65,32 +69,41 @@ export default function KnowledgeGalaxy() {
     } finally { setStartingQuiz(false); }
   };
   const detail = selectedNode && (
-    <div className="galaxy-detail-content">
+    <div className="galaxy-detail-content" key={selectedNode.id}>
       <div className="galaxy-detail-context">{selectedSystem.title} <ChevronRight size={12} aria-hidden="true" /> {selectedNode.chapter}</div>
       <div className="galaxy-detail-title"><Star size={22} aria-hidden="true" /><h3>{selectedNode.label}</h3></div>
       <span className={cn('galaxy-status', mastered[selectedNode.id] && 'is-mastered')}>
         {mastered[selectedNode.id] ? <CheckCircle2 size={14} aria-hidden="true" /> : <BookOpen size={14} aria-hidden="true" />}
         {mastered[selectedNode.id] ? '自评已掌握' : '学习中'} · {DIFFICULTIES[selectedNode.difficulty]}
       </span>
+      <section className="galaxy-related galaxy-concept">
+        <h4>学习要点 <span>{selectedGuide?.level}</span></h4>
+        <p>{selectedGuide?.summary}</p>
+      </section>
       <section className="galaxy-related">
-        <h4>关联典型题 <span>{selectedQuestions.length}</span></h4>
-        {selectedQuestions.length ? selectedQuestions.slice(0, 3).map((question, index) => (
-          <div className="galaxy-question" key={question.id}><span>题目 {index + 1} · 难度 {question.difficulty}</span><p>{question.stem}</p></div>
-        )) : <p>该知识点暂无精确关联题，可进入所属主题进行综合练习。</p>}
+        <h4>配套例题 <span>{selectedExamples.length}</span></h4>
+        {selectedExamples.map((example, index) => <div className="galaxy-question" key={index}>
+          <span>例题 {index + 1}</span><p className="whitespace-pre-line">{example.question}</p>
+          <details><summary>查看答案与说明</summary><p className="whitespace-pre-line">{example.answer}</p>{example.analysis && <p className="whitespace-pre-line">{example.analysis}</p>}</details>
+        </div>)}
+      </section>
+      <section className="galaxy-related">
+        <h4>测验题库关联 <span>{selectedQuestions.length}</span></h4>
+        {selectedQuestions.length ? selectedQuestions.slice(0, 3).map((question) => <div className="galaxy-question" key={question.id}><p>{question.stem}</p><ol type="A">{question.options.map((option, index) => <li key={index}>{option}</li>)}</ol></div>) : <p>该点已有配套例题，暂未纳入自动判分题库；综合练习按所属主题抽题。</p>}
       </section>
       <div className="galaxy-detail-actions">
         <button className="btn-outline" disabled={!userId} onClick={() => userId && toggleMastered(userId, selectedNode.id)}><CheckCircle2 size={16} aria-hidden="true" />{mastered[selectedNode.id] ? '取消自评掌握' : '标记自评已掌握'}</button>
         <button className="btn-primary" disabled={startingQuiz} onClick={handlePractice}><Zap size={16} aria-hidden="true" />{startingQuiz ? '正在创建练习…' : '综合练习'}</button>
       </div>
       <p className="galaxy-local-note">自评仅保存在本设备，不计入测验成绩。综合练习覆盖所属主题。</p>
-      {predecessor ? <button className="galaxy-predecessor" onClick={() => { setDifficulty(0); setSearchQuery(''); setCollapsedChapters({}); selectNode(predecessor); }}><ArrowLeft size={14} aria-hidden="true" /><span>上一知识点：{predecessor.label}</span></button> : <p className="galaxy-local-note">这是该主题的第一个知识点，可从这里开始学习。</p>}
+      {predecessor ? <button className="galaxy-predecessor" onClick={() => { setDifficulty(0); setSearchQuery(''); setCollapsedChapters({}); selectNode(predecessor); }}><ArrowLeft size={14} aria-hidden="true" /><span>按目录回看：{predecessor.label}</span></button> : <p className="galaxy-local-note">这是该主题目录中的第一个知识点。目录顺序供学习参考，不表示全部知识点都具有前置依赖。</p>}
     </div>
   );
 
   return (
     <div className="knowledge-explorer">
       <section className="galaxy-intro">
-        <div><h1>知识星河</h1><p>按主题探索，逐个点亮知识。</p></div>
+        <div><h1>知识星河</h1><p>沿概念、规律与应用建立知识联系；拓展内容单独标注。</p></div>
         <div className="galaxy-progress"><div><span>自评已掌握 <strong>{masteredCount}</strong> / {ALL_NODES.length} 个知识点</span><strong>{progress}%</strong></div><progress aria-label="知识点自评掌握进度" value={masteredCount} max={ALL_NODES.length} /></div>
       </section>
       <section className={cn('galaxy-constellation', motionPaused && 'is-paused')} aria-label="知识主题星图">

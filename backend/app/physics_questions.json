@@ -988,5 +988,125 @@
     "knowledgePoint": "逐差法",
     "difficulty": 1,
     "topicId": "topic-8"
+  },
+  {
+    "id": "q-067",
+    "type": "single",
+    "stem": "10N恒力与位移方向相同，使物体移动3m，该力做功为？",
+    "options": [
+      "0J",
+      "10J",
+      "30J",
+      "90J"
+    ],
+    "answer": 2,
+    "knowledgePoint": "功与功率",
+    "difficulty": 1,
+    "topicId": "topic-1"
+  },
+  {
+    "id": "q-068",
+    "type": "single",
+    "stem": "质量2kg物体速度由1m/s增至3m/s，合力做功为？",
+    "options": [
+      "2J",
+      "4J",
+      "8J",
+      "10J"
+    ],
+    "answer": 2,
+    "knowledgePoint": "动能定理",
+    "difficulty": 2,
+    "topicId": "topic-1"
+  },
+  {
+    "id": "q-069",
+    "type": "single",
+    "stem": "忽略空气阻力，小球自由下落时，机械能如何变化？",
+    "options": [
+      "增大",
+      "减小",
+      "不变",
+      "一定为零"
+    ],
+    "answer": 2,
+    "knowledgePoint": "机械能守恒定律",
+    "difficulty": 1,
+    "topicId": "topic-1"
+  },
+  {
+    "id": "q-070",
+    "type": "single",
+    "stem": "物体在粗糙水平面上滑动并停下，减少的机械能主要转化为？",
+    "options": [
+      "内能",
+      "质量",
+      "重力势能",
+      "核能"
+    ],
+    "answer": 0,
+    "knowledgePoint": "功能关系与能量转化",
+    "difficulty": 2,
+    "topicId": "topic-1"
+  },
+  {
+    "id": "q-071",
+    "type": "single",
+    "stem": "2N恒力作用3s，其冲量大小为？",
+    "options": [
+      "2N·s",
+      "3N·s",
+      "5N·s",
+      "6N·s"
+    ],
+    "answer": 3,
+    "knowledgePoint": "冲量与动量定理",
+    "difficulty": 1,
+    "topicId": "topic-1"
+  },
+  {
+    "id": "q-072",
+    "type": "single",
+    "stem": "系统在某方向上总动量守恒的条件是？",
+    "options": [
+      "每个物体速度都不变",
+      "该方向合外力冲量为零",
+      "总动能一定守恒",
+      "每个物体质量相等"
+    ],
+    "answer": 1,
+    "knowledgePoint": "动量守恒定律",
+    "difficulty": 2,
+    "topicId": "topic-1"
+  },
+  {
+    "id": "q-073",
+    "type": "single",
+    "stem": "两物体完全非弹性碰撞并粘在一起，外力冲量可忽略，哪些量守恒？",
+    "options": [
+      "总动量和总动能都守恒",
+      "总动量守恒，总动能通常减小",
+      "总动量不守恒，总动能守恒",
+      "都不守恒"
+    ],
+    "answer": 1,
+    "knowledgePoint": "碰撞与能量损失",
+    "difficulty": 1,
+    "topicId": "topic-1"
+  },
+  {
+    "id": "q-074",
+    "type": "single",
+    "stem": "静止的两物体质量分别为1kg和2kg，内力使其分离且外力冲量可忽略，前者向右2m/s，后者速度是？",
+    "options": [
+      "向右1m/s",
+      "向左1m/s",
+      "向左2m/s",
+      "向右4m/s"
+    ],
+    "answer": 1,
+    "knowledgePoint": "反冲与动量守恒应用",
+    "difficulty": 2,
+    "topicId": "topic-1"
   }
 ]

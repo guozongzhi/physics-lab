@@ -11,6 +11,7 @@ backend/*
 !backend/app/
 backend/app/*
 !backend/app/physics_questions.json
+!backend/app/physics_topics.json
 docs
 *.md
 

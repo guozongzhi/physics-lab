@@ -353,7 +353,7 @@
 .galaxy-empty h3 { font-size: 16px; color: #183456; font-weight: 700; }
 .galaxy-empty p { font-size: 13px; line-height: 1.8; margin: 12px 0; }
 .galaxy-detail-mobile { display: none; }
-.knowledge-explorer :is(button, input, select):focus-visible { outline: 3px solid #76acff; outline-offset: 2px; }
+.knowledge-explorer :is(button, input, select, summary):focus-visible { outline: 3px solid #76acff; outline-offset: 2px; }
 @media (max-width: 1199px) {
   .galaxy-workspace { grid-template-columns: 160px minmax(0, 1fr); }
   .galaxy-detail-desktop { grid-column: 1 / -1; position: static; }
@@ -518,3 +518,12 @@
  .student-study-copy ol > li::before { left: 9px; top: 11px; }
  .student-project-preview { max-width: 100%; }
 }
+
+/* Knowledge explanations and worked examples share the blue-white reading surface. */
+.galaxy-concept { padding: 14px; border: 1px solid #cbdffa; border-radius: 12px; background: #f0f6ff; }
+.galaxy-concept h4 { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+.galaxy-question details { margin-top: 10px; border-top: 1px solid #e3ebf6; }
+.galaxy-question summary { cursor: pointer; color: #245bd2; font-size: 13px; font-weight: 600; padding: 12px 0; min-height: 44px; }
+.galaxy-question details[open] { padding-bottom: 4px; }
+.galaxy-question ol { list-style-type: upper-alpha; padding-left: 24px; margin-top: 8px; color: #52688c; font-size: 13px; line-height: 1.8; }
+.galaxy-question li { padding-left: 4px; margin-top: 4px; overflow-wrap: anywhere; }
