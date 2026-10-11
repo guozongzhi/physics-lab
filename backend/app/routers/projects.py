@@ -273,6 +273,11 @@ def create_recruitment(
         raise HTTPException(status_code=404, detail="项目不存在")
     if current.account_role not in ("teacher", "admin") and current.group_id != project.owner_group_id:
         raise HTTPException(status_code=403, detail="只能为本小组项目发布招募")
+    deadline = payload.deadline
+    if deadline.tzinfo is None:
+        deadline = deadline.replace(tzinfo=timezone.utc)
+    if deadline <= datetime.now(timezone.utc):
+        raise HTTPException(status_code=400, detail="招募截止时间必须晚于当前时间")
     # 酬劳从项目归属组的能量币里预扣作押金。不扣的话结算时就是凭空发币，
     # 而且「失败」那一档会让发包组白得一笔自己从未付过的钱。
     owner = db.get(Group, project.owner_group_id) if project.owner_group_id else None
@@ -306,12 +311,21 @@ def place_bid(
     rec_id: str,
     payload: BidCreate,
     db: Session = Depends(get_db),
-    _: User = Depends(get_current_user),
+    current: User = Depends(get_current_user),
     _window: None = Depends(window_guard("recruit")),
 ):
     rec = db.get(Recruitment, rec_id)
     if not rec:
         raise HTTPException(status_code=404, detail="招募不存在")
+    if payload.userId != current.id:
+        raise HTTPException(status_code=403, detail="只能以本人身份投标")
+    deadline = rec.deadline
+    if deadline.tzinfo is None:
+        deadline = deadline.replace(tzinfo=timezone.utc)
+    if rec.status != "open" or deadline <= datetime.now(timezone.utc):
+        raise HTTPException(status_code=400, detail="招募已关闭或过期")
+    if any(b.get("userId") == current.id for b in rec.bids):
+        raise HTTPException(status_code=409, detail="请勿重复投标")
     bid = {
         "userId": payload.userId,
         "skillDesc": payload.skillDesc,
@@ -338,6 +352,8 @@ def assign(rec_id: str, payload: AssignRequest, db: Session = Depends(get_db), c
         raise HTTPException(status_code=403, detail="只能分配本项目招募")
     if payload.userId == current.id and current.account_role == "student":
         raise HTTPException(status_code=400, detail="不能给自己投标的招募做分配")
+    if not db.get(User, payload.userId) or not any(b.get("userId") == payload.userId for b in rec.bids):
+        raise HTTPException(status_code=400, detail="只能指派已投标的有效用户")
     rec.status = "assigned"
     rec.assignee_user_id = payload.userId
     db.commit()

@@ -6,7 +6,7 @@ import { autoReviveDate } from './dateReviver';
  *
  * - 通过环境变量 VITE_API_BASE_URL 指定后端地址（如 http://localhost:8000）。
  * - 未配置时 apiEnabled 为 false，前端保持原有 localStorage 离线模式，零影响。
- * - JWT 存于 localStorage(plab_token)，自动附加到 Authorization 头。
+ * - JWT 根据自动登录选择存于 localStorage 或 sessionStorage，自动附加到 Authorization 头。
  */
 
 const RAW_BASE = (import.meta.env.VITE_API_BASE_URL || '').trim();
@@ -19,10 +19,20 @@ const API_BASE = RAW_BASE === '/' ? '' : RAW_BASE.replace(/\/$/, '');
 export const apiEnabled = Boolean(RAW_BASE);
 
 const TOKEN_KEY = 'plab_token';
+const REMEMBER_KEY = 'plab_remember_login';
+
+export function getLoginPersistence(): boolean {
+  try { return localStorage.getItem(REMEMBER_KEY) === 'true'; } catch { return false; }
+}
+
+/** 在登录请求前设置；未设置的旧版本会话继续使用持久化存储。 */
+export function setLoginPersistence(remember: boolean): void {
+  try { localStorage.setItem(REMEMBER_KEY, String(remember)); } catch { /* ignore */ }
+}
 
 export function getToken(): string | null {
   try {
-    return localStorage.getItem(TOKEN_KEY);
+    return sessionStorage.getItem(TOKEN_KEY) || localStorage.getItem(TOKEN_KEY);
   } catch {
     return null;
   }
@@ -30,8 +40,12 @@ export function getToken(): string | null {
 
 export function setToken(token: string | null): void {
   try {
-    if (token) localStorage.setItem(TOKEN_KEY, token);
-    else localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(TOKEN_KEY);
+    sessionStorage.removeItem(TOKEN_KEY);
+    if (token) {
+      const storage = localStorage.getItem(REMEMBER_KEY) === 'false' ? sessionStorage : localStorage;
+      storage.setItem(TOKEN_KEY, token);
+    }
   } catch {
     /* ignore */
   }

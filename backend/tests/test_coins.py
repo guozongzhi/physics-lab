@@ -298,6 +298,8 @@ def test_recruitment_create_escrows_reward(client, auth):
 def test_recruitment_settle_success(client, auth):
     before_total = _recruit_total(client, auth)
     rec_id = _create_recruitment(client, auth, _project_for(client, auth), reward=50)
+    bid = client.post(f"/api/recruitments/{rec_id}/bid", json={"userId": "u-3", "skillDesc": "实验", "hours": 2}, headers=auth("u-3"))
+    assert bid.status_code == 200
     resp = client.put(f"/api/recruitments/{rec_id}/assign", json={"userId": "u-3"}, headers=auth("u-1"))
     assert resp.status_code == 200
 
@@ -314,7 +316,10 @@ def test_recruitment_settle_success(client, auth):
 def test_recruitment_settle_fail_refund_owner(client, auth):
     before_total = _recruit_total(client, auth)
     rec_id = _create_recruitment(client, auth, _project_for(client, auth), reward=50)
-    client.put(f"/api/recruitments/{rec_id}/assign", json={"userId": "u-3"}, headers=auth("u-1"))
+    bid = client.post(f"/api/recruitments/{rec_id}/bid", json={"userId": "u-3", "skillDesc": "实验", "hours": 2}, headers=auth("u-3"))
+    assert bid.status_code == 200
+    assigned = client.put(f"/api/recruitments/{rec_id}/assign", json={"userId": "u-3"}, headers=auth("u-1"))
+    assert assigned.status_code == 200
 
     resp = client.put(f"/api/recruitments/{rec_id}/resolve", json={"result": "fail"}, headers=auth("u-1"))
     assert resp.status_code == 200
@@ -329,7 +334,10 @@ def test_recruitment_settle_fail_refund_owner(client, auth):
 def test_recruitment_settle_partial_splits_escrow(client, auth):
     before_total = _recruit_total(client, auth)
     rec_id = _create_recruitment(client, auth, _project_for(client, auth), reward=50)
-    client.put(f"/api/recruitments/{rec_id}/assign", json={"userId": "u-3"}, headers=auth("u-1"))
+    bid = client.post(f"/api/recruitments/{rec_id}/bid", json={"userId": "u-3", "skillDesc": "实验", "hours": 2}, headers=auth("u-3"))
+    assert bid.status_code == 200
+    assigned = client.put(f"/api/recruitments/{rec_id}/assign", json={"userId": "u-3"}, headers=auth("u-1"))
+    assert assigned.status_code == 200
 
     resp = client.put(f"/api/recruitments/{rec_id}/resolve", json={"result": "partial"}, headers=auth("u-1"))
     assert resp.status_code == 200

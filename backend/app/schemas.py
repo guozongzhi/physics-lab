@@ -194,7 +194,7 @@ class GroupOut(CamelModel):
 
 class GroupCreate(BaseModel):
     name: str
-    initialCoins: int = 500
+    initialCoins: int = Field(default=500, ge=0)
     classId: str | None = None
 
 
@@ -380,12 +380,12 @@ class ProjectUpdate(BaseModel):
     results: str | None = None
     photos: list[str] | None = None
     rewardCoins: int | None = Field(default=None, ge=0)
-    status: str | None = None
+    status: Literal["planning", "progress", "review", "done", "failed", "frozen"] | None = None
     progress: int | None = Field(default=None, ge=0, le=100)
 
 
 class ProjectStatusUpdate(BaseModel):
-    status: str
+    status: Literal["planning", "progress", "review", "done", "failed", "frozen"]
 
 
 class ProjectProgressUpdate(BaseModel):

@@ -1,0 +1,86 @@
+[
+  {
+    "path": "/dashboard",
+    "headers": 1,
+    "overflow": 0,
+    "textLength": 443,
+    "title": "张伟"
+  },
+  {
+    "path": "/my-team",
+    "headers": 1,
+    "overflow": 0,
+    "textLength": 182,
+    "title": "牛顿先锋队"
+  },
+  {
+    "path": "/theory/topics",
+    "headers": 1,
+    "overflow": 0,
+    "textLength": 839,
+    "title": "Learning Hub · AI 学习中枢"
+  },
+  {
+    "path": "/theory/challenge",
+    "headers": 1,
+    "overflow": 0,
+    "textLength": 243,
+    "title": "知识星河 · 每一个知识点都是一颗星"
+  },
+  {
+    "path": "/theory/challenges",
+    "headers": 1,
+    "overflow": 0,
+    "textLength": 221,
+    "title": "挑战大厅"
+  },
+  {
+    "path": "/projects",
+    "headers": 1,
+    "overflow": 0,
+    "textLength": 439,
+    "title": "Project Center · 项目指挥中心"
+  },
+  {
+    "path": "/safety-lab",
+    "headers": 1,
+    "overflow": 0,
+    "textLength": 726,
+    "title": "Safety Lab · 安全实验舱"
+  },
+  {
+    "path": "/recruit/market",
+    "headers": 1,
+    "overflow": 0,
+    "textLength": 670,
+    "title": "人才招募大厅找到你的任务 · 贡献你的才华"
+  },
+  {
+    "path": "/coins",
+    "headers": 1,
+    "overflow": 0,
+    "textLength": 407,
+    "title": "Research League科研联赛榜"
+  },
+  {
+    "path": "/showcase",
+    "headers": 1,
+    "overflow": 0,
+    "textLength": 353,
+    "title": "Achievement Hall成果展览馆"
+  },
+  {
+    "path": "/profile",
+    "headers": 1,
+    "overflow": 0,
+    "textLength": 530,
+    "title": "张伟牛顿先锋队·「大胆假设，小心求证」"
+  },
+  {
+    "path": "/communicator",
+    "headers": 1,
+    "overflow": 0,
+    "textLength": 271,
+    "title": "小组沟通中心"
+  }
+]

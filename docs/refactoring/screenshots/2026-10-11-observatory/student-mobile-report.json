@@ -1,0 +1,62 @@
+[
+  {
+    "path": "/dashboard",
+    "overflow": 0,
+    "title": "张伟"
+  },
+  {
+    "path": "/my-team",
+    "overflow": 0,
+    "title": "牛顿先锋队"
+  },
+  {
+    "path": "/theory/topics",
+    "overflow": 0,
+    "title": "Learning Hub · AI 学习中枢"
+  },
+  {
+    "path": "/theory/challenge",
+    "overflow": 0,
+    "title": "知识星河 · 每一个知识点都是一颗星"
+  },
+  {
+    "path": "/theory/challenges",
+    "overflow": 0,
+    "title": "挑战大厅"
+  },
+  {
+    "path": "/projects",
+    "overflow": 0,
+    "title": "Project Center · 项目指挥中心"
+  },
+  {
+    "path": "/safety-lab",
+    "overflow": 0,
+    "title": "Safety Lab · 安全实验舱"
+  },
+  {
+    "path": "/recruit/market",
+    "overflow": 0,
+    "title": "人才招募大厅找到你的任务 · 贡献你的才华"
+  },
+  {
+    "path": "/coins",
+    "overflow": 0,
+    "title": "Research League科研联赛榜"
+  },
+  {
+    "path": "/showcase",
+    "overflow": 0,
+    "title": "Achievement Hall成果展览馆"
+  },
+  {
+    "path": "/profile",
+    "overflow": 0,
+    "title": "张伟牛顿先锋队·「大胆假设，小心求证」"
+  },
+  {
+    "path": "/communicator",
+    "overflow": 0,
+    "title": "小组沟通中心"
+  }
+]

@@ -1,0 +1,136 @@
+/* Mission workspaces share the observatory artwork and glass of the login page. */
+.mission-stage {
+  --workspace-ink: #071749;
+  --workspace-muted: #45628f;
+  --workspace-blue: #0753ff;
+  color: var(--workspace-ink);
+  background: #031630;
+  font-family: 'PingFang SC', 'Noto Sans SC', system-ui, sans-serif;
+}
+.mission-stage::before {
+  opacity: 1;
+  background: url('/images/login-observatory-desktop.jpg') center / cover no-repeat;
+  mask-image: none;
+}
+.mission-stage .mission-ambient { display: none; }
+.mission-stage .mission-header {
+  height: 72px;
+  background: rgba(3, 22, 48, .88);
+  border-color: #98bbff40;
+  box-shadow: 0 8px 30px #00113030;
+}
+.mission-stage .mission-brand-mark {
+  background: linear-gradient(135deg, #4ee0f2, #053bff 58%, #b477ef);
+  box-shadow: inset 0 1px 1px #ffffff70, 0 0 18px #0753ff30;
+}
+.mission-stage .mission-nav {
+  top: 88px;
+  height: calc(100dvh - 104px);
+  background: rgba(5, 25, 60, .87);
+  border: 1px solid #a5cdff45;
+  border-radius: 22px;
+  box-shadow: inset 0 1px #ffffff18, 0 15px 35px #00113040;
+}
+.mission-stage .mission-nav-item { padding-block: 12px; color: #d5e6ff; border: 1px solid transparent; }
+.mission-stage .mission-nav-item:hover { background: #2c6de72b; color: white; }
+.mission-stage .mission-nav-item[data-active='true'] {
+  background: linear-gradient(110deg, #0846ff, #076aff);
+  border-color: #96efff80;
+  box-shadow: 0 0 16px #0865ff40, inset 0 0 7px #71d8ff40;
+  color: white;
+}
+.mission-stage .mission-nav-item[data-active='true'] svg { color: white; }
+.mission-stage .mission-content { padding-top: 96px; }
+.mission-stage .mission-page-context {
+  color: #d1e5ff;
+  min-height: 36px;
+  margin-bottom: 14px;
+}
+.mission-stage .mission-page-context a { color: #81dfff; }
+.mission-stage .mission-page-context span:last-child { color: #f0f7ff; }
+.mission-stage :is(.glass-card, .card-base, .immersive-bento, .mission-page-intro, .mission-hero, .portal-card, .portal-overview-link, .admin-portal-card) {
+  background: linear-gradient(145deg, rgba(184, 217, 255, .92), rgba(232, 239, 255, .94) 52%, rgba(176, 210, 250, .92));
+  border: 1px solid #e7f5ffcc;
+  border-radius: 22px;
+  box-shadow: inset 0 1px 8px #ffffff65, 0 12px 32px #00174440;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  color: var(--workspace-ink);
+}
+.mission-stage :is(.glass-card-hover, .portal-card, .immersive-bento):hover {
+  border-color: #9de6ff;
+  box-shadow: inset 0 1px 8px #ffffff65, 0 0 18px #2a99ff40, 0 16px 35px #00174445;
+}
+.mission-stage :is(.mission-hero, .mission-page-intro)::after { border-color: #76aaff45; }
+.mission-stage :is(.portal-section-heading h2, .portal-card-title, .admin-portal-card strong, .portal-overview-link strong) { color: #071749; }
+.mission-stage :is(.portal-kicker, .portal-section-heading > div > p, .portal-section-heading > p) { color: #d1e7ff; }
+.mission-stage .portal-section-heading h2 { color: #fff; }
+.mission-stage :is(.portal-card-description, .portal-card-foot, .portal-overview-link small, .admin-portal-card small) { color: #3b5388; }
+.mission-stage .portal-card-featured {
+  background: linear-gradient(135deg, #0a4295, #052854);
+  border-color: #8edaff80;
+  color: white;
+}
+.mission-stage .portal-card-featured :is(.portal-card-title, .portal-card-description, .portal-card-foot) { color: #eef7ff; }
+.mission-stage .portal-card-featured .portal-card-eyebrow { color: #82deff; }
+.mission-stage :is(.btn-mission, .btn-primary) {
+  background: linear-gradient(110deg, #0853ff, #124aff 50%, #2297fa);
+  border: 1px solid #57bbff;
+  color: #fff;
+  border-radius: 13px;
+  box-shadow: 0 5px 16px #0759ff30, inset 0 1px 5px #46c8ff80;
+}
+.mission-stage :is(.input-field, input:not([type='checkbox']):not([type='radio']):not([type='file']), select, textarea) {
+  background-color: #f5f8ffeb;
+  border-color: #a9c6f2;
+  color: #102f68;
+}
+.mission-stage :is(input, textarea)::placeholder { color: #5f78a8; }
+.mission-stage main :is(.text-ink-800, .text-ink-900, .text-slate-900, .text-physics-800) { color: #071749; }
+.mission-stage main :is(.text-ink-500, .text-ink-600, .text-slate-500, .text-slate-600) { color: #45628f; }
+.mission-stage main :is(.text-ink-400, .text-slate-400) { color: #536e9a; }
+.mission-stage main .mission-label { color: #123c8a; background: #e5f1ffd9; border-color: #a7cfff; }
+.mission-stage main table { background: #f5f8ffb3; }
+.mission-stage main table th { background: #c9dff7; color: #34547f; }
+.mission-stage main table td { border-color: #aec9ed60; color: #182e56; }
+.mission-stage :is(button, a, input, select, textarea):focus-visible { outline: 2px solid #48aaff; outline-offset: 3px; }
+.mission-stage button:disabled { cursor: not-allowed; }
+.workspace-search-button { display: flex; align-items: center; gap: 9px; padding: 9px 14px; border: 1px solid #98bbff50; border-radius: 12px; background: #14366580; color: #d9e9ff; font-size: 12px; }
+.workspace-search-button kbd { color: #9fbde8; font-size: 10px; }
+.workspace-search-results { display: grid; gap: 6px; max-height: 50dvh; overflow-y: auto; margin-top: 16px; }
+.workspace-search-result { display: flex; align-items: center; gap: 12px; padding: 13px; border: 1px solid #a9c6f270; border-radius: 12px; text-align: left; background: #f5f8ff90; color: #173b7b; }
+.workspace-search-result:hover, .workspace-search-result:focus-visible { background: #c6e3ff; }
+.workspace-search-result small { display: block; color: #56719b; margin-top: 3px; }
+.workspace-dialog { position: fixed; inset: 0; z-index: 200; display: grid; place-items: center; padding: 16px; }
+.workspace-dialog-panel { position: relative; width: 100%; max-height: calc(100dvh - 32px); overflow-y: auto; background: linear-gradient(145deg,#c2ddff,#e9efff 52%,#b5d6fb); border: 1px solid #e7f5ff; border-radius: 22px; color: #071749; box-shadow: inset 0 1px 8px #ffffff65, 0 0 20px #2a99ff50, 0 24px 45px #00174470; }
+.workspace-dialog-panel :is(input,select,textarea) { background-color: #f5f8ff; color: #102f68; }
+.workspace-dialog-panel :is(button,a,input,select,textarea):focus-visible { outline: 2px solid #0753ff; outline-offset: 3px; }
+.workspace-dialog-panel .card-base { background: transparent; }
+.workspace-skip-link { position: fixed; left: 16px; top: -80px; z-index: 300; padding: 12px 20px; border-radius: 12px; background: white; color: #0753ff; }
+.workspace-skip-link:focus { top: 12px; }
+@media (max-width: 767px) {
+  .mission-stage::before { background-image: url('/images/login-observatory-mobile.jpg'); background-position: center top; }
+  .mission-stage .mission-header { height: 64px; }
+  .mission-stage .mission-content { padding-top: 80px; padding-inline: 16px; }
+  .mission-stage .mission-nav { top: 0; height: 100dvh; border-radius: 0 22px 22px 0; padding-top: 20px; }
+  .mission-stage .mission-nav-close { display: flex; }
+  .workspace-search-button { padding: 9px; }
+  .workspace-search-button :is(span,kbd) { display: none; }
+  .mission-stage :is(.glass-card,.immersive-bento,.mission-page-intro) { border-radius: 18px; }
+  .mission-stage main :is(.col-span-12) { min-width: 0; }
+  .mission-stage .portal-section-heading { align-items: start; flex-wrap: wrap; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mission-stage *, .mission-stage *::before, .mission-stage *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}
+.mission-stage .workspace-tabs { padding: 6px; border: 1px solid #e7f5ff80; border-radius: 18px; background: #c4dcf4e8; }
+.mission-stage .workspace-tabs button { flex: 1; justify-content: center; min-width: 140px; }
+.mission-stage .workspace-tabs button.glass-card { background: linear-gradient(110deg,#0846ff,#076aff); border-color: #96efff; color: white; }
+.mission-stage .workspace-tabs button.glass-card svg { color: white; }
+.mission-stage .mission-brand-title { white-space: nowrap; }
+@media (max-width: 767px) {
+  .mission-stage .mission-header > div { gap: 8px; }
+  .mission-stage .mission-header .mission-brand-title { font-size: 12px; }
+  .mission-stage .mission-header .text-energy-600 { display: none; }
+  .mission-stage .mission-header .mission-brand-mark { width: 32px; height: 32px; }
+}

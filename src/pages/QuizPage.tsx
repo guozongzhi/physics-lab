@@ -94,6 +94,23 @@ export default function QuizPage(props: QuizPageProps) {
           loadedSessionRef.current = session.id;
           setQuestions(session.questions);
           setAnswers(session.userAnswers || {});
+          if (session.graded) {
+            const results = session.questions.map((q) => ({
+              qid: q.id,
+              correct: isAnswerCorrect(q, session.userAnswers[q.id]),
+              correctAns: q.answer,
+              userAns: session.userAnswers[q.id],
+            }));
+            setSubmitted({
+              score: session.score,
+              correctCount: results.filter((r) => r.correct).length,
+              passed: session.passed,
+              blindPoints: session.blindPoints,
+              questionResults: results,
+            });
+          } else {
+            setSubmitted(null);
+          }
           const topic = getTopicById(session.topicId);
           setTopicTitle(topic?.title || '未知主题');
         }
@@ -138,13 +155,10 @@ export default function QuizPage(props: QuizPageProps) {
   const answeredCount = Object.keys(answers).length;
 
   const handleAnswer = (qid: string, val: Question['answer']) => {
-    setAnswers((prev) => {
-      const next = { ...prev, [qid]: val };
-      if (mode === 'quiz' && sessionId) {
-        useTheoryStore.getState().submitAnswer(sessionId, qid, val);
-      }
-      return next;
-    });
+    setAnswers((prev) => ({ ...prev, [qid]: val }));
+    if (mode === 'quiz' && sessionId) {
+      useTheoryStore.getState().submitAnswer(sessionId, qid, val);
+    }
   };
 
   const toggleMultiple = (qid: string, idx: number) => {
@@ -263,7 +277,24 @@ export default function QuizPage(props: QuizPageProps) {
     });
   };
 
-  const restart = () => {
+  const restart = async () => {
+    if (mode === 'quiz' && sessionId) {
+      const previous = useTheoryStore.getState().quizSessions.find((s) => s.id === sessionId);
+      if (!previous) {
+        pushToast('测验会话不存在，请回学习中心重新开始', 'error');
+        return;
+      }
+      try {
+        const next = await useTheoryStore.getState().startQuiz(previous.topicId, previous.userId);
+        navigate(`/theory/quiz/${next.id}`);
+      } catch (err) {
+        pushToast(err instanceof Error ? err.message : '无法开始新测验，请重试', 'error');
+        return;
+      }
+    } else {
+      navigate('/theory/challenges');
+      return;
+    }
     setAnswers({});
     setSubmitted(null);
     setCurrentQ(0);
@@ -654,17 +685,14 @@ export default function QuizPage(props: QuizPageProps) {
               )}
               <button
                 onClick={restart}
-                className={cn(
-                  'py-3.5 font-semibold text-white shadow-md bg-gradient-to-r hover:brightness-110 rounded-xl2 inline-flex items-center justify-center gap-2',
-                  submitted.passed ? 'from-lab-500 to-lab-600' : meta.gradient
-                )}
+                className="btn-mission py-3.5 inline-flex items-center justify-center gap-2"
               >
                 <RotateCcw size={18} />
                 {submitted.passed ? '再练一次巩固' : '重新检测'}
               </button>
               {submitted.passed && mode === 'quiz' && (
                 <button
-                  onClick={() => navigate('/theory')}
+                  onClick={() => navigate('/theory/challenges')}
                   className="md:col-span-2 btn-lab py-3.5"
                 >
                   <Swords size={18} />

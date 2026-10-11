@@ -4,6 +4,7 @@ import App from './App'
 import './index.css'
 import './design-system/styles/immersive.css'
 import './design-system/styles/unified.css'
+import './design-system/styles/workspace.css'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

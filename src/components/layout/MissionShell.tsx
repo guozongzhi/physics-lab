@@ -3,12 +3,15 @@ import { applyAvatarFallback, avatarFallback } from '@/lib/imageFallback';
 import type { ReactNode } from 'react';
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import { useEffect, useState } from 'react';
-import { LayoutDashboard, BookOpen, Sparkles, FolderKanban, ShieldCheck, ShoppingCart, Trophy, Medal, Users, UsersRound, Rocket, Bell, LogOut, Zap, Info, CheckCircle2, AlertTriangle, X, Camera, Gauge, ClipboardList, Shield, Menu, FileCheck, KeyRound, UserRound, ChevronRight } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { LayoutDashboard, BookOpen, Sparkles, FolderKanban, ShieldCheck, ShoppingCart, Trophy, Medal, Users, UsersRound, Rocket, Bell, LogOut, Zap, Info, CheckCircle2, AlertTriangle, X, Camera, Gauge, ClipboardList, Shield, Menu, FileCheck, KeyRound, UserRound, ChevronRight, Search, ArrowRight } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { useGroupStore } from '@/store/groupStore';
 import { useUIStore } from '@/store/uiStore';
 import { cn } from '@/lib/utils';
+import { apiEnabled } from '@/lib/apiClient';
+import { usersApi } from '@/lib/apiService';
+import Dialog from '@/components/ui/Dialog';
 import ChangePasswordModal from '@/components/ui/ChangePasswordModal';
 
 interface MissionShellProps {
@@ -57,6 +60,7 @@ const STUDENT_NAV_ITEMS: NavItem[] = [
   { id: 'dashboard', label: '主控看板', subLabel: '综合态势', icon: LayoutDashboard, to: '/dashboard' },
   { id: 'learning', label: '知识星系', subLabel: '理论体系', icon: BookOpen, to: '/theory/topics' },
   { id: 'galaxy', label: '关卡挑战', subLabel: '答题竞技', icon: Sparkles, to: '/theory/challenge' },
+  { id: 'challenges', label: '知识擂台', subLabel: '挑战发布', icon: Trophy, to: '/theory/challenges' },
   { id: 'project', label: '课题中心', subLabel: '实验研发', icon: FolderKanban, to: '/projects' },
   { id: 'safety', label: '安全准入', subLabel: '实验资质', icon: ShieldCheck, to: '/safety-lab' },
   { id: 'team', label: '我的小组', subLabel: '团队协同', icon: UsersRound, to: '/my-team' },
@@ -81,41 +85,26 @@ const ADMIN_NAV_ITEMS: NavItem[] = [
   { id: 'admin', label: '管理控制台', subLabel: '权限与班级', icon: Shield, to: '/admin' },
 ];
 
-function RequireAuth({
-  children,
-  allowRoles,
-}: {
-  children: ReactNode;
-  allowRoles: Array<'student' | 'teacher' | 'admin'>;
-}) {
-  const { role, userId } = useAuthStore();
-  const location = useLocation();
-
-  if (!userId) {
-    return <Navigate to="/login" replace state={{ from: location.pathname }} />;
-  }
-
-  if (role && !allowRoles.includes(role)) {
-    const fallback =
-      role === 'teacher'
-        ? '/teacher/overview'
-        : role === 'admin'
-        ? '/admin'
-        : '/dashboard';
-    return <Navigate to={fallback} replace />;
-  }
-
-  return <>{children}</>;
-}
-
-function MissionHeader({ onOpenNav }: { onOpenNav: () => void }) {
+function MissionHeader({ onOpenNav, onOpenSearch }: { onOpenNav: () => void; onOpenSearch: () => void }) {
   const navigate = useNavigate();
-  const { userId, role, groupId, logout } = useAuthStore();
+  const { userId, role, groupId, name, logout } = useAuthStore();
   const getUserById = useGroupStore((s) => s.getUserById);
   const groups = useGroupStore((s) => s.groups);
   const pushToast = useUIStore((s) => s.pushToast);
 
-  const currentUser = userId ? getUserById(userId) : null;
+  const [accountProfile, setAccountProfile] = useState<{ id: string; name: string; avatar: string } | null>(null);
+  useEffect(() => {
+    setAccountProfile(null);
+    if (!apiEnabled || !userId) return;
+    let active = true;
+    void usersApi.get(userId).then((profile) => {
+      if (active) setAccountProfile(profile);
+    }).catch(() => { /* 名册中的学生资料仍可作为回退。 */ });
+    return () => { active = false; };
+  }, [userId]);
+  const currentUser = (accountProfile?.id === userId ? accountProfile : null) || (userId ? getUserById(userId) : null);
+  const displayName = currentUser?.name || name || (role === 'admin' ? '管理员' : role === 'teacher' ? '教师' : '研究员');
+  const roleLabel = role === 'admin' ? '管理员' : role === 'teacher' ? '教师' : '学生';
   const currentGroup = groupId ? groups.find((g) => g.id === groupId) : null;
   const coreCoins = currentGroup ? currentGroup.totalCoins : 0;
 
@@ -147,7 +136,12 @@ function MissionHeader({ onOpenNav }: { onOpenNav: () => void }) {
   const handleAvatarChange = async () => {
     if (!selectedAvatar || !userId) return;
     try {
-      useGroupStore.getState().updateUserAvatar(userId, selectedAvatar);
+      if (apiEnabled) {
+        const profile = await usersApi.updateAvatar(userId, selectedAvatar);
+        setAccountProfile(profile);
+      } else {
+        useGroupStore.getState().updateUserAvatar(userId, selectedAvatar);
+      }
       pushToast('头像已更新', 'success');
       setShowAvatarModal(false);
       setSelectedAvatar('');
@@ -169,8 +163,8 @@ function MissionHeader({ onOpenNav }: { onOpenNav: () => void }) {
             <Menu size={20} />
           </button>
 
-          <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate(role === 'teacher' ? '/teacher/overview' : role === 'admin' ? '/admin' : '/dashboard')}>
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-mission-500 to-nova-600 flex items-center justify-center text-white shadow-sm shadow-mission-500/20 shrink-0">
+          <button aria-label="返回指挥中心" className="flex items-center gap-3 text-left" onClick={() => navigate(role === 'teacher' ? '/teacher/overview' : role === 'admin' ? '/admin' : '/dashboard')}>
+            <div className="mission-brand-mark w-9 h-9 rounded-xl bg-gradient-to-br from-mission-500 to-nova-600 flex items-center justify-center text-white shadow-sm shadow-mission-500/20 shrink-0">
               <Rocket size={18} />
             </div>
             <div className="leading-tight">
@@ -182,12 +176,15 @@ function MissionHeader({ onOpenNav }: { onOpenNav: () => void }) {
                 PBL 高中物理探究平台
               </div>
             </div>
-          </div>
+          </button>
         </div>
 
         {/* 右侧：能量统计与用户档案 */}
         <div className="flex items-center gap-3">
-          {role === 'student' && (
+          <button className="workspace-search-button" onClick={onOpenSearch} aria-label="查找页面">
+            <Search size={17} /><span>查找页面</span><kbd>⌘ K</kbd>
+          </button>
+          {role === 'student'  && (
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-energy-50/80 dark:bg-energy-950/40 border border-energy-200/80 dark:border-energy-800/60 text-xs">
               <Zap size={14} className="text-energy-500 fill-energy-400/30" />
               <span className="font-bold text-energy-700 dark:text-energy-300 font-mono">
@@ -199,16 +196,17 @@ function MissionHeader({ onOpenNav }: { onOpenNav: () => void }) {
 
           <div className="relative">
             <button
+              aria-label="用户菜单" aria-expanded={userMenuOpen}
               onClick={() => setUserMenuOpen(!userMenuOpen)}
               className="mission-profile-button flex items-center gap-2 p-1 rounded-xl transition-colors"
             >
               <img
                 src={currentUser?.avatar || avatarFallback} onError={applyAvatarFallback}
-                alt={currentUser?.name || '用户头像'}
+                alt={displayName}
                 className="w-8 h-8 rounded-lg object-cover border border-slate-200 dark:border-slate-700"
               />
               <span className="mission-profile-name hidden sm:inline text-xs font-semibold max-w-[90px] truncate">
-                {currentUser?.name || '研究员'}
+                {displayName}
               </span>
             </button>
 
@@ -224,8 +222,8 @@ function MissionHeader({ onOpenNav }: { onOpenNav: () => void }) {
                     className="absolute right-0 mt-2 w-48 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl py-1.5 z-50 text-xs"
                   >
                     <div className="px-3 py-2 border-b border-slate-100 dark:border-slate-800">
-                      <p className="font-bold text-slate-900 dark:text-slate-100">{currentUser?.name}</p>
-                      <p className="text-[11px] text-slate-400 capitalize">角色：{role}</p>
+                      <p className="font-bold text-slate-900 dark:text-slate-100">{displayName}</p>
+                      <p className="text-[11px] text-slate-400 capitalize">角色：{roleLabel}</p>
                     </div>
 
                     {role === 'student' && (
@@ -337,7 +335,7 @@ function MissionHeader({ onOpenNav }: { onOpenNav: () => void }) {
               </button>
               <button
                 onClick={handleAvatarChange}
-                disabled={!selectedAvatar}
+                disabled={!selectedAvatar || compressing}
                 className="flex-1 py-2 text-xs rounded-xl bg-mission-600 text-white font-medium hover:bg-mission-500 disabled:opacity-50"
               >
                 确认更换
@@ -353,6 +351,40 @@ function MissionHeader({ onOpenNav }: { onOpenNav: () => void }) {
 }
 
 function NavRail({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const railRef = useRef<HTMLElement>(null);
+  const closeRef = useRef(onClose);
+  closeRef.current = onClose;
+  const [mobile, setMobile] = useState(() => window.matchMedia('(max-width: 767px)').matches);
+  useEffect(() => {
+    const media = window.matchMedia('(max-width: 767px)');
+    const update = () => setMobile(media.matches);
+    media.addEventListener('change', update);
+    return () => media.removeEventListener('change', update);
+  }, []);
+  useEffect(() => {
+    if (!open || !mobile) return;
+    const previousFocus = document.activeElement as HTMLElement | null;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const frame = requestAnimationFrame(() => railRef.current?.querySelector<HTMLButtonElement>('button')?.focus());
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') { event.preventDefault(); closeRef.current(); }
+      if (event.key === 'Tab') {
+        const buttons = railRef.current?.querySelectorAll<HTMLButtonElement>('button');
+        const first = buttons?.[0];
+        const last = buttons?.[buttons.length - 1];
+        if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+        else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+      }
+    };
+    document.addEventListener('keydown', onKey);
+    return () => {
+      cancelAnimationFrame(frame);
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener('keydown', onKey);
+      previousFocus?.focus();
+    };
+  }, [open, mobile]);
   const location = useLocation();
   const navigate = useNavigate();
   const { role } = useAuthStore();
@@ -376,7 +408,7 @@ function NavRail({ open, onClose }: { open: boolean; onClose: () => void }) {
         )}
       </AnimatePresence>
 
-      <aside
+      <aside ref={railRef} aria-label="主要导航" aria-hidden={mobile && !open}
         className={cn(
           'mission-nav fixed z-40 flex flex-col transition-transform duration-300 ease-out',
           // 桌面端：紧凑型常驻面板
@@ -387,13 +419,17 @@ function NavRail({ open, onClose }: { open: boolean; onClose: () => void }) {
           open ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
         )}
       >
+        <button tabIndex={mobile && !open ? -1 : undefined} onClick={onClose} aria-label="关闭导航菜单" className="mission-nav-close hidden md:hidden items-center justify-between text-white pb-4 px-3">
+          <span>研究导航</span><X size={20} />
+        </button>
         <div className="space-y-1 flex-1 overflow-y-auto pr-1">
           {allItems.map((item) => {
             const Icon = item.icon;
-            const active = location.pathname === item.to || (item.to !== '/dashboard' && location.pathname.startsWith(item.to));
+            const active = location.pathname === item.to || (item.to !== '/dashboard' && location.pathname.startsWith(`${item.to}/`));
             return (
               <button
                 key={item.id}
+                tabIndex={mobile && !open ? -1 : undefined}
                 onClick={() => {
                   navigate(item.to);
                   onClose();
@@ -404,6 +440,7 @@ function NavRail({ open, onClose }: { open: boolean; onClose: () => void }) {
                     ? 'bg-mission-50 dark:bg-mission-950/50 text-mission-700 dark:text-mission-300 border border-mission-200/60 dark:border-mission-800/60 shadow-sm'
                     : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-slate-100'
                 )}
+                aria-current={active ? 'page' : undefined}
                 data-active={active}
               >
                 <Icon size={16} className={active ? 'text-mission-600 dark:text-mission-400 shrink-0' : 'text-slate-400 shrink-0'} />
@@ -493,6 +530,19 @@ export default function MissionShell({ children, requireAuth = true }: MissionSh
   const reduceMotion = useReducedMotion();
   const { userId, role, init } = useAuthStore();
   const [navOpen, setNavOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const navigate = useNavigate();
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault(); setQuery(''); setSearchOpen((open) => !open);
+      }
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, []);
+  useEffect(() => { window.scrollTo(0, 0); }, [location.pathname]);
   const homePath = role === 'teacher' ? '/teacher/overview' : role === 'admin' ? '/admin' : '/dashboard';
   const homeLabel = role === 'teacher' ? '指挥总览' : role === 'admin' ? '管理控制台' : '主控看板';
   const navItems = role === 'admin' ? [...TEACHER_NAV_ITEMS, ...ADMIN_NAV_ITEMS] : role === 'teacher' ? TEACHER_NAV_ITEMS : STUDENT_NAV_ITEMS;
@@ -506,22 +556,22 @@ export default function MissionShell({ children, requireAuth = true }: MissionSh
     return <Navigate to="/login" replace state={{ from: location.pathname }} />;
   }
 
-  const allowRoles: Array<'student' | 'teacher' | 'admin'> = ['student', 'teacher', 'admin'];
 
   return (
-    <RequireAuth allowRoles={allowRoles}>
+    <>
       <div className="mission-stage min-h-screen w-full relative text-slate-900 dark:text-slate-100">
         <div className="mission-ambient" aria-hidden="true">
           <span className="mission-ambient-orb mission-ambient-orb-a" />
           <span className="mission-ambient-orb mission-ambient-orb-b" />
           <span className="mission-ambient-orb mission-ambient-orb-c" />
         </div>
-        <MissionHeader onOpenNav={() => setNavOpen(true)} />
+        <a href="#workspace-main" className="workspace-skip-link">跳到页面内容</a>
+        <MissionHeader onOpenNav={() => setNavOpen(true)} onOpenSearch={() => { setQuery(''); setSearchOpen(true); }} />
         <NavRail open={navOpen} onClose={() => setNavOpen(false)} />
         <ToastStack />
 
         {/* 桌面端常驻导航预留 220px 边距 */}
-        <main className="mission-content md:ml-[220px] px-4 md:px-8 pt-20 pb-12">
+        <main id="workspace-main" tabIndex={-1} className="mission-content md:ml-[220px] px-4 md:px-8 pt-20 pb-12">
           <div className="max-w-[1440px] mx-auto w-full">
             {pageLabel && location.pathname !== homePath && (
               <nav className="mission-page-context" aria-label="当前位置">
@@ -543,7 +593,20 @@ export default function MissionShell({ children, requireAuth = true }: MissionSh
             </AnimatePresence>
           </div>
         </main>
+        <Dialog open={searchOpen} onClose={() => setSearchOpen(false)} title="查找页面" size="lg">
+          <label className="field-label" htmlFor="workspace-search">输入页面名称或功能</label>
+          <input data-dialog-autofocus id="workspace-search" className="input-field" placeholder="例如：课题、安全、能量" value={query} onChange={(event) => setQuery(event.target.value)} />
+          <div className="workspace-search-results">
+            {navItems.filter((item) => `${item.label} ${item.subLabel}`.includes(query.trim())).map((item) => {
+              const Icon = item.icon;
+              return <button key={item.id} className="workspace-search-result" onClick={() => { setSearchOpen(false); navigate(item.to); }}>
+                <Icon size={20} /><span className="flex-1"><strong>{item.label}</strong><small>{item.subLabel}</small></span><ArrowRight size={17} />
+              </button>;
+            })}
+            {!navItems.some((item) => `${item.label} ${item.subLabel}`.includes(query.trim())) && <p role="status" className="text-sm text-center py-6">没有找到相关页面，请换一个关键词。</p>}
+          </div>
+        </Dialog>
       </div>
-    </RequireAuth>
+    </>
   );
 }

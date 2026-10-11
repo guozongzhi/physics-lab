@@ -1,3 +1,4 @@
+import { apiEnabled } from '@/lib/apiClient';
 import type { LucideIcon } from 'lucide-react';
 import { applyAvatarFallback } from '@/lib/imageFallback';
 import { useEffect, useMemo, useState } from 'react';
@@ -12,6 +13,8 @@ import { useTheoryStore } from '@/store/theoryStore';
 import { useQuestionBankStore } from '@/store/questionBankStore';
 import ChangePasswordModal from '@/components/ui/ChangePasswordModal';
 import { safetyApi, SafetyRecord } from '@/lib/apiService';
+import { useCoinStore } from '@/store/coinStore';
+import { computeEarnedByUser } from '@/lib/earnedCoins';
 import { cn } from '@/lib/utils';
 
 function useTicker(target: number, duration = 900) {
@@ -47,6 +50,7 @@ const BADGES = [
 interface TimelineEvent {
   id: string;
   date: string;
+  timestamp: number;
   type: 'challenge' | 'project' | 'exam' | 'recruit';
   title: string;
   desc: string;
@@ -55,9 +59,9 @@ interface TimelineEvent {
 
 
 const SEMESTER_GOALS = [
-  { id: 'g1', text: '完成 ≥ 3 个项目式学习课题', checked: true },
-  { id: 'g2', text: '至少赢下 2 场对外知识挑战', checked: true },
-  { id: 'g3', text: '通过全部 6 类安全考核（含辐射）', checked: true },
+  { id: 'g1', text: '完成 ≥ 3 个项目式学习课题', checked: false },
+  { id: 'g2', text: '至少赢下 2 场对外知识挑战', checked: false },
+  { id: 'g3', text: '通过全部 6 类安全考核（含辐射）', checked: false },
   { id: 'g4', text: '在招募市场完成 ≥ 5 次跨组协助', checked: false },
   { id: 'g5', text: '个人能量币赛季累计突破 3000⚡', checked: false },
 ];
@@ -65,14 +69,19 @@ const SEMESTER_GOALS = [
 export default function ResearchProfile() {
   const { users, groups } = useGroupStore();
   const authUserId = useAuthStore((s) => s.userId);
-  const me = users.find((u) => u.id === authUserId) || users[0];
+  const me = useMemo(() => users.find((u) => u.id === authUserId) || { id: authUserId || '', name: '研究员', groupId: null, role: 'member', personalCoins: 0, avatar: '' }, [users, authUserId]);
   const myGroup = groups.find((g) => g.id === me.groupId);
   const { projects, recruitments } = useProjectStore();
-  const { challenges, quizSessions } = useTheoryStore();
-  const doneProjects = projects.filter((p) => p.ownerGroupId === me.groupId && p.status === 'done').length;
-  const createdChallenges = challenges.filter((c) => c.creatorGroupId === me.groupId).length;
+  const { challenges, quizSessions: allQuizSessions } = useTheoryStore();
+  const quizSessions = useMemo(() => allQuizSessions.filter((session) => (session.userId === authUserId || (apiEnabled && !session.userId)) && session.graded), [allQuizSessions, authUserId]);
+  const doneProjects = projects.filter((p) => Boolean(me.groupId) && p.ownerGroupId === me.groupId && p.status === 'done').length;
+  const createdChallenges = challenges.filter((c) => Boolean(me.groupId) && c.creatorGroupId === me.groupId).length;
   const recruitHelps = recruitments.filter((r) => r.assigneeUserId === me.id && r.status === 'done').length;
   const personalCoins = me.personalCoins || 0;
+  const coinTxs = useCoinStore((state) => state.coinTxs);
+  const earnedCoins = useMemo(() => computeEarnedByUser(coinTxs)[me.id] || 0, [coinTxs, me.id]);
+  const level = Math.floor(earnedCoins / 500) + 1;
+  const levelProgress = Math.round((earnedCoins % 500) / 5);
 
   const { questions: qbQuestions } = useQuestionBankStore();
   const submittedQ = qbQuestions.filter((q) => q.submittedBy === me.id).length;
@@ -80,10 +89,10 @@ export default function ResearchProfile() {
   useEffect(() => {
     safetyApi.myRecords().then(setSafetyRecords).catch(() => {});
   }, []);
-  const safetyPassed = safetyRecords.filter((r) => r.passed).length;
+  const safetyPassed = new Set(safetyRecords.filter((record) => record.passed).map((record) => record.category)).size;
   const quizAvg = quizSessions.length ? Math.round(quizSessions.reduce((s, q) => s + q.score, 0) / quizSessions.length) : 0;
   const quizHigh = quizSessions.some((q) => q.score >= 90);
-  const wonChallenges = challenges.filter((c) => c.creatorGroupId === me.groupId && c.submissions?.some((s) => s.earned > 0)).length;
+  const wonChallenges = challenges.filter((c) => Boolean(me.groupId) && c.submissions?.some((submission) => submission.groupId === me.groupId && submission.earned > 0)).length;
 
   // 各项均由真实活动量算出，不设"基线分"：此前每项都加了 40~60 的固定底数，
   // 导致一个什么都没做的学生也会显示 60/40/40/45/50/45 的假能力值。
@@ -120,15 +129,35 @@ export default function ResearchProfile() {
   const timeline = useMemo(() => {
     const events: TimelineEvent[] = [];
     const dstr = (v: Date | string) => { const d = v instanceof Date ? v : new Date(v); return `${d.getMonth() + 1}/${d.getDate()}`; };
-    for (const p of projects) if (p.ownerGroupId === me.groupId) events.push({ id: `p-${p.id}`, date: dstr(p.startDate), type: 'project', title: p.title, desc: `小组项目 · 进度 ${p.progress}%`, coins: p.rewardCoins });
-    for (const c of challenges) if (c.creatorGroupId === me.groupId) events.push({ id: `c-${c.id}`, date: dstr(c.deadline), type: 'challenge', title: c.title, desc: '发起知识挑战', coins: c.reward });
-    for (const qs of quizSessions) events.push({ id: `q-${qs.id}`, date: dstr(qs.createdAt), type: 'exam', title: '理论 / 安全测验', desc: `${qs.score} 分 · ${qs.passed ? '通过' : '未过'}`, coins: 0 });
-    for (const r of recruitments) if (r.assigneeUserId === me.id) events.push({ id: `r-${r.id}`, date: dstr(r.deadline), type: 'recruit', title: r.title, desc: '跨组协助', coins: r.actualPay || 0 });
-    return events.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 20);
+    for (const p of projects) if (Boolean(me.groupId) && p.ownerGroupId === me.groupId) events.push({ id: `p-${p.id}`, date: dstr(p.startDate), timestamp: new Date(p.startDate).getTime(), type: 'project', title: p.title, desc: `小组项目 · 进度 ${p.progress}%`, coins: p.status === 'done' ? p.rewardCoins : 0 });
+    for (const c of challenges) if (Boolean(me.groupId) && c.creatorGroupId === me.groupId) events.push({ id: `c-${c.id}`, date: dstr(c.deadline), timestamp: new Date(c.deadline).getTime(), type: 'challenge', title: c.title, desc: '发起知识挑战', coins: 0 });
+    for (const qs of quizSessions) events.push({ id: `q-${qs.id}`, date: dstr(qs.createdAt), timestamp: new Date(qs.createdAt).getTime(), type: 'exam', title: '理论 / 安全测验', desc: `${qs.score} 分 · ${qs.passed ? '通过' : '未过'}`, coins: 0 });
+    for (const r of recruitments) if (r.assigneeUserId === me.id) events.push({ id: `r-${r.id}`, date: dstr(r.deadline), timestamp: new Date(r.deadline).getTime(), type: 'recruit', title: r.title, desc: '跨组协助', coins: r.actualPay || 0 });
+    return events.sort((a, b) => b.timestamp - a.timestamp).slice(0, 20);
   }, [me, projects, challenges, quizSessions, recruitments]);
-  const [goals, setGoals] = useState<Record<string, boolean>>(
-    Object.fromEntries(SEMESTER_GOALS.map((g) => [g.id, g.checked]))
-  );
+  // Personal checklists are stored per account on this device.
+  const goalKey = `plab_semester_goals:${authUserId || 'anonymous'}`;
+  const [savedGoals, setSavedGoals] = useState<Record<string, boolean>>({});
+  useEffect(() => {
+    try {
+      const value = JSON.parse(localStorage.getItem(goalKey) || '{}');
+      setSavedGoals(Object.fromEntries(SEMESTER_GOALS.map((goal) => [goal.id, value?.[goal.id] === true])));
+    } catch { setSavedGoals({}); }
+  }, [goalKey]);
+  const goals: Record<string, boolean> = {
+    g1: doneProjects >= 3 || !!savedGoals.g1,
+    g2: wonChallenges >= 2 || !!savedGoals.g2,
+    g3: safetyPassed >= 6 || !!savedGoals.g3,
+    g4: recruitHelps >= 5 || !!savedGoals.g4,
+    g5: earnedCoins >= 3000 || !!savedGoals.g5,
+  };
+  const updateGoal = (id: string, checked: boolean) => {
+    const next = { ...savedGoals, [id]: checked };
+    setSavedGoals(next);
+    try { localStorage.setItem(goalKey, JSON.stringify(next)); }
+    catch { /* Keep the checklist usable when browser storage is unavailable. */ }
+  };
+
   const doneCount = Object.values(goals).filter(Boolean).length;
 
   const [pwdOpen, setPwdOpen] = useState(false);
@@ -185,7 +214,7 @@ export default function ResearchProfile() {
                   <div className="flex flex-wrap items-center gap-2 mb-2">
                     <span className="chip-nova !py-1 !px-3 !text-[11px]">
                       <Star size={10} fill="currentColor" />
-                      LV8 Researcher
+                      LV.{level} 研究员
                     </span>
                     {me.role === 'leader' && (
                       <span className="chip-energy !py-1 !px-3 !text-[11px]">
@@ -245,14 +274,14 @@ export default function ResearchProfile() {
                 <div className="flex items-center justify-between mb-1.5">
                   <div className="flex items-center gap-2">
                     <span className="chip-growth !py-0.5 !px-2 !text-[11px]">升级进度</span>
-                    <span className="text-[12px] text-ink-500">距离 LV9 Researcher</span>
+                    <span className="text-[12px] text-ink-500">距离 LV.{level + 1} 研究员</span>
                   </div>
-                  <span className="text-[12px] font-bold text-gradient-mission tabular-nums">94%</span>
+                  <span className="text-[12px] font-bold text-gradient-mission tabular-nums">{levelProgress}%</span>
                 </div>
                 <div className="h-2.5 w-full rounded-full bg-ink-100 overflow-hidden relative">
                   <motion.div
                     initial={{ width: 0 }}
-                    animate={{ width: '94%' }}
+                    animate={{ width: `${levelProgress}%` }}
                     transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1], delay: 0.2 }}
                     className="h-full rounded-full bg-gradient-to-r from-mission-400 via-nova-500 to-energy-400 relative"
                   >
@@ -260,8 +289,8 @@ export default function ResearchProfile() {
                   </motion.div>
                 </div>
                 <div className="flex items-center justify-between mt-1 text-[11px] text-ink-400 font-mono">
-                  <span>4700 / 5000 EXP</span>
-                  <span>还需 300 EXP · 约 2 个课题</span>
+                  <span>{earnedCoins % 500} / 500 累计能量</span>
+                  <span>还需 {500 - earnedCoins % 500} 能量</span>
                 </div>
               </div>
 
@@ -269,7 +298,7 @@ export default function ResearchProfile() {
                 <div className="flex items-center gap-2 mb-3">
                   <Award size={15} className="text-alert-500" />
                   <span className="text-[13px] font-bold text-ink-800">徽章墙</span>
-                  <span className="text-[11px] text-ink-400 font-mono">{earnedBadgeCount} / 24</span>
+                  <span className="text-[11px] text-ink-400 font-mono">{earnedBadgeCount} / {BADGES.length}</span>
                 </div>
                 <div className="flex flex-wrap gap-3">
                   {BADGES.map((b, i) => {
@@ -330,7 +359,7 @@ export default function ResearchProfile() {
                   <Calendar size={19} className="text-nova-500" />
                   学习与研究路径
                 </h2>
-                <span className="chip-nova !py-0.5 !px-2 !text-[10px]">近 100 天 · 20 条</span>
+                <span className="chip-nova !py-0.5 !px-2 !text-[10px]">最近 {timeline.length} 条活动</span>
               </div>
               <div className="relative pl-1">
                 <div
@@ -341,6 +370,7 @@ export default function ResearchProfile() {
                   }}
                 />
                 <div className="space-y-4 max-h-[720px] overflow-y-auto pr-2 scroll-thin">
+                  {timeline.length === 0 && <p className="text-sm text-ink-500 py-6 pl-10">暂无活动记录，开始学习或参与项目后会在这里显示。</p>}
                   {timeline.map((e, i) => {
                     const cfg = timelineCfg[e.type];
                     const Icon = cfg.icon;
@@ -487,6 +517,7 @@ export default function ResearchProfile() {
                   />
                 </div>
               </div>
+              <p className="text-xs text-ink-500 mb-3">系统自动同步已达成目标；手动勾选保存在当前账号的本机清单中。</p>
               <div className="space-y-2.5">
                 {SEMESTER_GOALS.map((g, i) => (
                   <motion.div
@@ -504,7 +535,7 @@ export default function ResearchProfile() {
                     <Checkbox
                       checked={!!goals[g.id]}
                       onCheckedChange={(c) =>
-                        setGoals((prev) => ({ ...prev, [g.id]: c }))
+                        updateGoal(g.id, c)
                       }
                       label={g.text}
                       id={`goal-${g.id}`}

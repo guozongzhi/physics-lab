@@ -1,3 +1,5 @@
+import { useLearningProgressStore } from '@/store/learningProgressStore';
+import { useQuestionBankStore } from '@/store/questionBankStore';
 import { useEffect, useState, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useUIStore } from '../store/uiStore';
@@ -92,7 +94,7 @@ export default function Dashboard() {
     [groups, classId]
   );
   const { quizSessions, challenges } = useTheoryStore();
-  const { projects, createProject, updateProject, deleteProject, createRecruitment } = useProjectStore();
+  const { projects, showcaseItems, createProject, updateProject, deleteProject, createRecruitment } = useProjectStore();
   const { coinTxs } = useCoinStore();
 
   // 自助加入小组本地状态
@@ -258,20 +260,27 @@ export default function Dashboard() {
     safetyApi.myRecords().then(setSafetyRecords).catch(() => {});
   }, []);
 
-  const completedSteps = useMemo(() => {
-    // 依据用户活跃度与测验真实判定完成步数
-    const base = Math.min(11, (quizSessions?.length ? 3 : 1) + (safetyRecords.length ? 2 : 0) + (projects.length ? 3 : 1));
-    return base;
-  }, [quizSessions, safetyRecords, projects]);
-
+  const questions = useQuestionBankStore((state) => state.questions);
+  const learningVisits = useLearningProgressStore((state) => state.visits);
   const pathSteps: PathStep[] = useMemo(() => {
-    return LEARNING_PATH_CONFIG.map((cfg, idx) => ({
-      id: cfg.id,
-      name: cfg.name,
-      badge: cfg.badge,
-      done: idx < completedSteps,
-    }));
-  }, [completedSteps]);
+    const myQuizzes = quizSessions.filter((session) => (session.userId === userId || (apiEnabled && !session.userId)) && session.graded);
+    const ownProjects = groupId ? projects.filter((project) => project.ownerGroupId === groupId) : [];
+    const completed: Record<string, boolean> = {
+      ai_learn: !!userId && !!learningVisits[userId]?.ai_learn,
+      knowledge_organize: !!userId && !!learningVisits[userId]?.knowledge_organize,
+      ai_test: myQuizzes.length > 0,
+      intensive_training: myQuizzes.length >= 2,
+      pass_80: myQuizzes.some((session) => session.passed),
+      create_quiz: questions.some((question) => question.submittedBy === userId),
+      challenge_other: !!groupId && challenges.some((challenge) => challenge.creatorGroupId === groupId || challenge.submissions?.some((submission) => submission.groupId === groupId)),
+      earn_energy: coinTxs.some((tx) => tx.userId === userId && tx.delta > 0),
+      project_dev: ownProjects.length > 0,
+      experiment: ownProjects.some((project) => project.status === 'done'),
+      showcase: showcaseItems.some((item) => ownProjects.some((project) => project.id === item.projectId) && item.status === 'approved'),
+    };
+    return LEARNING_PATH_CONFIG.map((cfg) => ({ ...cfg, done: completed[cfg.id], statusLabel: completed[cfg.id] ? (['ai_learn', 'knowledge_organize'].includes(cfg.id) ? '已查看' : '已达标') : '待完成' }));
+  }, [userId, groupId, learningVisits, quizSessions, questions, challenges, coinTxs, projects, showcaseItems]);
+  const completedSteps = pathSteps.filter((step) => step.done).length;
 
   const myCoins = Math.max(0, myGroup?.totalCoins || 0);
   const levelOf = (coins: number) => Math.max(1, Math.min(12, Math.floor(Math.log10(Math.max(1, coins)) * 2)));

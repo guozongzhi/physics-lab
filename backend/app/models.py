@@ -284,3 +284,11 @@ class SafetyAssignment(Base):
     group_id: Mapped[str | None] = mapped_column(ForeignKey("groups.id"), index=True, nullable=True)
     created_by: Mapped[str] = mapped_column(String, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=_now)
+
+
+class ReviewQuestion(Base):
+    """投稿审核记录；新增独立表，保留现有题库和历史成绩。"""
+    __tablename__ = 'review_questions'
+    id: Mapped[str] = mapped_column(String, primary_key=True)
+    submitted_by: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
+    payload: Mapped[dict] = mapped_column(JSON, default=dict)

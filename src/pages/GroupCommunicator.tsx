@@ -210,6 +210,7 @@ export default function GroupCommunicator() {
   const { challenges, createChallenge, getTopicQuestions, topics, questions: allQuestions } = useTheoryStore();
   const { recruitments, projects, placeBid, resolveRecruitment } = useProjectStore();
   const { coinTxs, transferCoins } = useCoinStore();
+  const myCoinTxs = coinTxs.filter((tx) => tx.groupId === groupId);
   const pushToast = useUIStore((s) => s.pushToast);
   
   const [tab, setTab] = useState<TabKey>('challenges');
@@ -362,8 +363,8 @@ export default function GroupCommunicator() {
   
   return (
     <div className="min-h-screen">
-      <div className="max-w-[1280px] mx-auto px-6 py-8 space-y-6">
-        <div className="flex items-center justify-between flex-wrap gap-4">
+      <div className="max-w-[1280px] mx-auto space-y-6">
+        <div className="glass-card p-5 md:p-7 flex items-center justify-between flex-wrap gap-4">
           <div>
             <h1 className="page-title flex items-center gap-2">
               <Users size={28} className="text-mission-500" />
@@ -604,14 +605,14 @@ export default function GroupCommunicator() {
                 能量币流水
               </h3>
               <p className="text-xs text-ink-500 mb-4">本组全部收支记录（含组间转账、挑战、招募、项目结算）</p>
-              {coinTxs.length === 0 ? (
+              {myCoinTxs.length === 0 ? (
                 <div className="text-center py-8 text-ink-400">
                   <Coins size={32} className="mx-auto mb-2 opacity-40" />
                   <p className="text-sm">暂无交易记录</p>
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {[...coinTxs]
+                  {[...myCoinTxs]
                     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
                     .slice(0, 10)
                     .map((tx) => (
@@ -628,15 +629,14 @@ export default function GroupCommunicator() {
               </h3>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                 {otherGroups.map((g) => (
-                  <button
+                  <div
                     key={g.id}
-                    onClick={() => {
-                      setTransferForm({ targetGroupId: g.id, amount: 50, note: '' });
-                      setActiveDialog('createTransfer');
-                    }}
                     className="card-base card-hover p-4 text-left"
                   >
-                    <div className="flex items-center gap-3 mb-2">
+                    <button className="flex items-center gap-3 mb-2 w-full text-left" onClick={() => {
+                      setTransferForm({ targetGroupId: g.id, amount: 50, note: '' });
+                      setActiveDialog('createTransfer');
+                    }}>
                       <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-physics-100 to-physics-50 flex items-center justify-center">
                         <Users size={18} className="text-physics-500" />
                       </div>
@@ -644,7 +644,7 @@ export default function GroupCommunicator() {
                         <p className="font-semibold text-ink-800 text-sm">{g.name}</p>
                         <p className="text-xs text-ink-500">{g.totalCoins} 能量币</p>
                       </div>
-                    </div>
+                    </button>
                     <div className="flex gap-1">
                       {[50, 100, 200].map((amount) => (
                         <button
@@ -660,7 +660,7 @@ export default function GroupCommunicator() {
                         </button>
                       ))}
                     </div>
-                  </button>
+                  </div>
                 ))}
               </div>
             </div>

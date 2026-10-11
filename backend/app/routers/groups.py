@@ -135,6 +135,11 @@ def update_contribution(
     group = db.get(Group, group_id)
     if not group:
         raise HTTPException(status_code=404, detail="小组不存在")
+    if any(value < 0 or value > 100 for value in payload.ratioRecord.values()):
+        raise HTTPException(status_code=400, detail="贡献比例必须在 0 到 100 之间")
+    member_ids = {u.id for u in db.query(User).filter(User.group_id == group_id).all()}
+    if not set(payload.ratioRecord).issubset(member_ids):
+        raise HTTPException(status_code=400, detail="贡献者必须为本小组成员")
     group.contribution_ratio = dict(payload.ratioRecord)
     db.commit()
     db.refresh(group)

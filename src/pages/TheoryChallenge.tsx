@@ -111,7 +111,7 @@ export default function TheoryChallenge() {
 
   const resetQForm = () => setQForm({ type: 'single', stem: '', options: ['', '', '', ''], answer: 0, kp: '' });
 
-  const handleSubmitQuestion = () => {
+  const handleSubmitQuestion = async () => {
     if (!userId) { pushToast('请先登录', 'error'); return; }
     const stem = qForm.stem.trim();
     if (!stem) return setQFormErr('请填写题干');
@@ -126,10 +126,12 @@ export default function TheoryChallenge() {
       const arr = Array.isArray(answer) ? answer : [];
       answer = arr.map((i) => trimmed.indexOf(kept[i])).filter((n) => n >= 0);
     }
-    submitQuestion({ type: qForm.type, stem, options: kept, answer, knowledgePoint: qForm.kp.trim(), difficulty: 1 }, userId, name || '学生');
+    try {
+    await submitQuestion({ type: qForm.type, stem, options: kept, answer, knowledgePoint: qForm.kp.trim(), difficulty: 1 }, userId, name || '学生');
     pushToast('题目已提交，等待教师审核', 'success');
     resetQForm();
     setQFormErr('');
+    } catch (err) { setQFormErr(err instanceof Error ? err.message : '提交失败，请重试'); }
   };
 
   const myGid = groupId || (role === 'teacher' ? groups[0]?.id : undefined);
@@ -222,8 +224,8 @@ export default function TheoryChallenge() {
 
   return (
     <div className="min-h-screen">
-      <div className="max-w-[1280px] mx-auto px-6 py-8 space-y-6">
-        <div className="flex items-center justify-between flex-wrap gap-4">
+      <div className="max-w-[1280px] mx-auto space-y-6">
+        <div className="glass-card p-5 md:p-7 flex items-center justify-between flex-wrap gap-4">
           <div>
             <div className="flex items-center gap-2 mb-2">
               <Chip variant="energy"><Sparkles size={12} /> 组间 PK · 凭实力赢能量币</Chip>

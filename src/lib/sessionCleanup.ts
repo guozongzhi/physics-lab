@@ -9,6 +9,7 @@
  * 这里不自己判断也不 import apiClient，免得形成 sessionCleanup → apiClient 的循环依赖。
  */
 import { LS_KEYS } from '../data/mockData';
+import { useQuestionBankStore } from '../store/questionBankStore';
 import { useTheoryStore } from '../store/theoryStore';
 import { useCoinStore } from '../store/coinStore';
 import { useGroupStore } from '../store/groupStore';
@@ -16,6 +17,7 @@ import { useProjectStore } from '../store/projectStore';
 import { useSafetyStore } from '../store/safetyStore';
 
 export function clearBusinessData(): void {
+  useQuestionBankStore.setState({ questions: [] });
   useGroupStore.setState({ groups: [], users: [] });
   useProjectStore.setState({ projects: [], recruitments: [], showcaseItems: [] });
   useTheoryStore.setState({ topics: [], questions: [], challenges: [], quizSessions: [] });

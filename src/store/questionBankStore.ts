@@ -1,12 +1,13 @@
 /**
  * 题库审核 store —— 教师上传题目 + 学生提交题目 + 审核/反馈/修改
  *
- * 数据持久化在 localStorage（键 plab_review_questions）。
+ * 在线数据由服务端持久化并按身份读取；离线数据保存在localStorage。
  *  - 学生提交的题目进入 pending 状态，等待教师审核
  *  - 教师上传的题目直接为 approved
  *  - 教师可对任意题目写反馈（学生端可见）、修改题目内容、通过/驳回
  */
 import { create } from 'zustand';
+import { api, apiEnabled } from '../lib/apiClient';
 import { loadLS, saveLS } from '../data/mockData';
 import type { ReviewableQuestion, ReviewStatus, QuestionType } from '../data/mockData';
 
@@ -83,18 +84,18 @@ function loadInitial(): ReviewableQuestion[] {
 interface QuestionBankState {
   questions: ReviewableQuestion[];
   /** 教师上传：直接 approved */
-  uploadQuestion: (input: ReviewableInput, teacherName: string) => ReviewableQuestion;
+  uploadQuestion: (input: ReviewableInput, teacherName: string) => ReviewableQuestion | Promise<ReviewableQuestion>;
   /** 学生提交：pending */
-  submitQuestion: (input: ReviewableInput, userId: string, userName: string) => ReviewableQuestion;
-  approveQuestion: (id: string, feedback?: string) => void;
-  rejectQuestion: (id: string, feedback: string) => void;
+  submitQuestion: (input: ReviewableInput, userId: string, userName: string) => ReviewableQuestion | Promise<ReviewableQuestion>;
+  approveQuestion: (id: string, feedback?: string) => void | Promise<void>;
+  rejectQuestion: (id: string, feedback: string) => void | Promise<void>;
   /** 教师修改题目（在原题上编辑，标记 edited） */
-  editQuestion: (id: string, patch: Partial<ReviewableInput>, teacherName: string) => void;
+  editQuestion: (id: string, patch: Partial<ReviewableInput>, teacherName: string) => void | Promise<void>;
   /** 教师写反馈（学生可见） */
-  setFeedback: (id: string, feedback: string, teacherName: string) => void;
-  deleteQuestion: (id: string) => void;
+  setFeedback: (id: string, feedback: string, teacherName: string) => void | Promise<void>;
+  deleteQuestion: (id: string) => void | Promise<void>;
   /** 批量导入教师上传题目 */
-  importTeacherQuestions: (raw: unknown[], teacherName: string) => number;
+  importTeacherQuestions: (raw: unknown[], teacherName: string) => number | Promise<number>;
 }
 
 const persist = (questions: ReviewableQuestion[]) => saveLS(LS_KEY, questions);
@@ -111,9 +112,10 @@ function toReviewable(input: ReviewableInput): Omit<ReviewableQuestion, keyof ({
 }
 
 export const useQuestionBankStore = create<QuestionBankState>((set, get) => ({
-  questions: loadInitial(),
+  questions: apiEnabled ? [] : loadInitial(),
 
   uploadQuestion: (input, teacherName) => {
+    if (apiEnabled) return api.post<ReviewableQuestion>('/api/review-questions', input).then(q => { set({questions:[q,...get().questions]});return q; });
     const q: ReviewableQuestion = {
       ...toReviewable(input),
       id: uid(),
@@ -129,6 +131,7 @@ export const useQuestionBankStore = create<QuestionBankState>((set, get) => ({
   },
 
   submitQuestion: (input, userId, userName) => {
+    if (apiEnabled) return api.post<ReviewableQuestion>('/api/review-questions', input).then(q => { set({questions:[q,...get().questions]});return q; });
     const q: ReviewableQuestion = {
       ...toReviewable(input),
       id: uid(),
@@ -144,6 +147,7 @@ export const useQuestionBankStore = create<QuestionBankState>((set, get) => ({
   },
 
   approveQuestion: (id, feedback) => {
+    if (apiEnabled) return api.patch<ReviewableQuestion>(`/api/review-questions/${id}`, {reviewStatus:'approved', ...(feedback !== undefined ? {teacherFeedback:feedback} : {})}).then(q => {set({questions:get().questions.map(old=>old.id===id?q:old)});});
     const now = new Date().toISOString();
     const questions = get().questions.map((q) =>
       q.id === id
@@ -155,6 +159,7 @@ export const useQuestionBankStore = create<QuestionBankState>((set, get) => ({
   },
 
   rejectQuestion: (id, feedback) => {
+    if (apiEnabled) return api.patch<ReviewableQuestion>(`/api/review-questions/${id}`, {reviewStatus:'rejected', teacherFeedback:feedback}).then(q => {set({questions:get().questions.map(old=>old.id===id?q:old)});});
     const now = new Date().toISOString();
     const questions = get().questions.map((q) =>
       q.id === id
@@ -166,6 +171,7 @@ export const useQuestionBankStore = create<QuestionBankState>((set, get) => ({
   },
 
   editQuestion: (id, patch, teacherName) => {
+    if (apiEnabled) return api.patch<ReviewableQuestion>(`/api/review-questions/${id}`, patch).then(q => {set({questions:get().questions.map(old=>old.id===id?q:old)});});
     const questions = get().questions.map((q) =>
       q.id === id
         ? { ...q, ...patch, edited: true, editedBy: teacherName }
@@ -176,6 +182,7 @@ export const useQuestionBankStore = create<QuestionBankState>((set, get) => ({
   },
 
   setFeedback: (id, feedback, teacherName) => {
+    if (apiEnabled) return api.patch<ReviewableQuestion>(`/api/review-questions/${id}`, {teacherFeedback:feedback}).then(q => {set({questions:get().questions.map(old=>old.id===id?q:old)});});
     const now = new Date().toISOString();
     const questions = get().questions.map((q) =>
       q.id === id ? { ...q, teacherFeedback: feedback, feedbackAt: now, editedBy: teacherName } : q
@@ -185,12 +192,14 @@ export const useQuestionBankStore = create<QuestionBankState>((set, get) => ({
   },
 
   deleteQuestion: (id) => {
+    if (apiEnabled) return api.delete(`/api/review-questions/${id}`).then(()=>{set({questions:get().questions.filter(q=>q.id!==id)});});
     const questions = get().questions.filter((q) => q.id !== id);
     persist(questions);
     set({ questions });
   },
 
   importTeacherQuestions: (raw, teacherName) => {
+    if (apiEnabled) return api.post<{imported:number}>('/api/review-questions/import', {questions:raw}).then(async result=>{set({questions:await api.get<ReviewableQuestion[]>('/api/review-questions')});return result.imported;});
     const valid = ['single', 'multiple', 'judge'];
     const incoming: ReviewableQuestion[] = [];
     for (const candidate of raw) {

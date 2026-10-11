@@ -359,7 +359,7 @@ export default function AchievementHall() {
                         <div className="p-4 flex items-center justify-between">
                           <div className="flex items-center gap-2">
                             <button
-                              onClick={() => toggleLove(card.id)}
+                              onClick={(event) => { event.stopPropagation(); toggleLove(card.id); }}
                               className={cn(
                                 'flex items-center gap-1 text-[12px] font-semibold transition-all',
                                 loved ? 'text-danger-600' : 'text-ink-500 hover:text-danger-600'

@@ -50,9 +50,9 @@ const loadUsersFromGroups = (): User[] => {
 };
 
 export const useGroupStore = create<GroupState>((set, get) => {
-  initMockData();
-  const initialGroups = loadLS<Group[]>(LS_KEYS.GROUPS, []);
-  const initialUsers = loadUsersFromGroups();
+  if (!apiEnabled) initMockData();
+  const initialGroups = apiEnabled ? [] : loadLS<Group[]>(LS_KEYS.GROUPS, []);
+  const initialUsers = apiEnabled ? [] : loadUsersFromGroups();
   const initialClassMeta = loadLS<ClassMeta>(LS_KEYS.CLASS_META, {
     initialCoinsPerGroup: 500,
     termName: '',

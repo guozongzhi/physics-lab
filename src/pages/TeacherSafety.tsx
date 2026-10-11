@@ -384,7 +384,7 @@ export default function TeacherSafety() {
   return (
     <div className="w-full space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-4">
+      <div className="glass-card p-5 md:p-7 flex items-center gap-4">
         <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-growth-400 to-growth-600 flex items-center justify-center text-white shadow-lg">
           <ShieldCheck size={28} strokeWidth={2.2} />
         </div>

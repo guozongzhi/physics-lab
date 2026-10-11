@@ -8,7 +8,9 @@
  *
  * 未启用后端时：本模块不做任何事，前端保持原有 localStorage 离线模式。
  */
-import { apiEnabled } from './apiClient';
+import { apiEnabled, api } from './apiClient';
+import { useQuestionBankStore } from '../store/questionBankStore';
+import type { ReviewableQuestion } from '../data/mockData';
 import {
   groupsApi,
   usersApi,
@@ -54,7 +56,7 @@ export async function bootstrapFromApi(force = false): Promise<void> {
 
     // 所有接口完成后统一检查；任何失败都不注入部分快照，避免混合新旧账号数据。
     const [
-      rGroups, rUsers, rTopics, rQuestions, rChallenges, rProjects, rRecruits, rShowcase, rCoinTxs, rClassMeta, rQuizSessions,
+      rGroups, rUsers, rTopics, rQuestions, rChallenges, rProjects, rRecruits, rShowcase, rCoinTxs, rClassMeta, rQuizSessions, rReviewQuestions,
     ] = await Promise.allSettled([
       groupsApi.list(),
       usersApi.list(),
@@ -67,9 +69,10 @@ export async function bootstrapFromApi(force = false): Promise<void> {
       coinsApi.transactions(),
       coinsApi.classMeta(),
       theoryApi.quizSessions(),
+      api.get<ReviewableQuestion[]>('/api/review-questions'),
     ]);
 
-    const results = [rGroups, rUsers, rTopics, rQuestions, rChallenges, rProjects, rRecruits, rShowcase, rCoinTxs, rClassMeta, rQuizSessions];
+    const results = [rGroups, rUsers, rTopics, rQuestions, rChallenges, rProjects, rRecruits, rShowcase, rCoinTxs, rClassMeta, rQuizSessions, rReviewQuestions];
     const failed = results.find((result) => result.status === 'rejected');
     if (failed && failed.status === 'rejected') throw failed.reason;
     if (myGeneration !== generation) {
@@ -77,6 +80,8 @@ export async function bootstrapFromApi(force = false): Promise<void> {
       return;
     }
 
+    const reviewed = pick(rReviewQuestions);
+    if (reviewed) useQuestionBankStore.setState({questions:reviewed});
     const groups = pick(rGroups);
     const users = pick(rUsers);
     const rawClassMeta = pick(rClassMeta);

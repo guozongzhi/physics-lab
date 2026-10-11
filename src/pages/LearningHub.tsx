@@ -1,6 +1,8 @@
+import { useLearningProgressStore } from '@/store/learningProgressStore';
+import { apiEnabled } from '@/lib/apiClient';
 import type { LucideIcon } from 'lucide-react';
-import { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useMemo, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import { Atom, Zap, Eye, ThermometerSun, RadioTower, Waves, Rocket, Scale, CheckCircle2, Star, Sparkles, PlayCircle, Trophy, Target, Lightbulb, Brain, ChevronRight, ChevronDown, BookOpen, X, HelpCircle } from 'lucide-react';
@@ -37,7 +39,8 @@ const TOPIC_META: TopicMeta[] = [
 
 
 export default function LearningHub() {
-  const [activeTopicId, setActiveTopicId] = useState('topic-2');
+  const { id: routeTopicId } = useParams();
+  const [activeTopicId, setActiveTopicId] = useState(routeTopicId || 'topic-1');
   const [activeTab, setActiveTab] = useState<TopicTab>('ai-study');
   const [expandedChapter, setExpandedChapter] = useState<string | null>(null);
   const [selectedPoint, setSelectedPoint] = useState<string | null>(null);
@@ -46,8 +49,9 @@ export default function LearningHub() {
 
   const navigate = useNavigate();
   const pushToast = useUIStore((s) => s.pushToast);
-  const { quizSessions, startQuiz } = useTheoryStore();
+  const { quizSessions: allQuizSessions, startQuiz } = useTheoryStore();
   const userId = useAuthStore((s) => s.userId);
+  const quizSessions = useMemo(() => allQuizSessions.filter((session) => (session.userId === userId || (apiEnabled && !session.userId)) && session.graded), [allQuizSessions, userId]);
 
   // 完成/解锁：从真实测验派生（某主题有通过记录即完成；主题按顺序解锁）
   const completedTopicIds = useMemo(() => new Set(quizSessions.filter((s) => s.passed).map((s) => s.topicId)), [quizSessions]);
@@ -60,6 +64,18 @@ export default function LearningHub() {
       }),
     [completedTopicIds]
   );
+  useEffect(() => {
+    const requested = topicMeta.find((topic) => topic.id === routeTopicId && topic.unlocked);
+    const fallback = topicMeta.find((topic) => topic.unlocked && !topic.completed) ?? topicMeta[0];
+    setActiveTopicId(requested?.id ?? fallback.id);
+    setExpandedChapter(null);
+    setSelectedPoint(null);
+    if (routeTopicId && !requested) {
+      pushToast('该主题不存在或尚未解锁，已返回可学习的主题', 'warning');
+      navigate('/theory/topics', { replace: true });
+    }
+  }, [routeTopicId, topicMeta, navigate, pushToast]);
+
   const quizHistory = useMemo(
     () =>
       quizSessions
@@ -76,6 +92,12 @@ export default function LearningHub() {
 
   const activeTopicData = mockTopics.find((t) => t.id === activeTopicId) || mockTopics[0];
   const activeMeta = topicMeta.find((t) => t.id === activeTopicId) || topicMeta[0];
+  const markVisited = useLearningProgressStore((state) => state.markVisited);
+  useEffect(() => {
+    if (!userId || !activeMeta.unlocked) return;
+    if (activeTab === 'ai-study') markVisited(userId, 'ai_learn');
+    if (activeTab === 'knowledge') markVisited(userId, 'knowledge_organize');
+  }, [userId, activeTab, activeMeta.unlocked, markVisited]);
   const unlockedCount = topicMeta.filter((t) => t.unlocked).length;
   const completedCount = topicMeta.filter((t) => t.completed).length;
   const totalProgress = Math.round((completedCount / topicMeta.length) * 100);
@@ -85,7 +107,7 @@ export default function LearningHub() {
   /** 建一条真实测验会话再跳转。之前是跳 `${topicId}-quiz` 这个编造的 id，
    *  测验页找不到它就退化成「抽全局前 10 题」，交卷时还报「会话不存在」。 */
   const handleStartQuiz = async () => {
-    if (startingQuiz) return;
+    if (startingQuiz || !activeMeta.unlocked) return;
     setStartingQuiz(true);
     try {
       const session = await startQuiz(activeTopicId, userId);
@@ -185,7 +207,7 @@ export default function LearningHub() {
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: idx * 0.05 }}
-                onClick={() => meta.unlocked && setActiveTopicId(meta.id)}
+                onClick={() => meta.unlocked && navigate(`/theory/topics/${meta.id}`)}
                 disabled={!meta.unlocked}
                 className={cn(
                   'w-full glass-card glass-card-hover p-4 text-left relative overflow-hidden group',
@@ -242,7 +264,7 @@ export default function LearningHub() {
         </aside>
 
         <section className="lg:col-span-9">
-          <div className="flex items-center gap-2 mb-4">
+          <div className="workspace-tabs flex flex-wrap items-center gap-2 mb-4">
             {([
               { id: 'ai-study', label: 'AI Study Tabs', icon: Brain, color: 'mission' },
               { id: 'knowledge', label: 'Knowledge Galaxy Mini', icon: Sparkles, color: 'nova' },
@@ -255,7 +277,7 @@ export default function LearningHub() {
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
                   className={cn(
-                    'px-5 py-2.5 rounded-xl font-bold text-sm flex items-center gap-2 transition-all',
+                    'px-4 py-2.5 rounded-xl font-bold text-sm flex items-center gap-2 transition-all',
                     isActive
                       ? 'glass-card shadow-glowMission text-mission-700'
                       : 'text-ink-500 hover:text-ink-700 hover:bg-white/50'

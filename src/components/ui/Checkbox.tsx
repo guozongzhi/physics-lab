@@ -1,6 +1,6 @@
 import { Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { InputHTMLAttributes } from 'react';
+import { InputHTMLAttributes, useId } from 'react';
 
 interface CheckboxProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'size'> {
   label?: string;
@@ -12,7 +12,8 @@ interface CheckboxProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'siz
 export default function Checkbox({ label, checked, onCheckedChange, size = 'md', className, id, ...rest }: CheckboxProps) {
   const boxSize = size === 'sm' ? 'w-4 h-4' : 'w-5 h-5';
   const chkSize = size === 'sm' ? 10 : 14;
-  const inputId = id || `chk-${Math.random().toString(36).slice(2, 8)}`;
+  const generatedId = useId();
+  const inputId = id || generatedId;
 
   return (
     <label htmlFor={inputId} className={cn('inline-flex items-start gap-2.5 cursor-pointer select-none', className)}>
@@ -20,7 +21,7 @@ export default function Checkbox({ label, checked, onCheckedChange, size = 'md',
         <input
           id={inputId}
           type="checkbox"
-          className="sr-only"
+          className="peer sr-only"
           checked={checked}
           onChange={(e) => onCheckedChange(e.target.checked)}
           {...rest}
@@ -28,7 +29,7 @@ export default function Checkbox({ label, checked, onCheckedChange, size = 'md',
         <span
           className={cn(
             boxSize,
-            'rounded-md border transition-all duration-150 flex items-center justify-center',
+            'rounded-md border transition-all duration-150 flex items-center justify-center peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-4 peer-focus-visible:outline-mission-500',
             checked
               ? 'bg-physics-500 border-physics-500 ring-4 ring-physics-100'
               : 'bg-white border-physics-200 hover:border-physics-300'

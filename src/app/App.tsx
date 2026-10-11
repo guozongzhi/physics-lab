@@ -135,7 +135,7 @@ export default function App() {
           <Route path="my-team" element={<MyTeam />} />
           <Route path="theory" element={<Navigate to="/theory/topics" replace />} />
           <Route path="theory/topics" element={<LearningHub />} />
-          <Route path="theory/topics/:id" element={<Navigate to="/theory/topics" replace />} />
+          <Route path="theory/topics/:id" element={<LearningHub />} />
           <Route path="theory/quiz/:sessionId" element={<QuizPage mode="quiz" />} />
           <Route path="theory/challenge" element={<KnowledgeGalaxy />} />
           <Route path="theory/challenge/:id/accept" element={<QuizPage mode="challenge" />} />
