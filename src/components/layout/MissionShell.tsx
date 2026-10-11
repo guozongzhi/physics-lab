@@ -559,7 +559,7 @@ export default function MissionShell({ children, requireAuth = true }: MissionSh
 
   return (
     <>
-      <div className="mission-stage min-h-screen w-full relative text-slate-900 dark:text-slate-100">
+      <div data-workspace-role={role} className="mission-stage min-h-screen w-full relative text-slate-900 dark:text-slate-100">
         <div className="mission-ambient" aria-hidden="true">
           <span className="mission-ambient-orb mission-ambient-orb-a" />
           <span className="mission-ambient-orb mission-ambient-orb-b" />

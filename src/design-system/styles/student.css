@@ -1,0 +1,135 @@
+/* Student workspace polish. Keep teacher/admin surfaces independently styled. */
+.mission-stage[data-workspace-role='student']::before {
+  background-image: linear-gradient(180deg, #03152d40, #03152d85), url('/images/login-observatory-desktop.jpg');
+}
+.mission-stage[data-workspace-role='student'] {
+  --workspace-muted: #40577a;
+  --student-surface: linear-gradient(135deg, #edf5fff5, #f5f7fff5 55%, #dceafff5);
+}
+.mission-stage[data-workspace-role='student'] :is(.glass-card, .card-base, .immersive-bento, .mission-page-intro, .mission-hero, .portal-card, .portal-overview-link) {
+  background: var(--student-surface);
+  border-color: #e8f2ffe6;
+  box-shadow: inset 0 1px #fff, 0 8px 24px #00133328;
+  border-radius: 20px;
+}
+.mission-stage[data-workspace-role='student'] :is(.glass-card-hover, .portal-card):hover {
+  transform: translateY(-2px);
+  box-shadow: inset 0 1px #fff, 0 12px 28px #00133338;
+  border-color: #9fcfff;
+}
+.mission-stage[data-workspace-role='student'] .glass-card .glass-card:not(button) {
+  background: #f8fbffb8;
+  border-color: #b6cbe55c;
+  box-shadow: none;
+  border-radius: 14px;
+}
+.mission-stage[data-workspace-role='student'] .portal-card-featured {
+  background: linear-gradient(135deg, #103c80, #082449);
+  border-color: #8ac7f566;
+}
+.mission-stage[data-workspace-role='student'] .mission-nav {
+  background: linear-gradient(180deg, #102647f5, #081a33f5);
+  border-color: #a5cdff30;
+  scrollbar-color: #527299 #102647;
+  scrollbar-width: thin;
+}
+.mission-stage[data-workspace-role='student'] .mission-nav-item {
+  padding-block: 10px;
+  font-size: 13px;
+  border-radius: 12px;
+}
+.mission-stage[data-workspace-role='student'] .mission-nav-item div > div:last-child:not(:first-child) {
+  font-size: 11px;
+  color: #a4bad6;
+  margin-top: 2px;
+}
+.mission-stage[data-workspace-role='student'] .mission-nav-item[data-active='true'] {
+  background: linear-gradient(115deg, #1555dd, #246be8);
+  box-shadow: inset 0 1px #ffffff30, 0 4px 12px #0060ff20;
+  border-color: #a2d5ff80;
+}
+.mission-stage[data-workspace-role='student'] .mission-nav-item[data-active='true'] div > div:last-child { color: #e1efff; }
+.mission-stage[data-workspace-role='student'] main .text-xs { font-size: 13px; line-height: 1.65; }
+.mission-stage[data-workspace-role='student'] main :is(.text-ink-400, .text-slate-400) { color: #52688c; }
+.mission-stage[data-workspace-role='student'] .mission-page-context { font-size: 13px; gap: 8px; }
+.mission-stage[data-workspace-role='student'] .portal-card-description { font-size: 14px; line-height: 1.7; }
+.mission-stage[data-workspace-role='student'] .portal-card-foot { font-size: 13px; }
+.mission-stage[data-workspace-role='student'] .portal-section-heading p:last-child { font-size: 14px; line-height: 1.7; }
+.mission-stage[data-workspace-role='student'] .portal-section-heading h2 { font-size: clamp(24px, 2.5vw, 30px); }
+.mission-stage[data-workspace-role='student'] .portal-overview-link small { font-size: 13px; line-height: 1.6; }
+.mission-stage[data-workspace-role='student'] .portal-card::after { opacity: .5; }
+.mission-stage[data-workspace-role='student'] .workspace-tabs {
+  background: #cfe0f2e6;
+  border-radius: 16px;
+  gap: 6px;
+}
+.mission-stage[data-workspace-role='student'] .workspace-tabs button {
+  min-height: 42px;
+  border-radius: 11px;
+  font-size: 13px;
+}
+.mission-stage[data-workspace-role='student'] .workspace-tabs button.glass-card {
+  background: #215bdd;
+  box-shadow: 0 3px 8px #17458d20;
+  color: #fff;
+}
+.mission-stage[data-workspace-role='student'] main :is(input:not([type='range']):not([type='checkbox']):not([type='radio']):not([type='file']), select, textarea) {
+  border-color: #a7bdd9;
+  background-color: #f9fcff;
+}
+.mission-stage[data-workspace-role='student'] main button.h-8 { min-height: 36px; }
+.mission-stage[data-workspace-role='student'] .student-password-hint { gap: 12px; }
+.mission-stage[data-workspace-role='student'] .student-password-hint > div:last-child { flex-shrink: 0; }
+.student-topic-hint { display: none; }
+
+@media (max-width: 767px) {
+  .mission-stage[data-workspace-role='student']::before {
+    background-image: linear-gradient(180deg, #03152d55, #03152d9c), url('/images/login-observatory-mobile.jpg');
+  }
+  .mission-stage[data-workspace-role='student'] .mission-content { padding-inline: 16px; padding-bottom: 32px; }
+  .mission-stage[data-workspace-role='student'] :is(.glass-card, .immersive-bento, .mission-hero, .portal-card) { border-radius: 18px; }
+  .mission-stage[data-workspace-role='student'] .mission-header button { min-height: 44px; }
+  .mission-stage[data-workspace-role='student'] .mission-nav-close { min-height: 48px; }
+  .mission-stage[data-workspace-role='student'] .mission-hero { padding: 20px; }
+  .mission-stage[data-workspace-role='student'] .student-password-hint { flex-wrap: wrap; }
+  .mission-stage[data-workspace-role='student'] .student-password-hint > div:last-child { margin-left: auto; }
+  .mission-stage[data-workspace-role='student'] .student-learning-intro { padding: 22px; }
+  .mission-stage[data-workspace-role='student'] .student-learning-intro h1 { font-size: 28px; line-height: 1.3; }
+  .mission-stage[data-workspace-role='student'] .student-learning-intro p { font-size: 15px; line-height: 1.75; }
+  .mission-stage[data-workspace-role='student'] .student-learning-intro .mission-label { margin-bottom: 12px; font-size: 10px; letter-spacing: .08em; }
+  .mission-stage[data-workspace-role='student'] .student-learning-intro .mt-6 { margin-top: 16px; gap: 8px; }
+  .mission-stage[data-workspace-role='student'] .student-topic-hint { display: block; }
+  .mission-stage[data-workspace-role='student'] .student-topic-list {
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    padding: 4px 4px 12px;
+    scroll-snap-type: x proximity;
+    scrollbar-color: #8badd8 #20375a;
+    scrollbar-width: thin;
+  }
+  .mission-stage[data-workspace-role='student'] .student-topic-list > button {
+    width: 220px;
+    flex-shrink: 0;
+    margin-top: 0;
+    scroll-snap-align: start;
+  }
+  .mission-stage[data-workspace-role='student'] .workspace-tabs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .mission-stage[data-workspace-role='student'] .workspace-tabs button { min-width: 0; padding-inline: 8px; white-space: normal; }
+  .mission-stage[data-workspace-role='student'] .workspace-tabs button:last-child:nth-child(odd) { grid-column: 1 / -1; }
+  .mission-stage[data-workspace-role='student'] .student-inline-tabs {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    scrollbar-width: thin;
+    scrollbar-color: #8badd8 #cfdfef;
+  }
+  .mission-stage[data-workspace-role='student'] .student-inline-tabs > button { flex-shrink: 0; white-space: nowrap; padding-inline: 12px; min-height: 44px; }
+  .mission-stage[data-workspace-role='student'] .student-safety-intro { padding: 22px; }
+  .mission-stage[data-workspace-role='student'] .student-safety-brand { align-items: start; gap: 16px; }
+  .mission-stage[data-workspace-role='student'] .student-safety-brand .shield-card.relative { width: 72px; height: 84px; }
+  .mission-stage[data-workspace-role='student'] .student-safety-intro h1 { font-size: 28px; }
+  .mission-stage[data-workspace-role='student'] .portal-card { padding: 20px; min-height: 216px; }
+  .mission-stage[data-workspace-role='student'] .portal-overview-link { padding: 16px; gap: 12px; }
+  .mission-stage[data-workspace-role='student'] .portal-overview-link > svg { flex-shrink: 0; }
+}

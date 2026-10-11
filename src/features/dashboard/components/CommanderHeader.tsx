@@ -40,7 +40,7 @@ export const CommanderHeader: React.FC<CommanderHeaderProps> = ({
     <div className="space-y-4">
       {/* 初始密码安全警示 */}
       {showPwdHint && (
-        <div className="flex items-center justify-between p-3.5 rounded-xl bg-alert-50 dark:bg-alert-950/40 border border-alert-200 dark:border-alert-800/60 text-alert-800 dark:text-alert-200 text-xs">
+        <div className="student-password-hint flex items-center justify-between p-3.5 rounded-xl bg-alert-50 dark:bg-alert-950/40 border border-alert-200 dark:border-alert-800/60 text-alert-800 dark:text-alert-200 text-xs">
           <div className="flex items-center gap-2">
             <span className="p-1 rounded-md bg-alert-500/20 text-alert-600 dark:text-alert-400 font-bold">
               !

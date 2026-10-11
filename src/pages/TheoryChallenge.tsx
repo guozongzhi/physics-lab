@@ -249,10 +249,11 @@ export default function TheoryChallenge() {
           </button>
         </div>
 
-        <div className="flex gap-2 p-1.5 bg-ink-100/80 rounded-xl2 w-fit">
+        <div className="student-inline-tabs flex gap-2 p-1.5 bg-ink-100/80 rounded-xl2 w-fit">
           {TABS.map((t) => (
             <button
               key={t.key}
+              aria-pressed={tab === t.key}
               onClick={() => setTab(t.key)}
               className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium text-sm transition-all ${
                 tab === t.key

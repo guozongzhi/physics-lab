@@ -120,7 +120,7 @@ export default function LearningHub() {
 
   return (
     <div className="w-full space-y-6">
-      <section className="glass-card glass-card-hover p-8 rounded-[20px] relative overflow-hidden">
+      <section className="student-learning-intro glass-card p-8 rounded-[20px] relative overflow-hidden">
         <div className="absolute -right-20 -top-20 w-72 h-72 rounded-full bg-gradient-to-br from-mission-300/30 to-nova-300/20 blur-3xl pointer-events-none" />
         <div className="absolute -left-10 -bottom-10 w-56 h-56 rounded-full bg-gradient-to-br from-growth-300/20 to-mission-300/20 blur-3xl pointer-events-none" />
         
@@ -198,6 +198,8 @@ export default function LearningHub() {
             <Atom size={12} />
             物理主题导航
           </div>
+          <p className="student-topic-hint text-xs text-white/80">左右滑动查看主题</p>
+          <div className="student-topic-list space-y-3" aria-label="物理主题列表" tabIndex={0}>
           {topicMeta.map((meta, idx) => {
             const Icon = meta.icon;
             const isActive = activeTopicId === meta.id;
@@ -261,6 +263,7 @@ export default function LearningHub() {
               </motion.button>
             );
           })}
+          </div>
         </aside>
 
         <section className="lg:col-span-9">
@@ -275,6 +278,7 @@ export default function LearningHub() {
               return (
                 <button
                   key={tab.id}
+                  aria-pressed={isActive}
                   onClick={() => setActiveTab(tab.id)}
                   className={cn(
                     'px-4 py-2.5 rounded-xl font-bold text-sm flex items-center gap-2 transition-all',

@@ -328,12 +328,12 @@ export default function SafetyLab() {
         )}
       </AnimatePresence>
 
-      <section className="glass-card glass-card-hover p-8 rounded-[28px] relative overflow-hidden">
+      <section className="student-safety-intro glass-card p-8 rounded-[28px] relative overflow-hidden">
         <div className="absolute -right-32 -top-32 w-[400px] h-[400px] rounded-full bg-gradient-to-br from-growth-300/25 via-mission-300/15 to-nova-300/10 blur-3xl pointer-events-none" />
         <div className="absolute -left-20 -bottom-24 w-80 h-80 rounded-full bg-gradient-to-br from-mission-300/20 via-nova-300/10 to-transparent blur-3xl pointer-events-none" />
 
         <div className="relative grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-          <div className="lg:col-span-5 flex items-center gap-6">
+          <div className="student-safety-brand lg:col-span-5 flex items-center gap-6">
             <div className="relative shrink-0">
               <div className="absolute -inset-3 rounded-[32px] bg-growth-400/25 blur-2xl animate-pulse" />
               <div className="shield-card relative w-28 h-32 bg-gradient-to-br from-growth-300 via-growth-500 to-growth-700 shadow-glowMission flex items-center justify-center">
@@ -400,7 +400,7 @@ export default function SafetyLab() {
             <ShieldCheck size={12} />
             六大安全领域 · 分类考核
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {domains.map((domain, idx) => {
               const Icon = domain.icon;
               return (
