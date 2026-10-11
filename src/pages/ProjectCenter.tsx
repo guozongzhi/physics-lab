@@ -117,7 +117,6 @@ export default function ProjectCenter() {
   useEffect(() => {
     if (projectId) setSelectedId(projectId);
   }, [projectId]);
-  const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [groupFilter, setGroupFilter] = useState('全部小组');
   const [statusFilters, setStatusFilters] = useState<ProjectStatus[]>([]);
@@ -334,176 +333,44 @@ export default function ProjectCenter() {
       </section>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        <section className="lg:col-span-8 glass-card p-8 rounded-[20px] relative overflow-hidden min-h-[680px]">
-          <div className="absolute inset-0 bg-grid-fine opacity-30 pointer-events-none" />
-          <div className="relative grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-y-12 gap-x-8">
+        <section className="project-mission-board lg:col-span-8 glass-card rounded-[20px]">
+          <header className="project-board-heading">
+            <div><span className="mission-label">RESEARCH MISSIONS</span><h2>探索你的研究任务</h2><p>选择课题，查看器材、技术要点与下一步行动。</p></div>
+            <span className="project-board-count">{filteredPlanets.length} 个项目</span>
+          </header>
+          <div className="project-mission-grid">
             {filteredPlanets.map((planet, idx) => {
               const cfg = STATUS_CONFIG[planet.status];
               const StatusIcon = STATUS_ICONS[planet.status];
               const isSelected = selectedId === planet.id;
-              const isHovered = hoveredId === planet.id;
-              const showOverlay = isSelected || isHovered;
-
               return (
-                <motion.div
-                  key={planet.id}
-                  initial={{ opacity: 0, scale: 0.9, y: 20 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  transition={{ delay: idx * 0.06 }}
-                  className="student-project-planet relative flex flex-col items-center"
-                  onMouseEnter={() => setHoveredId(planet.id)}
-                  onMouseLeave={() => setHoveredId(null)}
-                  onClick={() => selectProject(planet.id)}
-                >
-                  <div className="relative w-[160px] h-[160px] flex items-center justify-center cursor-pointer group">
-                    <div className={cn('absolute inset-[-60px] rounded-full blur-3xl opacity-50', cfg.halo)} />
-
-                    <div className="absolute w-[190px] h-[190px] rounded-full border border-dashed opacity-50"
-                      style={{ borderColor: planet.status === 'progress' ? 'rgba(79,124,255,0.3)' : 'rgba(148,163,184,0.25)' }}>
-                      {planet.milestonesData.slice(0, 4).map((_, mi) => {
-                        const angle = (mi / 4) * Math.PI * 2 - Math.PI / 2;
-                        const rx = 95, ry = 95;
-                        return (
-                          <div
-                            key={mi}
-                            className="absolute w-2.5 h-2.5 rounded-full"
-                            style={{
-                              left: `calc(50% + ${Math.cos(angle) * rx}px - 5px)`,
-                              top: `calc(50% + ${Math.sin(angle) * ry}px - 5px)`,
-                              background: planet.milestonesData[mi].status === 'done'
-                                ? 'linear-gradient(135deg,#22C55E,#6CE9A6)'
-                                : planet.milestonesData[mi].status === 'progress'
-                                  ? 'linear-gradient(135deg,#4F7CFF,#8B5CF6)'
-                                  : 'rgba(148,163,184,0.4)',
-                              boxShadow: planet.milestonesData[mi].status !== 'pending'
-                                ? `0 0 8px ${planet.milestonesData[mi].status === 'done' ? 'rgba(34,197,94,0.6)' : 'rgba(79,124,255,0.6)'}`
-                                : 'none',
-                            }}
-                          />
-                        );
-                      })}
-                    </div>
-
-                    <div className="absolute w-[150px] h-[150px] rounded-full border-2 opacity-60"
-                      style={{ borderColor: planet.status === 'progress' ? 'rgba(79,124,255,0.25)' : 'rgba(148,163,184,0.2)' }} />
-
-                    <div
-                      className={cn(
-                        'relative w-[108px] h-[108px] rounded-full bg-gradient-to-br transition-all duration-500',
-                        cfg.planetGrad,
-                        showOverlay && 'scale-105',
-                        isSelected && 'ring-4 ring-white/80 shadow-[0_0_0_6px_rgba(79,124,255,0.18)]'
-                      )}
-                      style={{
-                        boxShadow: `inset -10px -14px 40px rgba(0,0,0,0.18), 0 20px 60px ${
-                          planet.status === 'progress' ? 'rgba(79,124,255,0.35)' :
-                          planet.status === 'done' ? 'rgba(34,197,94,0.3)' :
-                          planet.status === 'failed' ? 'rgba(240,68,56,0.3)' :
-                          planet.status === 'frozen' ? 'rgba(139,92,246,0.3)' :
-                          planet.status === 'review' ? 'rgba(245,158,11,0.3)' :
-                          'rgba(148,163,184,0.25)'
-                        }`,
-                      }}
-                    >
-                      <div className="absolute inset-0 rounded-full opacity-40 bg-gradient-to-br from-white/60 via-transparent to-transparent" />
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <StatusIcon size={30} className="text-white/95 drop-shadow-lg" strokeWidth={2.2} />
-                      </div>
-                      <div className="absolute w-full h-full rounded-full" style={{
-                        background: 'radial-gradient(circle at 30% 25%, rgba(255,255,255,0.45) 0%, transparent 45%)',
-                      }} />
-                    </div>
-
-
+                <button key={planet.id} type="button" aria-pressed={isSelected}
+                  className={cn('project-mission-card', isSelected && 'is-selected')}
+                  onClick={() => selectProject(planet.id)}>
+                  <div className="project-mission-art" aria-hidden="true">
+                    <svg viewBox="0 0 320 130" fill="none">
+                      <path className="mission-signal" d={planet.topic.includes('光') ? 'M0 100 L125 65 L155 20 L190 105 L125 65 L320 35 M125 65 L320 70 M125 65 L320 105' : planet.topic.includes('电') ? 'M0 65 H65 V25 H120 V105 H175 V25 H230 V65 H320' : 'M0 65 Q40 0 80 65 T160 65 T240 65 T320 65'} />
+                      <path d="M0 115H320M0 15H320M30 0V130M290 0V130" stroke="currentColor" opacity=".12" />
+                      <circle className="mission-particle" cx="65" cy="65" r="5" fill="currentColor" />
+                    </svg>
+                    <span className="project-art-index">MISSION / {String(idx + 1).padStart(2, '0')}</span>
+                    <span className="project-art-icon"><StatusIcon size={24} /></span>
+                    <span className="project-art-topic">{planet.topic}</span>
                   </div>
-
-                  <div className="mt-6 text-center">
-                    <div className="inline-block mb-1.5">
-                      <span className={cn(cfg.chip, '!py-0.5 !text-[10px]')}>{planet.topic}</span>
-                    </div>
-                    <h3 className={cn(
-                      'font-black text-sm leading-tight max-w-[160px] mx-auto',
-                      isSelected ? 'text-mission-700' : 'text-ink-800'
-                    )}>
-                      {planet.title}
-                    </h3>
-                    <div className="mt-2 h-1.5 w-28 mx-auto rounded-full bg-ink-100 overflow-hidden">
-                      <motion.div
-                        initial={{ width: 0 }}
-                        animate={{ width: `${planet.progress}%` }}
-                        transition={{ duration: 0.8, delay: idx * 0.05 }}
-                        className={cn('h-full rounded-full bg-gradient-to-r',
-                          planet.status === 'done' ? 'from-growth-400 to-growth-500' :
-                          planet.status === 'failed' ? 'from-danger-400 to-danger-500' :
-                          planet.status === 'frozen' ? 'from-nova-400 to-nova-500' :
-                          planet.status === 'review' ? 'from-alert-400 to-energy-500' :
-                          'from-mission-400 to-nova-500'
-                        )}
-                      />
-                    </div>
-                    <div className="text-[10px] font-bold text-ink-500 mt-1 tabular-nums">{planet.progress}%</div>
+                  <div className="project-mission-body">
+                    <div className="project-mission-meta"><span className={cfg.chip}>{cfg.label}</span><span><Zap size={13} /> +{planet.rewardCoins}</span></div>
+                    <h3>{planet.title}</h3>
+                    <p className="project-mission-description">{planet.description || '从提出问题到实验验证，开启你的物理研究。'}</p>
+                    <div className="project-mission-progress"><span>研究进度</span><strong>{planet.progress}%</strong></div>
+                    <div className="project-mission-track"><span style={{ width: `${planet.progress}%` }} /></div>
+                    <div className="project-mission-footer"><span><Users size={14} />{planet.groupName}</span><ChevronRight size={18} /></div>
+                    <div className="project-mission-facts"><span><Wrench size={12} /> 器材 {planet.equipmentList.length} 项</span><span><ShieldCheck size={12} />{planet.safetyPassed ? '安全已通过' : '待安全认证'}</span></div>
                   </div>
-                    {showOverlay && (
-                      <motion.div
-                        initial={{ opacity: 0, y: 8, scale: 0.96 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        className="student-project-preview"
-                      >
-                        <div className="glass-card !p-4 !rounded-2xl shadow-glowMission">
-                          <div className="flex items-start justify-between mb-2">
-                            <div>
-                              <div className="flex items-center gap-2 mb-1">
-                                <span className={cn(cfg.chip, '!py-0.5 !text-[10px]')}>{cfg.label}</span>
-                                <span className="chip-energy !py-0.5 !text-[10px]">
-                                  +{planet.rewardCoins}⚡
-                                </span>
-                              </div>
-                              <h4 className="font-black text-ink-800 text-sm leading-tight">{planet.title}</h4>
-                            </div>
-                            {planet.dueInDays > 0 && (
-                              <span className="chip-alert !py-0.5 !text-[10px] shrink-0">
-                                剩 {planet.dueInDays} 天
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-[11px] text-ink-500 leading-relaxed line-clamp-2 mb-3">
-                            {planet.description}
-                          </p>
-                          <div className="flex items-center justify-between">
-                            <div className="flex -space-x-2">
-                              {planet.owners.slice(0, 3).map((o, i) => (
-                                <div
-                                  key={i}
-                                  className="w-6 h-6 rounded-full ring-2 ring-white flex items-center justify-center text-[10px] font-black text-white"
-                                  style={{ background: o.color }}
-                                >
-                                  {o.name}
-                                </div>
-                              ))}
-                            </div>
-                            <button
-                              className="btn-mission !py-1.5 !px-3 !text-[11px] !rounded-xl"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                selectProject(planet.id);
-                                setMissionTab('milestones');
-                                setTimeout(() => {
-                                  const el = document.getElementById('mission-focus-panel');
-                                  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                                }, 50);
-                                pushToast?.(`已切换到《${planet.title}》任务中心`, 'info');
-                              }}
-                            >
-                              进入任务中心 <ChevronRight size={12} />
-                            </button>
-                          </div>
-                        </div>
-                      </motion.div>
-                    )}
-                </motion.div>
+                </button>
               );
             })}
           </div>
+          {filteredPlanets.length === 0 && <div className="project-board-empty"><Search size={30} /><h3>没有匹配的项目</h3><p>试试其他关键词，或调整小组与状态筛选。</p></div>}
         </section>
 
         <aside id="mission-focus-panel" className="lg:col-span-4 space-y-4 scroll-mt-24">

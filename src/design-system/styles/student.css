@@ -555,3 +555,41 @@
 @media (prefers-reduced-motion: reduce) { .adaptive-navigation-layout { transition: none; } .adaptive-navigation-panel { animation: none !important; } }
 .adaptive-navigation-content { grid-column: 2; }
 .adaptive-navigation-toolbar > .btn-outline { display: inline-flex; align-items: center; gap: 8px; padding: 10px 14px; border: 1px solid #accbfa; border-radius: 12px; color: #204f9c; background: #edf5ff; font-weight: 700; }
+
+/* Research mission cards: compact, selectable and readable at every width. */
+.project-mission-board { padding: 24px; min-width: 0; }
+.project-board-heading { display:flex; justify-content:space-between; align-items:center; gap:16px; margin-bottom:22px; }
+.project-board-heading h2 { color:#122b58; font-size:22px; font-weight:800; margin:8px 0; }
+.project-board-heading p { color:#577298; font-size:13px; }
+.project-board-count { white-space:nowrap; border:1px solid #bad2fa; background:#eff6ff; padding:7px 12px; border-radius:20px; color:#2862bd; font-size:12px; font-weight:700; }
+.project-mission-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px; }
+.project-mission-card { text-align:left; min-width:0; overflow:hidden; border:1px solid #c5d7f0; border-radius:20px; background:#f8fbff; color:#17325d; transition:transform .2s,box-shadow .2s,border-color .2s; }
+.project-mission-card:hover { transform:translateY(-3px); box-shadow:0 12px 28px #2563eb18; }
+.project-mission-card.is-selected { border-color:#397af2; box-shadow:0 0 0 2px #397af230,0 12px 28px #2563eb12; }
+.project-mission-card:focus-visible { outline:3px solid #2563eb; outline-offset:4px; }
+.project-mission-art { height:126px; position:relative; color:#85c8ff; background:linear-gradient(120deg,#103768,#2356a5); overflow:hidden; }
+.project-mission-art svg { position:absolute; inset:0; width:100%; height:100%; opacity:.65; }
+.mission-signal { stroke:currentColor; stroke-width:2; stroke-dasharray:8 5; animation:mission-flow 16s linear infinite; }
+.mission-particle { animation:mission-pulse 3s ease-in-out infinite; }
+.project-art-index { position:absolute; top:16px; left:18px; font:10px monospace; letter-spacing:2px; color:#c5e5ff; }
+.project-art-icon { position:absolute; left:18px; bottom:16px; width:44px; height:44px; display:grid; place-items:center; border:1px solid #a5d6ff66; border-radius:14px; background:#ffffff14; color:white; }
+.project-art-topic { position:absolute; right:16px; bottom:18px; color:#e0efff; font-size:12px; padding:4px 10px; border-radius:20px; background:#ffffff18; }
+.project-mission-body { padding:18px; }
+.project-mission-meta,.project-mission-progress,.project-mission-footer { display:flex; justify-content:space-between; align-items:center; gap:10px; }
+.project-mission-meta > span:last-child { display:inline-flex; align-items:center; gap:4px; color:#2563eb; font-size:12px; font-weight:700; }
+.project-mission-body h3 { font-size:18px; font-weight:800; margin:12px 0 7px; overflow-wrap:anywhere; }
+.project-mission-description { color:#657e9f; font-size:13px; line-height:1.65; min-height:43px; display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; overflow:hidden; }
+.project-mission-progress { font-size:12px; color:#61799b; margin-top:16px; }
+.project-mission-progress strong { color:#2563eb; }
+.project-mission-track { height:6px; background:#e2ecfa; border-radius:10px; overflow:hidden; margin:7px 0 16px; }
+.project-mission-track span { display:block; height:100%; background:linear-gradient(90deg,#3c7cf4,#74c6ff); border-radius:10px; }
+.project-mission-footer { border-top:1px solid #e0eaf7; padding-top:12px; color:#28538c; font-size:12px; font-weight:700; }
+.project-mission-footer > span { display:inline-flex; align-items:center; gap:6px; min-width:0; overflow-wrap:anywhere; }
+.project-mission-facts { display:flex; flex-wrap:wrap; gap:12px; margin-top:10px; color:#7286a3; font-size:11px; }
+.project-mission-facts span { display:inline-flex; align-items:center; gap:4px; }
+.project-board-empty { padding:60px 16px; text-align:center; color:#61799b; }
+.project-board-empty svg { margin:0 auto 12px; }.project-board-empty h3 { font-weight:700; margin-bottom:8px; }
+@keyframes mission-flow { to { stroke-dashoffset:-130; } }
+@keyframes mission-pulse { 50% { opacity:.25; } }
+@media(max-width:767px) { .project-mission-board { padding:16px; }.project-board-heading { align-items:flex-start; }.project-board-heading h2 { font-size:18px; }.project-board-heading p { font-size:12px; }.project-mission-grid { grid-template-columns:1fr; gap:14px; }.project-mission-art { height:100px; }.project-mission-body { padding:16px; } }
+@media(prefers-reduced-motion:reduce) { .mission-signal,.mission-particle { animation:none; }.project-mission-card { transition:none; } }
