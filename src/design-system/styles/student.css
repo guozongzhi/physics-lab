@@ -527,3 +527,31 @@
 .galaxy-question details[open] { padding-bottom: 4px; }
 .galaxy-question ol { list-style-type: upper-alpha; padding-left: 24px; margin-top: 8px; color: #52688c; font-size: 13px; line-height: 1.8; }
 .galaxy-question li { padding-left: 4px; margin-top: 4px; overflow-wrap: anywhere; }
+
+/* Sliding directories: reclaim reading space without losing navigation. */
+.adaptive-navigation { min-width: 0; }
+.adaptive-navigation-toolbar { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+.adaptive-navigation-toolbar > span { color: #d9eaff; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.adaptive-navigation-layout { display: grid; grid-template-columns: var(--navigation-width) minmax(0, 1fr); gap: 18px; align-items: start; transition: grid-template-columns .25s ease, gap .25s ease; }
+.adaptive-navigation.is-closed > .adaptive-navigation-layout { grid-template-columns: 0 minmax(0, 1fr); gap: 0; }
+.adaptive-navigation-panel { min-width: 0; }
+.adaptive-navigation-content { min-width: 0; }
+.adaptive-navigation-heading { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; margin-bottom: 10px; border-radius: 12px; background: #eef6ff; color: #204d92; }
+.adaptive-navigation-heading button { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 8px; }
+.adaptive-navigation-content > .galaxy-detail-desktop { display: block; position: static; width: 100%; }
+.adaptive-navigation-panel .student-topic-list { display: grid; grid-template-columns: 1fr; overflow: visible; }
+.adaptive-navigation-panel .student-topic-hint { display: none; }
+.adaptive-navigation-panel .galaxy-node { padding: 12px 8px; }
+@media (max-width: 767px) {
+ .adaptive-navigation-layout, .adaptive-navigation.is-closed > .adaptive-navigation-layout { display: block; }
+ .adaptive-navigation-panel:not([hidden]) { position: fixed; z-index: 141; top: 0; bottom: 0; left: 0; width: min(360px, 90vw); overflow-y: auto; padding: 18px 14px; background: #eaf3ff; box-shadow: 12px 0 40px #001a4266; animation: directory-slide-in .25s ease both; }
+ .adaptive-navigation-backdrop { position: fixed; z-index: 140; inset: 0; background: #071c4299; backdrop-filter: blur(3px); }
+ .adaptive-navigation-toolbar { gap: 8px; }
+ .adaptive-navigation-toolbar .btn-outline { flex-shrink: 0; }
+ .adaptive-navigation-panel .student-topic-list > button { width: 100%; min-width: 0; }
+ .adaptive-navigation-content > .galaxy-detail-desktop { display: block; padding: 18px; }
+}
+@keyframes directory-slide-in { from { opacity: 0; transform: translateX(-100%); } to { opacity: 1; transform: translateX(0); } }
+@media (prefers-reduced-motion: reduce) { .adaptive-navigation-layout { transition: none; } .adaptive-navigation-panel { animation: none !important; } }
+.adaptive-navigation-content { grid-column: 2; }
+.adaptive-navigation-toolbar > .btn-outline { display: inline-flex; align-items: center; gap: 8px; padding: 10px 14px; border: 1px solid #accbfa; border-radius: 12px; color: #204f9c; background: #edf5ff; font-weight: 700; }

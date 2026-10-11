@@ -1,3 +1,4 @@
+import AdaptiveNavigation from '@/components/ui/AdaptiveNavigation';
 import { useLearningProgressStore } from '@/store/learningProgressStore';
 import { apiEnabled } from '@/lib/apiClient';
 import type { LucideIcon } from 'lucide-react';
@@ -161,8 +162,7 @@ export default function LearningHub() {
         </div>
       </section>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        <aside className="lg:col-span-3 space-y-3">
+      <AdaptiveNavigation title="主题导航" summary={activeMeta.title} width={230} navigation={<aside className="space-y-3">
           <div className="mission-label">
             <Atom size={12} />
             物理主题导航
@@ -178,6 +178,7 @@ export default function LearningHub() {
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: idx * 0.05 }}
+                data-nav-select
                 onClick={() => meta.unlocked && navigate(`/theory/topics/${meta.id}`)}
                 disabled={!meta.unlocked}
                 className={cn(
@@ -233,9 +234,9 @@ export default function LearningHub() {
             );
           })}
           </div>
-        </aside>
+        </aside>}>
 
-        <section className="lg:col-span-9">
+        <section>
           <div className="workspace-tabs flex flex-wrap items-center gap-2 mb-4">
             {([
               { id: 'ai-study', label: 'AI 自学', icon: Brain, color: 'mission' },
@@ -326,9 +327,9 @@ export default function LearningHub() {
             <motion.div
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
-              className="grid grid-cols-1 lg:grid-cols-12 gap-4"
+              className="min-w-0"
             >
-              <div className="lg:col-span-7 glass-card p-6 rounded-2xl">
+              <AdaptiveNavigation title="章节目录" summary={selectedPoint ?? activeTopicData.title} width={300} navigation={<div className="glass-card p-4 rounded-2xl">
                 <div className="flex items-center justify-between mb-5">
                   <div className="mission-label">
                     <Sparkles size={12} />
@@ -368,6 +369,7 @@ export default function LearningHub() {
                             {chapter.points.map((point, pIdx) => (
                               <button
                                 key={pIdx}
+                                data-nav-select
                                 onClick={() => setSelectedPoint(point)}
                                 className={cn(
                                   'w-full p-3 rounded-xl text-left flex items-center gap-3 transition-all',
@@ -393,9 +395,9 @@ export default function LearningHub() {
                     );
                   })}
                 </div>
-              </div>
+              </div>}>
 
-              <div className="lg:col-span-5 space-y-4">
+              <div className="space-y-4">
                 <div className="glass-card p-5 rounded-2xl">
                   <div className="chip-nova mb-3">
                     <Lightbulb size={12} /> 知识要点与例题
@@ -426,6 +428,7 @@ export default function LearningHub() {
                   )}
                 </div>
               </div>
+            </AdaptiveNavigation>
             </motion.div>
           )}
 
@@ -531,7 +534,7 @@ export default function LearningHub() {
             </motion.div>
           )}
         </section>
-      </div>
+      </AdaptiveNavigation>
 
       <AnimatePresence>
         {showAnalysis && currentAnalysis && (

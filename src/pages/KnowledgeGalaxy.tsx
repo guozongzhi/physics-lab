@@ -1,3 +1,4 @@
+import AdaptiveNavigation from '@/components/ui/AdaptiveNavigation';
 import { useMemo, useState, type CSSProperties } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheoryStore } from '@/store/theoryStore';
@@ -34,7 +35,6 @@ export default function KnowledgeGalaxy() {
   const [motionPaused, setMotionPaused] = useState(false);
   const [topicId, setTopicId] = useState(SYSTEMS[0].id);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [detailsOpen, setDetailsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [difficulty, setDifficulty] = useState(0);
   const [startingQuiz, setStartingQuiz] = useState(false);
@@ -55,9 +55,9 @@ export default function KnowledgeGalaxy() {
   const selectedExamples = selectedNode ? getLearningExamples(selectedNode.topicId, selectedNode.label, questions) : [];
   const predecessor = selectedNode ? selectedSystem.nodes[selectedSystem.nodes.findIndex((node) => node.id === selectedNode.id) - 1] : undefined;
   const selectTopic = (id: string) => {
-    setTopicId(id); setSelectedId(null); setDetailsOpen(false); setCollapsedChapters({});
+    setTopicId(id); setSelectedId(null); setCollapsedChapters({});
   };
-  const selectNode = (node: KnowledgeNode) => { setSelectedId(node.id); setDetailsOpen(true); };
+  const selectNode = (node: KnowledgeNode) => { setSelectedId(node.id); };
   const handlePractice = async () => {
     if (!selectedNode || startingQuiz) return;
     setStartingQuiz(true);
@@ -133,10 +133,10 @@ export default function KnowledgeGalaxy() {
         </div>
       </section>
       <div className="galaxy-tools">
-        <label className="galaxy-search"><Search size={18} aria-hidden="true" /><input aria-label="搜索知识点或章节" placeholder="搜索知识点或章节" value={searchQuery} onChange={(event) => { setSearchQuery(event.target.value); setDetailsOpen(false); }} />{searchQuery && <button aria-label="清空搜索" onClick={() => setSearchQuery('')}><X size={16} /></button>}</label>
-        <select aria-label="知识点难度" value={difficulty} onChange={(event) => { setDifficulty(Number(event.target.value)); setDetailsOpen(false); }}>{DIFFICULTIES.map((label, index) => <option key={label} value={index}>{label}</option>)}</select>
+        <label className="galaxy-search"><Search size={18} aria-hidden="true" /><input aria-label="搜索知识点或章节" placeholder="搜索知识点或章节" value={searchQuery} onChange={(event) => { setSearchQuery(event.target.value); }} />{searchQuery && <button aria-label="清空搜索" onClick={() => setSearchQuery('')}><X size={16} /></button>}</label>
+        <select aria-label="知识点难度" value={difficulty} onChange={(event) => { setDifficulty(Number(event.target.value)); }}>{DIFFICULTIES.map((label, index) => <option key={label} value={index}>{label}</option>)}</select>
       </div>
-      <div className="galaxy-workspace">
+      <AdaptiveNavigation title="知识点目录" summary={selectedNode?.label ?? system.title} width={340} navigation={
         <section className="galaxy-path" aria-label={`${topicId === 'all' ? '全部主题' : system.title}知识点`}>
           <header className="galaxy-path-heading"><system.icon size={26} aria-hidden="true" /><div><h2>{topicId === 'all' ? '全部主题' : system.title}</h2><p>{visibleNodes.length} 个知识点{query || difficulty ? '匹配筛选' : ` · ${displaySystems.reduce((sum, topic) => sum + topic.outline.length, 0)} 个章节`}</p></div><span>{displaySystems.flatMap((topic) => topic.nodes).filter((node) => mastered[node.id]).length} / {displaySystems.reduce((sum, topic) => sum + topic.nodes.length, 0)}</span></header>
           {!visibleNodes.length ? <div className="galaxy-empty" role="status"><Search size={28} aria-hidden="true" /><h3>没有匹配的知识点</h3><p>可切换左侧主题，或清空当前搜索与难度筛选。</p><button className="btn-outline" onClick={() => { setSearchQuery(''); setDifficulty(0); }}>重置筛选</button></div> : displaySystems.flatMap((listedSystem) => listedSystem.outline.map((chapter, chapterIdx) => {
@@ -146,12 +146,12 @@ export default function KnowledgeGalaxy() {
             const collapsed = Boolean(collapsedChapters[key]);
             return <section className="galaxy-chapter" key={key}><button className="galaxy-chapter-heading" aria-expanded={!collapsed} aria-controls={`galaxy-chapter-${key}`} onClick={() => setCollapsedChapters((state) => ({ ...state, [key]: !state[key] }))}><strong>{topicId === 'all' ? `${listedSystem.title} · ` : ''}{chapter.chapter}</strong><span>{nodes.length} 个知识点<ChevronRight size={15} className={cn(!collapsed && 'is-expanded')} aria-hidden="true" /></span></button><div id={`galaxy-chapter-${key}`} hidden={collapsed}>{nodes.map((node) => {
               const selected = selectedNode?.id === node.id;
-              return <div className="galaxy-point" key={node.id}><button className={cn('galaxy-node', selected && 'is-selected')} aria-label={`查看知识点：${node.label}`} aria-pressed={selected} onClick={() => selectNode(node)}><span className={cn('galaxy-node-index', mastered[node.id] && 'is-mastered')}>{mastered[node.id] ? <CheckCircle2 size={19} aria-hidden="true" /> : listedSystem.nodes.findIndex((point) => point.id === node.id) + 1}</span><span className="galaxy-node-label">{node.label}</span>{mastered[node.id] && <span className="galaxy-node-done">已掌握</span>}<ChevronRight size={16} aria-hidden="true" /></button>{selected && detailsOpen && <div className="galaxy-detail-mobile"><button className="galaxy-close" aria-label="收起知识点详情" onClick={() => setDetailsOpen(false)}><X size={18} aria-hidden="true" /></button>{detail}</div>}</div>;
+              return <div className="galaxy-point" key={node.id}><button className={cn('galaxy-node', selected && 'is-selected')} aria-label={`查看知识点：${node.label}`} aria-pressed={selected} data-nav-select onClick={() => selectNode(node)}><span className={cn('galaxy-node-index', mastered[node.id] && 'is-mastered')}>{mastered[node.id] ? <CheckCircle2 size={19} aria-hidden="true" /> : listedSystem.nodes.findIndex((point) => point.id === node.id) + 1}</span><span className="galaxy-node-label">{node.label}</span>{mastered[node.id] && <span className="galaxy-node-done">已掌握</span>}<ChevronRight size={16} aria-hidden="true" /></button></div>;
             })}</div></section>;
           }))}
-        </section>
+        </section>}>
         <aside className="galaxy-detail-desktop" aria-label="知识点详情">{detail ?? <div className="galaxy-empty"><BookOpen size={28} aria-hidden="true" /><h3>选择知识点开始探索</h3><p>调整筛选条件后，点击知识点查看关联题目和学习入口。</p></div>}</aside>
-      </div>
+      </AdaptiveNavigation>
     </div>
   );
 }
