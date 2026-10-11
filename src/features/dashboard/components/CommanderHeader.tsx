@@ -64,10 +64,10 @@ export const CommanderHeader: React.FC<CommanderHeaderProps> = ({
 
       {/* 指挥官全息档案卡 */}
       <BentoCard variant="accent" padding="lg" className="mission-hero relative overflow-hidden">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+        <div className="student-commander-grid grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
           {/* 左侧：身份与所属编制 */}
-          <div className="lg:col-span-7 flex flex-col sm:flex-row items-start sm:items-center gap-4">
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-mission-500 to-nova-600 flex items-center justify-center text-white text-2xl font-black shadow-md shadow-mission-500/20 shrink-0">
+          <div className="student-commander-identity lg:col-span-7 flex flex-col sm:flex-row items-start sm:items-center gap-4">
+            <div className="student-commander-avatar w-16 h-16 rounded-2xl bg-gradient-to-br from-mission-500 to-nova-600 flex items-center justify-center text-white text-2xl font-black shadow-md shadow-mission-500/20 shrink-0">
               {user?.name?.[0] || "U"}
             </div>
             <div className="space-y-1.5">
@@ -103,7 +103,7 @@ export const CommanderHeader: React.FC<CommanderHeaderProps> = ({
           </div>
 
           {/* 右侧：科研能量与流程总进度 */}
-          <div className="lg:col-span-5 grid grid-cols-2 gap-4 border-t lg:border-t-0 lg:border-l border-slate-200/80 dark:border-slate-800/80 pt-4 lg:pt-0 lg:pl-6">
+          <div className="student-commander-metrics lg:col-span-5 grid grid-cols-2 gap-4 border-t lg:border-t-0 lg:border-l border-slate-200/80 dark:border-slate-800/80 pt-4 lg:pt-0 lg:pl-6">
             <div>
               <div className="text-xs text-slate-500 dark:text-slate-400 mb-1 flex items-center gap-1">
                 <Zap size={13} className="text-energy-500" />
@@ -133,7 +133,7 @@ export const CommanderHeader: React.FC<CommanderHeaderProps> = ({
         </div>
 
         {/* 等级进度标尺 */}
-        <div className="mt-5 pt-4 border-t border-slate-200/60 dark:border-slate-800/60">
+        <div className="student-commander-ruler mt-5 pt-4 border-t border-slate-200/60 dark:border-slate-800/60">
           <div className="flex justify-between text-xs text-slate-500 dark:text-slate-400 mb-1.5 font-medium">
             <span>当前段位：LV.{level}</span>
             <span>距 LV.{level + 1} 尚存 {100 - levelProgress}% 跨度</span>

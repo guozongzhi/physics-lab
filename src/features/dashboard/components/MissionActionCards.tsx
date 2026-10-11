@@ -83,7 +83,7 @@ export const MissionActionCards: React.FC<MissionActionCardsProps> = ({
             className="flex flex-col justify-between group"
           >
             <div>
-              <div className="flex items-center justify-between mb-3">
+              <div className="mission-action-top flex items-center justify-between mb-3">
                 <div className="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 group-hover:scale-105 transition-transform">
                   <Icon size={20} />
                 </div>
@@ -99,7 +99,7 @@ export const MissionActionCards: React.FC<MissionActionCardsProps> = ({
               </p>
             </div>
 
-            <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between text-xs">
+            <div className="mission-action-foot mt-4 pt-3 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between text-xs">
               <span className="font-semibold text-energy-600 dark:text-energy-400 flex items-center gap-1">
                 <Zap size={12} /> {c.rewardText}
               </span>

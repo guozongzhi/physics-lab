@@ -129,7 +129,42 @@
   .mission-stage[data-workspace-role='student'] .student-safety-brand { align-items: start; gap: 16px; }
   .mission-stage[data-workspace-role='student'] .student-safety-brand .shield-card.relative { width: 72px; height: 84px; }
   .mission-stage[data-workspace-role='student'] .student-safety-intro h1 { font-size: 28px; }
-  .mission-stage[data-workspace-role='student'] .portal-card { padding: 20px; min-height: 216px; }
+  /* Keep the mobile dashboard compact without reducing its reading or tap areas. */
+  .mission-stage[data-workspace-role='student'] .dashboard-focused > * + * { margin-top: 20px; }
+  .mission-stage[data-workspace-role='student'] .dashboard-focused section > * + * { margin-top: 12px; }
+  .mission-stage[data-workspace-role='student'] .dashboard-focused .portal-section-heading h2 { font-size: 23px; }
+  .mission-stage[data-workspace-role='student'] .dashboard-focused .portal-section-heading p:last-child { font-size: 13px; line-height: 1.6; }
+  .mission-stage[data-workspace-role='student'] .dashboard-focused .grid { gap: 12px; }
+  .mission-stage[data-workspace-role='student'] .dashboard-focused .portal-card {
+    display: grid;
+    grid-template-columns: 36px minmax(0, 1fr);
+    grid-template-rows: 1fr auto;
+    align-items: start;
+    gap: 10px 12px;
+    padding: 16px;
+    min-height: 154px;
+  }
+  .mission-stage[data-workspace-role='student'] .dashboard-focused .portal-card-icon { width: 36px; height: 36px; border-radius: 11px; }
+  .mission-stage[data-workspace-role='student'] .dashboard-focused .portal-card-title { font-size: 20px; }
+  .mission-stage[data-workspace-role='student'] .dashboard-focused .portal-card-description { font-size: 13px; line-height: 1.6; }
+  .mission-stage[data-workspace-role='student'] .dashboard-focused .portal-card-eyebrow { letter-spacing: .04em; }
+  .mission-stage[data-workspace-role='student'] .dashboard-focused .portal-card-foot { grid-column: 1 / -1; }
+  .mission-stage[data-workspace-role='student'] .dashboard-focused .portal-card-arrow { width: 32px; height: 32px; flex-shrink: 0; }
+  .mission-stage[data-workspace-role='student'] .dashboard-focused .portal-card-with-visual .portal-card-copy { max-width: 100%; }
+  .mission-stage[data-workspace-role='student'] .dashboard-focused .mission-action-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .mission-stage[data-workspace-role='student'] .mission-action-grid .immersive-bento { padding: 14px; }
+  .mission-stage[data-workspace-role='student'] .mission-action-top { gap: 4px; margin-bottom: 8px; }
+  .mission-stage[data-workspace-role='student'] .mission-action-top > div:first-child { padding: 7px; }
+  .mission-stage[data-workspace-role='student'] .mission-action-foot { margin-top: 10px; padding-top: 8px; }
+  .mission-stage[data-workspace-role='student'] .mission-action-foot > span:last-child { gap: 2px; }
+  .mission-stage[data-workspace-role='student'] .mission-hero { padding: 16px; }
+  .mission-stage[data-workspace-role='student'] .student-commander-grid { gap: 12px; }
+  .mission-stage[data-workspace-role='student'] .student-commander-identity { flex-direction: row; gap: 12px; }
+  .mission-stage[data-workspace-role='student'] .student-commander-avatar { width: 48px; height: 48px; font-size: 22px; border-radius: 14px; }
+  .mission-stage[data-workspace-role='student'] .student-commander-identity > div:last-child { min-width: 0; }
+  .mission-stage[data-workspace-role='student'] .student-commander-identity p { flex-wrap: wrap; column-gap: 6px; row-gap: 0; }
+  .mission-stage[data-workspace-role='student'] .student-commander-metrics { padding-top: 12px; gap: 12px; }
+  .mission-stage[data-workspace-role='student'] .student-commander-ruler { margin-top: 12px; padding-top: 12px; }
   .mission-stage[data-workspace-role='student'] .portal-overview-link { padding: 16px; gap: 12px; }
   .mission-stage[data-workspace-role='student'] .portal-overview-link > svg { flex-shrink: 0; }
 }
