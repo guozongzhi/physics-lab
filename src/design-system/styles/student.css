@@ -474,3 +474,47 @@
 @media (prefers-reduced-motion: reduce) {
  .knowledge-explorer :is(.galaxy-starfield,.galaxy-trail-light,.galaxy-detail-mobile) { animation: none !important; transition: none !important; }
 }
+
+/* Keep learning summaries, reading material and project previews within their panels. */
+.student-showcase-rank { display: inline-flex; align-items: center; justify-content: center; min-width: 38px; height: 28px; padding: 0 10px; margin-bottom: 10px; border-radius: 8px; color: #fff; background: #2864d6; font-size: 13px; font-weight: 800; box-shadow: 0 3px 8px #2864d622; }
+.student-learning-hero-grid { grid-template-columns: minmax(0, 1fr) 280px !important; align-items: center; }
+.student-learning-hero-grid > div { grid-column: auto !important; min-width: 0; }
+.student-learning-title { display: block; font-size: 30px; line-height: 1.35; }
+.student-learning-subtitle { display: block; font-size: 15px; line-height: 1.5; margin-top: 4px; }
+.student-learning-intro h1 { margin-bottom: 12px; }
+.student-learning-intro h1 + p { font-size: 14px; line-height: 1.9; }
+.student-learning-summary { padding: 18px; border: 1px solid #b8d3f5; border-radius: 16px; background: #f5f9fff0; }
+.student-learning-progress-heading { display: flex; gap: 12px; justify-content: space-between; align-items: center; color: #52688c; font-size: 13px; }
+.student-learning-progress-heading strong { color: #2864d6; font-size: 28px; font-variant-numeric: tabular-nums; }
+.student-learning-progress-heading small { font-size: 14px; margin-left: 3px; }
+.student-learning-summary progress { display: block; width: 100%; height: 7px; margin: 10px 0 18px; border: 0; border-radius: 8px; overflow: hidden; background: #dce8f6; accent-color: #2864d6; }
+.student-learning-summary progress::-webkit-progress-bar { background: #dce8f6; border-radius: 8px; }
+.student-learning-summary progress::-webkit-progress-value { background: linear-gradient(90deg, #2873ea, #60afff); border-radius: 8px; }
+.student-learning-summary-row { display: flex; align-items: center; gap: 8px; min-height: 36px; font-size: 12px; color: #52688c; }
+.student-learning-summary-row svg { color: #2864d6; flex-shrink: 0; }
+.student-learning-summary-row strong { margin-left: auto; color: #183456; font-size: 13px; }
+.student-study-section { border-style: solid !important; }
+.student-study-copy { font-size: 14px; line-height: 1.9; overflow-wrap: anywhere; }
+.student-study-copy :is(p,li) { font-size: inherit; line-height: inherit; }
+.student-study-copy p + p { margin-top: 14px; padding-top: 14px; border-top: 1px solid #c9dbf0; }
+.student-study-copy ol { list-style: none; padding: 0; margin: 0; counter-reset: study-point; display: grid; gap: 10px; }
+.student-study-copy ol > li { counter-increment: study-point; position: relative; padding: 12px 14px 12px 46px; border: 1px solid #ccddf2; border-radius: 12px; background: #f6faffb3; }
+.student-study-copy ol > li::before { content: counter(study-point, decimal-leading-zero); position: absolute; top: 13px; left: 12px; color: #2864d6; font-size: 12px; font-weight: 800; }
+.student-study-copy ol > li > strong:first-child { color: #1c4b93; }
+.student-project-planet { min-width: 0; }
+.student-project-preview { position: relative; width: 100%; max-width: 320px; margin-top: 16px; z-index: 1; min-width: 0; }
+.student-project-preview > div { background: #f5f9ff !important; border: 1px solid #a9c9f2 !important; box-shadow: 0 8px 22px #15365d1a; }
+.student-project-preview h4 { overflow-wrap: anywhere; }
+.student-project-preview > div > div:last-child { flex-wrap: wrap; gap: 10px; }
+.student-project-preview button { min-height: 40px; white-space: normal; }
+@media (max-width: 1199px) { .student-learning-hero-grid { grid-template-columns: minmax(0, 1fr) !important; } .student-learning-summary { width: 100%; } }
+@media (max-width: 767px) {
+ .student-learning-title { font-size: 25px; }
+ .student-learning-intro .mission-label { font-size: 10px; letter-spacing: .06em; }
+ .student-learning-intro h1 + p { font-size: 13px; }
+ .student-learning-summary { padding: 14px; }
+ .student-study-copy { font-size: 13px; line-height: 1.85; }
+ .student-study-copy ol > li { padding: 10px 12px 10px 38px; }
+ .student-study-copy ol > li::before { left: 9px; top: 11px; }
+ .student-project-preview { max-width: 100%; }
+}

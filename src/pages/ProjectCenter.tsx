@@ -350,7 +350,7 @@ export default function ProjectCenter() {
                   initial={{ opacity: 0, scale: 0.9, y: 20 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   transition={{ delay: idx * 0.06 }}
-                  className="relative flex flex-col items-center"
+                  className="student-project-planet relative flex flex-col items-center"
                   onMouseEnter={() => setHoveredId(planet.id)}
                   onMouseLeave={() => setHoveredId(null)}
                   onClick={() => selectProject(planet.id)}
@@ -414,12 +414,40 @@ export default function ProjectCenter() {
                       }} />
                     </div>
 
+
+                  </div>
+
+                  <div className="mt-6 text-center">
+                    <div className="inline-block mb-1.5">
+                      <span className={cn(cfg.chip, '!py-0.5 !text-[10px]')}>{planet.topic}</span>
+                    </div>
+                    <h3 className={cn(
+                      'font-black text-sm leading-tight max-w-[160px] mx-auto',
+                      isSelected ? 'text-mission-700' : 'text-ink-800'
+                    )}>
+                      {planet.title}
+                    </h3>
+                    <div className="mt-2 h-1.5 w-28 mx-auto rounded-full bg-ink-100 overflow-hidden">
+                      <motion.div
+                        initial={{ width: 0 }}
+                        animate={{ width: `${planet.progress}%` }}
+                        transition={{ duration: 0.8, delay: idx * 0.05 }}
+                        className={cn('h-full rounded-full bg-gradient-to-r',
+                          planet.status === 'done' ? 'from-growth-400 to-growth-500' :
+                          planet.status === 'failed' ? 'from-danger-400 to-danger-500' :
+                          planet.status === 'frozen' ? 'from-nova-400 to-nova-500' :
+                          planet.status === 'review' ? 'from-alert-400 to-energy-500' :
+                          'from-mission-400 to-nova-500'
+                        )}
+                      />
+                    </div>
+                    <div className="text-[10px] font-bold text-ink-500 mt-1 tabular-nums">{planet.progress}%</div>
+                  </div>
                     {showOverlay && (
                       <motion.div
                         initial={{ opacity: 0, y: 8, scale: 0.96 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
-                        className="absolute -bottom-4 left-1/2 -translate-x-1/2 z-20 w-[280px]"
-                        style={{ transform: 'translateX(-50%) translateY(100%)' }}
+                        className="student-project-preview"
                       >
                         <div className="glass-card !p-4 !rounded-2xl shadow-glowMission">
                           <div className="flex items-start justify-between mb-2">
@@ -472,34 +500,6 @@ export default function ProjectCenter() {
                         </div>
                       </motion.div>
                     )}
-                  </div>
-
-                  <div className="mt-6 text-center">
-                    <div className="inline-block mb-1.5">
-                      <span className={cn(cfg.chip, '!py-0.5 !text-[10px]')}>{planet.topic}</span>
-                    </div>
-                    <h3 className={cn(
-                      'font-black text-sm leading-tight max-w-[160px] mx-auto',
-                      isSelected ? 'text-mission-700' : 'text-ink-800'
-                    )}>
-                      {planet.title}
-                    </h3>
-                    <div className="mt-2 h-1.5 w-28 mx-auto rounded-full bg-ink-100 overflow-hidden">
-                      <motion.div
-                        initial={{ width: 0 }}
-                        animate={{ width: `${planet.progress}%` }}
-                        transition={{ duration: 0.8, delay: idx * 0.05 }}
-                        className={cn('h-full rounded-full bg-gradient-to-r',
-                          planet.status === 'done' ? 'from-growth-400 to-growth-500' :
-                          planet.status === 'failed' ? 'from-danger-400 to-danger-500' :
-                          planet.status === 'frozen' ? 'from-nova-400 to-nova-500' :
-                          planet.status === 'review' ? 'from-alert-400 to-energy-500' :
-                          'from-mission-400 to-nova-500'
-                        )}
-                      />
-                    </div>
-                    <div className="text-[10px] font-bold text-ink-500 mt-1 tabular-nums">{planet.progress}%</div>
-                  </div>
                 </motion.div>
               );
             })}

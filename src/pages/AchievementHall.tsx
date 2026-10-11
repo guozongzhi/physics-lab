@@ -453,7 +453,7 @@ export default function AchievementHall() {
                       transition={{ duration: 0.35, delay: 0.15 + i * 0.06 }}
                       className="p-3 rounded-2xl bg-gradient-to-br from-alert-50/60 via-energy-50/40 to-mission-50/30 border border-alert-100/50 relative"
                     >
-                      <div className="absolute -left-1 -top-2 w-8 h-8 rounded-full bg-gradient-to-br from-alert-400 to-energy-500 flex items-center justify-center text-white font-black text-[13px] shadow-lg shadow-energy-500/30 ring-2 ring-white">
+                      <div className="student-showcase-rank">
                         #{hof.rank}
                       </div>
                       <div className="rounded-xl overflow-hidden aspect-[16/10] mb-3 ring-1 ring-white/60 shadow-sm relative bg-gradient-to-br from-mission-400/30 via-nova-400/20 to-energy-400/20 flex items-center justify-center">
