@@ -360,7 +360,7 @@ class ProjectCreate(BaseModel):
     difficulties: str | None = ""
     equipmentList: list[EquipmentItem] = []
     dueDate: datetime | None = None
-    rewardCoins: int | None = 200
+    rewardCoins: int | None = Field(default=200, ge=0)
     # 教师/管理员代建时指定所属小组；学生创建由后端绑定本人小组
     ownerGroupId: str | None = None
 

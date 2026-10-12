@@ -35,7 +35,7 @@ uvicorn app.main:app --reload --port 8000
 
 - 教师账号：用户名 `teacher`，密码取自 `TEACHER_PASSWORD`（见下方环境变量，必须在 `.env` 中自行设置）
 - 学生账号：用户名为学生的登录名（见种子数据打印输出），密码取自 `STUDENT_DEFAULT_PASSWORD`
-- 未在 `.env` 配置时，密码兜底为占位符 `change-me-via-env`，无法用于正常登录——这是刻意设计，避免仓库泄露可用凭据
+- 未在 `.env` 配置时，密码兜底为占位符 `change-me-via-env`；首次播种会拒绝空密码/占位符密码，必须配置真实密码。已有账号的密码由数据库哈希决定，修改 `.env` 不会自动更改已有密码。播种日志只打印用户名，不打印密码
 - 登录接口 `POST /api/auth/login` 返回 JWT，前端在后续请求头 `Authorization: Bearer <token>` 中携带。
 
 安全考核使用 `POST /api/safety/exams/start` 获取无答案的题目和考核 ID，再向 `POST /api/safety/exams/{id}/submit` 提交答案。服务端判分并写入考核记录；旧的直接提交分数接口 `/api/safety/records` 返回 410。项目安全认证仅接受本项目已通过的服务端考核。

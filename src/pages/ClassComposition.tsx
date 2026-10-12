@@ -29,7 +29,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { School, Users, Plus, Pencil, Trash2, ChevronDown, ChevronRight, Crown, UserMinus, ArrowRightLeft, X, Loader2, Layers, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { useUIStore } from '@/store/uiStore';
 import { classesApi, groupsApi, usersApi, adminGroupsApi } from '@/lib/apiService';
-import type { SchoolClass, Group, User } from '@/data/mockData';
+import type { SchoolClass, Group, User } from '@/types';
 import { cn } from '@/lib/utils';
 
 export default function ClassComposition() {

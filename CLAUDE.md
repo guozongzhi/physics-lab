@@ -15,7 +15,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 npm run dev       # Vite 开发服务器（默认 5173；端口被占时 vite 会自动 +1）
 npm run check     # tsc -b --noEmit（提交前必须通过）
 npm run build     # tsc -b && vite build（已配置 vendor 分包）
-npm run lint      # eslint；仓库有约 160 个历史告警，不是提交门禁，但**别新增**
+npm run lint      # eslint；2026-10-11 本轮基线为 0 错误 / 0 警告
+npm run test:core # 核心契约与模块依赖检查
 ```
 
 推送 GitHub（**本机 `gh` 登录账号 `shuhua-uiuc` 与 SSH 密钥所属账号不一致，用 SSH 会被拒**）：
@@ -32,14 +33,14 @@ cd backend
 .venv/bin/python -m pytest "tests/test_projects.py::test_update_project_partial_fields_keep_others" -q   # 单个测试
 ```
 
-登录名：教师 `teacher`、管理员 `admin`、学生**预置数据是 `u-01` 起，但教师批量导入的学生其登录名就是姓名本身**（如 `黄雅童`）——见启动时的种子输出，或直接查 `/api/users`。**密码不要从本文档推断**，按加载来源优先级为：本地跑 → `backend/.env`；Docker 部署 → 仓库根 `.env`；两者都没配 → `backend/app/config.py` 的兜底值，而那是**刻意不可用的占位符** `change-me-via-env`（防止公开仓库泄露可用凭据）。
+登录名：教师 `teacher`、管理员 `admin`、学生**预置数据是 `u-01` 起，但教师批量导入的学生其登录名就是姓名本身**（如 `黄雅童`）——见启动时的种子输出，或直接查 `/api/users`。**密码不要从本文档推断**，按加载来源优先级为：本地跑 → `backend/.env`；Docker 部署 → 仓库根 `.env`；两者都没配 → `backend/app/config.py` 的兜底值，而那是**首次播种禁止使用的占位符** `change-me-via-env`；已有账号密码以数据库哈希为准。
 
 **改密码的正确做法**：密码哈希存在数据库 `users.password_hash` 里，而 `seed()` 只在**空库**时才会去读 `.env`。所以已有数据的库改了 `.env` 也不会生效，必须直接改库——用后端镜像跑一段 `bcrypt.hashpw` 更新该字段即可，**不需要 rebuild**；同时把服务器 `.env` 的值一并改掉，保证将来重新播种时一致。
 
 ## 架构
 
 ### 前端数据流
-`pages → Zustand stores（单一数据源）→ lib/apiService → lib/apiClient（fetch + Bearer）`。TS 领域类型与离线种子数据在 `src/data/mockData.ts`。
+`pages → Zustand stores（单一数据源）→ lib/apiService → lib/apiClient（fetch + Bearer）`。TS 领域类型在 `src/types/domain.ts`，浏览器存储在 `src/lib/storage.ts`，离线种子数据在 `src/data/mockData.ts`。
 
 由 `VITE_API_BASE_URL` 控制模式（实现见 `src/lib/apiClient.ts`）：
 - **离线**（未配置）：store 只读写 `localStorage`。
@@ -52,7 +53,7 @@ cd backend
 ### 金币经济——结算只归后端（重要契约）
 `src/store/coinStore.ts` 明确约定：`addTx` / `settleChallenge` / `settleRecruitment` / `settleProjectDone` 只是**本地乐观 UI 更新**，不得向后端推送裸金币变动。真正的记账只发生在后端业务端点：`POST /projects/{id}/done`、`POST /challenges/{id}/submit`、`PUT /recruitments/{id}/resolve`、`POST /coins/transfer`。这些操作完成后需重拉 groups/users/coinTxs 对齐（`src/store/projectStore.ts` 的 `refetchAfterSettlement`）。
 
-> ⚠️ 已知问题（来自全量代码审查）：多个结算端点缺少授权/幂等校验，且 `addTx→updateGroupCoins` 可能额外推送 `groupsApi.adjustCoins`，导致重复记账/刷币。改动结算相关代码时，切勿重新引入裸金币推送。
+> 项目/招募结算已增加数据库原子资格检查；余额/流水在同一事务。跨班写入使用 `backend/app/access.py` 的统一策略。挑战多组答题的奖励池、全校内容可见范围仍需后续明确；改动结算代码时不得引入裸金币推送。
 
 ### 设计系统
 Tailwind + 语义色 token（`mission/energy/growth/nova/alert/danger/ink`）。卡片 `glass-card`、徽章 `chip-*`、按钮 `btn-*`。Markdown 必须包在 `.prose-safety` 内渲染。所有可交互元素需显式绑定 `onClick`（无功能时给 toast 或跳转）。页面中禁止硬编码业务数据——一律从 store 取。
@@ -69,7 +70,7 @@ Tailwind + 语义色 token（`mission/energy/growth/nova/alert/danger/ink`）。
 - 改导航/路由前先读 `src/app/App.tsx`（路由表和角色守卫）；`src/App.tsx` 是兼容转发。`src/pages/` 里可能留有没被任何路由引用的文件。
 - **加路由时页面不包 `MissionShell`**：`src/app/App.tsx` 用父路由与 `AppShell` 统一包裹，子页面只返回页面内容。登录页独立。看到顶栏或侧边栏重复时检查父布局与页面是否都创建了 Shell。
 - **"我的 / 本组的"指标必须按本组口径统计**：Dashboard 的学习路径进度曾用全局数据（`projects.length > 0`、`coinTxs.length > 0` 之类）判断，结果任何一个小组做了项目、全校学生都显示同一个 45%。凡是呈现在学生个人视角的数字，都要先 `filter(x => x.groupId === groupId)`。同理 `/profile` 的能力六维图不要加写死的基线分（曾被加成"零活动也有 60/40/40/45/50/45"的假能力值）。
-- **后端测试当前共 150 个用例**，`pytest tests/ -q` 约 6 秒跑完，改完随手跑一次很划算。
+- **后端测试用例数量以本次 pytest 输出为准**，`pytest tests/ -q` 约 6 秒跑完，改完随手跑一次很划算。
 
 ## 部署
 

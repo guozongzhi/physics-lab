@@ -1,5 +1,6 @@
 import { create } from 'zustand';
-import { CurrentUser, UserRole, LS_KEYS, loadLS, saveLS } from '../data/mockData';
+import type { CurrentUser, UserRole } from '../types';
+import { LS_KEYS, loadLS, saveLS } from '../lib/storage';
 import { apiEnabled, apiLogin, apiLogout, apiRegister, getToken, RegisterPayload } from '../lib/apiClient';
 import { clearBusinessData } from '../lib/sessionCleanup';
 import { resetSyncQueue } from '../lib/syncQueue';

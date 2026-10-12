@@ -24,6 +24,8 @@
 npm install
 npm run dev       # http://localhost:5173
 npm run check     # 类型检查（提交前必须通过）
+npm run lint      # 静态检查
+npm run test:core # 日期、错误、会话、模块依赖与完成结算契约
 ```
 
 后端（必须用项目自带 venv，系统 Python 缺依赖）：

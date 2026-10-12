@@ -1,59 +1,14 @@
-"""业务服务层：能量币结算、答题判分等核心逻辑。
-
-算法逐条对齐前端 store（coinStore.ts / theoryStore.ts），确保迁移后结算结果一致。
-"""
-
-import uuid
-from datetime import datetime, timezone
-
+from sqlalchemy import update
 from sqlalchemy.orm import Session
-
-from . import models
-
-
-def gen_id(prefix: str = "") -> str:
-    core = uuid.uuid4().hex[:12]
-    return f"{prefix}{core}" if prefix else core
-
-
-def _now() -> datetime:
-    return datetime.now(timezone.utc)
-
-
-# ---------- 教师可控的开放窗口 ----------
-def _utcnow_naive() -> datetime:
-    """SQLite 的时间列没有时区（存的是 UTC 字面值），比较前要去掉 tzinfo，
-    否则 aware 与 naive 相减会抛 TypeError。"""
-    return datetime.now(timezone.utc).replace(tzinfo=None)
-
-
-def _window_open(flag: bool | None, closes_at: datetime | None) -> bool:
-    if not flag:
-        return False
-    if closes_at is None:
-        return True
-    if closes_at.tzinfo is not None:
-        closes_at = closes_at.astimezone(timezone.utc).replace(tzinfo=None)
-    return _utcnow_naive() < closes_at
-
-
-def window_state(meta: models.ClassMeta | None) -> dict:
-    """三个窗口此刻是否开着。
-
-    到点自动关闭是**惰性判定**——每次请求现算即可，不需要定时任务；
-    老师端界面用同一套规则渲染，所以到点会自己显示"已关闭"。
-
-    `meta` 为 None（尚未播种）时按全开处理，与旧行为一致。
-    """
-    if meta is None:
-        return {"challenge": True, "recruit": True, "transfer": True}
-    challenge = _window_open(meta.challenge_window_open, meta.challenge_window_closes_at)
-    recruit = _window_open(meta.recruit_window_open, meta.recruit_window_closes_at)
-    # 组间转账不单设开关：任一窗口开着就算"课上有监督"
-    return {"challenge": challenge, "recruit": recruit, "transfer": challenge or recruit}
-
+from sqlalchemy.orm.attributes import set_committed_value
+from .. import models
+from .common import gen_id, _now
 
 # ---------- 能量币 ----------
+class InsufficientCoins(ValueError):
+    """余额不足时由 HTTP 用例转换为 400；不在服务层提交事务。"""
+
+
 def add_tx(
     db: Session,
     group_id: str,
@@ -63,16 +18,26 @@ def add_tx(
     delta: int,
     note: str,
     user_id: str | None = None,
+    allow_partial_debit: bool = True,
 ) -> models.CoinTransaction:
     group = db.get(models.Group, group_id)
     if group is None:
         raise ValueError(f"小组不存在: {group_id}")
-    # 能量币不允许为负：扣减最多扣到 0，同步修正记账 delta
-    new_total = group.total_coins + delta
-    if new_total < 0:
-        delta = -group.total_coins
-        new_total = 0
+    # UPDATE 获取行写锁并返回最新余额，避免两个请求基于旧值覆盖彼此。
+    # SQLite 不支持 SELECT FOR UPDATE；无变化 UPDATE 在两种数据库中都能序列化写入。
+    balance = db.execute(
+        update(models.Group).where(models.Group.id == group_id)
+        .values(total_coins=models.Group.total_coins)
+        .returning(models.Group.total_coins)
+        .execution_options(synchronize_session=False)
+    ).scalar_one()
+    set_committed_value(group, 'total_coins', balance)
+    if not allow_partial_debit and balance + delta < 0:
+        raise InsufficientCoins('小组能量币不足')
+    new_total = max(0, balance + delta)
+    delta = new_total - balance
     group.total_coins = new_total
+    db.flush([group])
     tx = models.CoinTransaction(
         id=gen_id("tx_"),
         group_id=group_id,
@@ -130,11 +95,12 @@ def escrow_recruitment(
     owner_group_id: str | None,
     *,
     note: str,
+    allow_partial_debit: bool = True,
 ) -> int:
     """从发包组扣押招募押金，返回实际扣到的数额。
 
-    发布路径会先校验余额充足；押金扣不满时（余额不足）add_tx 会把扣减封顶，
-    这里据实返回，避免出现"账上写了扣、实际没扣"的差额。
+    新发布路径使用严格扣款；历史招募允许按实际余额补扣。
+    返回实际押金，避免出现"账上写了扣、实际没扣"的差额。
     """
     if owner_group_id is None or recruitment.reward <= 0:
         return 0
@@ -145,6 +111,7 @@ def escrow_recruitment(
         ref_id=recruitment.id,
         delta=-recruitment.reward,
         note=note,
+        allow_partial_debit=allow_partial_debit,
     )
     recruitment.escrow_paid = -tx.delta
     return recruitment.escrow_paid
@@ -153,7 +120,7 @@ def escrow_recruitment(
 def settle_recruitment(db: Session, recruitment: models.Recruitment, result: str) -> dict:
     """按押金结算招募：酬劳从中标组该得的份额里出，剩下的退回发包组。
 
-    押金是发布招募时就从发包组扣下的（见 routers/projects.create_recruitment），
+    押金是发布招募时就从发包组扣下的（见 routers/recruitments.create_recruitment），
     所以这里**不增发**能量币。原实现既没扣押金又照发不误，等于凭空印币——
     「失败」一档尤其离谱：发包组会白得一笔自己从未付过的钱。
 
@@ -229,7 +196,9 @@ def settle_project_done(db: Session, project: models.Project) -> dict:
             earning = int(total_reward * ratios[member.id] / 100)
             if earning > 0:
                 earnings[member.id] = earning
-                member.personal_coins = member.personal_coins + earning
+                db.execute(update(models.User).where(models.User.id == member.id).values(
+                    personal_coins=models.User.personal_coins + earning
+                ))
     elif members:
         # 余数依次补给靠前的成员，保证分出去的总额恰好等于奖励
         share, remainder = divmod(total_reward, len(members))
@@ -237,7 +206,9 @@ def settle_project_done(db: Session, project: models.Project) -> dict:
             earning = share + (1 if i < remainder else 0)
             if earning > 0:
                 earnings[member.id] = earning
-                member.personal_coins = member.personal_coins + earning
+                db.execute(update(models.User).where(models.User.id == member.id).values(
+                    personal_coins=models.User.personal_coins + earning
+                ))
 
     add_tx(
         db,
@@ -250,17 +221,3 @@ def settle_project_done(db: Session, project: models.Project) -> dict:
     return earnings
 
 
-# ---------- 答题判分 ----------
-def is_answer_correct(question: dict, user_answer) -> bool:
-    qtype = question.get("type")
-    answer = question.get("answer")
-    if qtype == "multiple":
-        correct = ",".join(str(x) for x in sorted(answer)) if isinstance(answer, list) else ""
-        user = ",".join(str(x) for x in sorted(user_answer)) if isinstance(user_answer, list) else ""
-        return correct == user
-    if qtype == "judge":
-        return bool(user_answer) == bool(answer)
-    try:
-        return int(user_answer) == int(answer)
-    except (TypeError, ValueError):
-        return False

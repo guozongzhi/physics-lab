@@ -23,6 +23,9 @@ let sessionVersion = 0;
 
 export function resetSyncQueue(): void {
   sessionVersion++;
+  queued = Promise.resolve();
+  lastError = null;
+  lastToastAt = 0;
 }
 
 export function getLastSyncError() {
@@ -61,7 +64,9 @@ export function syncToApi(task: Task, label: string): void {
       const { bootstrapFromApi } = await import('./bootstrap');
       await bootstrapFromApi(true);
     } catch {
+      if (version !== sessionVersion || token !== getToken()) return;
       const { clearBusinessData } = await import('./sessionCleanup');
+      if (version !== sessionVersion || token !== getToken()) return;
       clearBusinessData();
       useUIStore.getState().pushToast('无法确认服务器状态，请重新连接后刷新页面', 'error');
     }

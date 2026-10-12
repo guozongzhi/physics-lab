@@ -1,5 +1,5 @@
 import guides from '../data/knowledgeGuides.json';
-import type { Question } from '../data/mockData';
+import type { Question } from '../types';
 
 export function getKnowledgeGuide(topicId: string, point: string) {
   return guides.find((guide) => guide.topicId === topicId && guide.point === point);

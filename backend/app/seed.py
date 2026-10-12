@@ -409,7 +409,17 @@ def ensure_safety_questions(db: Session) -> int:
     return len(build_safety_questions())
 
 
+def _validate_seed_credentials() -> None:
+    missing = [name for name in ('admin_password', 'teacher_password', 'student_default_password')
+               if not getattr(settings, name).strip() or getattr(settings, name) == 'change-me-via-env']
+    if missing:
+        raise ValueError('首次播种前请配置非占位符密码：' + ', '.join(name.upper() for name in missing))
+
+
 def seed(force: bool = False) -> None:
+    # force 也必须先验证，不能清空已有数据库后才发现配置不完整。
+    if force:
+        _validate_seed_credentials()
     init_db()
     db = SessionLocal()
     try:
@@ -426,6 +436,8 @@ def seed(force: bool = False) -> None:
         if db.query(Group).first() is not None:
             print("✅ 数据库已有数据，跳过种子灌入（如需重置请加 --force）。")
             return
+
+        _validate_seed_credentials()
 
         # 管理员账号
         db.add(
@@ -470,9 +482,9 @@ def seed(force: bool = False) -> None:
 
         db.commit()
         print("🎉 种子数据灌入完成！")
-        print(f"   - 管理员账号: admin / {settings.admin_password}")
-        print(f"   - 教师账号: teacher / {settings.teacher_password}")
-        print(f"   - 学生账号: u-01 ~ u-{len(users):02d} / {settings.student_default_password}（例：u-01 是张伟，高二(1)班 牛顿先锋队组长）")
+        print("   - 管理员账号: admin（密码取自配置，不写入日志）")
+        print("   - 教师账号: teacher（密码取自配置，不写入日志）")
+        print(f"   - 学生账号: u-01 ~ u-{len(users):02d}（密码取自配置，不写入日志）")
         print(f"   - {len(classes)} 个班级、{len(groups)} 个小组、{len(users)} 名学生、{len(topics)} 个主题")
     finally:
         db.close()

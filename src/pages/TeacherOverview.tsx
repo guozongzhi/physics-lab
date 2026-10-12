@@ -8,7 +8,7 @@ import { useProjectStore } from '@/store/projectStore';
 import { useQuestionBankStore } from '@/store/questionBankStore';
 import { bootstrapFromApi } from '@/lib/bootstrap';
 import { classesApi } from '@/lib/apiService';
-import { SchoolClass } from '@/data/mockData';
+import type { SchoolClass } from '@/types';
 import { TeachingKPISection } from '@/features/teaching/overview/TeachingKPISection';
 import { DataInsightsBento } from '@/features/teaching/overview/DataInsightsBento';
 import { ClassEnergyBars } from '@/features/teaching/overview/ClassEnergyBars';

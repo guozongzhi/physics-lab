@@ -1,4 +1,4 @@
-import { Project, ProjectStatus } from '@/data/mockData';
+import type { Project, ProjectStatus } from '@/types';
 import ProjectCard from './ProjectCard';
 import { cn } from '@/lib/utils';
 import { FolderKanban } from 'lucide-react';

@@ -4,7 +4,7 @@ import { Plus, Target, Pencil, Trash2, Megaphone, X, Zap } from 'lucide-react';
 import { useUIStore } from '@/store/uiStore';
 import { useGroupStore } from '@/store/groupStore';
 import { useProjectStore } from '@/store/projectStore';
-import { Project, ProjectStatus } from '@/data/mockData';
+import type { Project, ProjectStatus } from '@/types';
 import { cn } from '@/lib/utils';
 
 const STATUS_LABEL: Record<ProjectStatus, string> = {

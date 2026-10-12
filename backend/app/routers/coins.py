@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from .. import services
+from ..access import require_class_access
 from ..database import get_db
 from ..deps import get_current_user, require_teacher, visible_class_id, window_guard
 from ..models import ClassMeta, CoinTransaction, Group, User
@@ -87,11 +88,12 @@ def teacher_adjust_coins(
     group_id: str,
     payload: CoinDelta,
     db: Session = Depends(get_db),
-    _: User = Depends(require_teacher),
+    current: User = Depends(require_teacher),
 ):
     group = db.get(Group, group_id)
     if not group:
         raise HTTPException(status_code=404, detail="小组不存在")
+    require_class_access(current, group.class_id)
     tx = services.add_tx(
         db,
         group_id,
@@ -120,6 +122,8 @@ def transfer_coins(
     tgt = db.get(Group, payload.target_group_id)
     if not src or not tgt:
         raise HTTPException(status_code=404, detail="小组不存在")
+    require_class_access(user, src.class_id)
+    require_class_access(user, tgt.class_id)
     # 学生只能从自己所在小组转出；教师/管理员可代任意小组操作
     if user.account_role == "student" and user.group_id != src.id:
         raise HTTPException(status_code=403, detail="只能从自己所在小组转出")
@@ -128,15 +132,19 @@ def transfer_coins(
 
     ref_id = services.gen_id("tr_")
     note = payload.note.strip()
-    tx_out = services.add_tx(
-        db,
-        src.id,
-        source="transfer",
-        ref_id=ref_id,
-        delta=-payload.amount,
-        note=f"转账给「{tgt.name}」" + (f"：{note}" if note else ""),
-        user_id=user.id,
-    )
+    try:
+        tx_out = services.add_tx(
+            db,
+            src.id,
+            source="transfer",
+            ref_id=ref_id,
+            delta=-payload.amount,
+            allow_partial_debit=False,
+            note=f"转账给「{tgt.name}」" + (f"：{note}" if note else ""),
+            user_id=user.id,
+        )
+    except services.InsufficientCoins as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     tx_in = services.add_tx(
         db,
         tgt.id,

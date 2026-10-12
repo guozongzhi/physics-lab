@@ -3,7 +3,7 @@ import { BentoCard } from "@/design-system/components/BentoCard";
 import { Button } from "@/design-system/components/Button";
 
 import { ArrowRightLeft, Download } from "lucide-react";
-import { CoinTransaction } from "@/data/mockData";
+import type { CoinTransaction } from '@/types';
 
 interface RecentTxItem extends CoinTransaction {
   timeLabel: string;

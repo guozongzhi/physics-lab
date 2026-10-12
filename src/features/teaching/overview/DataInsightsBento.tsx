@@ -17,7 +17,7 @@ import {
   Bar,
 } from "recharts";
 import { formatAxisTick } from "@/lib/utils";
-import { SchoolClass } from "@/data/mockData";
+import type { SchoolClass } from '@/types';
 
 interface DataInsightsBentoProps {
   insightClass: string;

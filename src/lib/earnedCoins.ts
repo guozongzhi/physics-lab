@@ -1,4 +1,4 @@
-import type { CoinTransaction } from '@/data/mockData';
+import type { CoinTransaction } from '@/types';
 
 /**
  * 计算每个学生的「累计获得」能量币。

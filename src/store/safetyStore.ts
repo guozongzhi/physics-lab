@@ -9,7 +9,8 @@
  *    首次使用以内置题库 buildSafetyQuestions() 兜底，仅用于无后端的演示。
  */
 import { create } from 'zustand';
-import { Question, SafetyCategory, loadLS, saveLS } from '../data/mockData';
+import type { Question, SafetyCategory } from '../types';
+import { loadLS, saveLS } from '../lib/storage';
 import { buildSafetyQuestions } from '../data/safetyContent';
 import { apiEnabled } from '../lib/apiClient';
 import { safetyBankApi } from '../lib/apiService';

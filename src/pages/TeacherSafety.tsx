@@ -33,8 +33,8 @@ import {
   groupsApi,
   SafetyAssignment,
 } from '@/lib/apiService';
-import type { SchoolClass, Group } from '@/data/mockData';
-import { Question, SafetyCategory } from '@/data/mockData';
+import type { SchoolClass, Group } from '@/types';
+import type { Question, SafetyCategory } from '@/types';
 import { categoryNameMap } from '@/data/safetyContent';
 import { cn } from '@/lib/utils';
 

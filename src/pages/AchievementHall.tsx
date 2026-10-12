@@ -11,7 +11,7 @@ import { useGroupStore } from '@/store/groupStore';
 import { useProjectStore } from '@/store/projectStore';
 import { useAuthStore } from '@/store/authStore';
 import { useUIStore } from '@/store/uiStore';
-import { ShowcaseCategory } from '@/data/mockData';
+import type { ShowcaseCategory } from '@/types';
 import { cn } from '@/lib/utils';
 
 type GalleryTab = ShowcaseCategory;

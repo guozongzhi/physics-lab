@@ -1,6 +1,6 @@
 """SQLAlchemy 数据模型。
 
-字段命名尽量对齐前端 TypeScript 类型（src/data/mockData.ts），
+字段命名尽量对齐前端 TypeScript 类型（src/types/domain.ts），
 对于数组 / 嵌套对象采用 JSON 列存储，保证前后端数据结构一致、迁移零损耗。
 """
 

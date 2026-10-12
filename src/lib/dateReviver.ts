@@ -1,36 +1,26 @@
-/**
- * 全局 ISO 日期智能反序列化解析器
- * 自动识别 ISO 8601 格式，无时区标记时规范为 UTC 并转为 JS Date 对象
- */
-
+/** 后端的无时区时间按 UTC 解析；保留明确时区，拒绝非法日期。 */
 const ISO_DATE_REGEX = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:?\d{2})?$/;
 
+export function parseApiDate(value: unknown): unknown {
+  if (typeof value !== 'string' || !ISO_DATE_REGEX.test(value)) return value;
+  const normalized = /(?:Z|[+-]\d{2}:?\d{2})$/.test(value) ? value : `${value}Z`;
+  const date = new Date(normalized);
+  return Number.isNaN(date.getTime()) ? value : date;
+}
+
+// 只转换领域模型声明为 Date 的字段。投稿时间/反馈时间契约是 string，正文亦不能误转。
+const DATE_FIELDS = new Set([
+  'createdAt', 'startDate', 'dueDate', 'deadline', 'bidAt',
+  'challengeWindowClosesAt', 'recruitWindowClosesAt',
+]);
+
 export function autoReviveDate(value: unknown): unknown {
-  if (typeof value === "string") {
-    if (ISO_DATE_REGEX.test(value)) {
-      // 若无时区后缀，补充 'Z' 确保按绝对 UTC 解析，规避东八区本地时间解析偏移
-      const normalized = value.endsWith("Z") || /[+-]\d{2}:?\d{2}$/.test(value)
-        ? value
-        : `${value}Z`;
-      const date = new Date(normalized);
-      if (!isNaN(date.getTime())) {
-        return date;
-      }
-    }
-    return value;
+  if (value instanceof Date) return value;
+  if (Array.isArray(value)) return value.map(autoReviveDate);
+  if (value !== null && typeof value === 'object') {
+    return Object.fromEntries(Object.entries(value).map(([key, item]) => [
+      key, DATE_FIELDS.has(key) ? parseApiDate(item) : autoReviveDate(item),
+    ]));
   }
-
-  if (Array.isArray(value)) {
-    return value.map(autoReviveDate);
-  }
-
-  if (value !== null && typeof value === "object") {
-    const result: Record<string, unknown> = {};
-    for (const key of Object.keys(value)) {
-      result[key] = autoReviveDate((value as Record<string, unknown>)[key]);
-    }
-    return result;
-  }
-
   return value;
 }

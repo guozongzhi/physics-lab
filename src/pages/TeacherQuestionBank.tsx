@@ -20,7 +20,7 @@ import { LibraryBig, Plus, Upload, Download, Pencil, Trash2, X, CheckCircle2, Al
 import { useQuestionBankStore } from '@/store/questionBankStore';
 import { useAuthStore } from '@/store/authStore';
 import { useUIStore } from '@/store/uiStore';
-import type { QuestionType } from '@/data/mockData';
+import type { QuestionType } from '@/types';
 import { cn } from '@/lib/utils';
 
 type Tab = 'students' | 'teacher';

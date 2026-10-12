@@ -11,7 +11,7 @@ import { useCoinStore } from '../store/coinStore';
 import ChangePasswordModal from '../components/ui/ChangePasswordModal';
 import { classesApi, safetyApi, groupsApi, coinsApi, SafetyRecord } from '@/lib/apiService';
 import { apiEnabled, getToken } from '@/lib/apiClient';
-import type { User, Project, ProjectStatus } from '@/data/mockData';
+import type { User, Project, ProjectStatus } from '@/types';
 import { X, UserPlus, AlertTriangle, Megaphone, ArrowRight, BookOpen, FlaskConical, Zap } from 'lucide-react';
 import { CommanderHeader } from '@/features/dashboard/components/CommanderHeader';
 import { MissionActionCards } from '@/features/dashboard/components/MissionActionCards';

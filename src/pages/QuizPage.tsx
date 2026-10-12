@@ -5,7 +5,7 @@ import { useTheoryStore } from '@/store/theoryStore';
 import { useAuthStore } from '@/store/authStore';
 import { useUIStore } from '@/store/uiStore';
 import ProgressRing from '@/components/ui/ProgressRing';
-import { Question } from '@/data/mockData';
+import type { Question } from '@/types';
 import { BookOpen, Swords, ChevronLeft, ChevronRight, Send, CheckCircle2, XCircle, AlertTriangle, Brain, RotateCcw, Trophy, Sparkles, Zap } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { theoryApi } from '@/lib/apiService';

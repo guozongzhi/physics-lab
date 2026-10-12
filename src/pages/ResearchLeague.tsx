@@ -20,7 +20,7 @@ import { useGroupStore } from '@/store/groupStore';
 import { useAuthStore } from '@/store/authStore';
 import { useCoinStore } from '@/store/coinStore';
 import { classesApi } from '@/lib/apiService';
-import { SchoolClass } from '@/data/mockData';
+import type { SchoolClass } from '@/types';
 import { cn, formatAxisTick } from '@/lib/utils';
 
 type TabKey = 'total' | 'month' | 'week' | 'personal';

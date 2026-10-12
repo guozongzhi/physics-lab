@@ -8,8 +8,8 @@
  */
 import { create } from 'zustand';
 import { api, apiEnabled } from '../lib/apiClient';
-import { loadLS, saveLS } from '../data/mockData';
-import type { ReviewableQuestion, ReviewStatus, QuestionType } from '../data/mockData';
+import { loadLS, saveLS } from '../lib/storage';
+import type { ReviewableQuestion, ReviewStatus, QuestionType } from '../types';
 
 const LS_KEY = 'plab_review_questions';
 

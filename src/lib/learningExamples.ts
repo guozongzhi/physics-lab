@@ -3,7 +3,7 @@ import builtinQuestions from '../../backend/app/physics_questions.json';
 import supplementalExamples from '../data/supplementalExamples.json';
 import { mockTopics } from '../data/mockTopics';
 import { getRelatedQuestions } from './knowledgeSystem';
-import type { Question } from '../data/mockData';
+import type { Question } from '../types';
 
 // A point must belong to the selected topic before any example can be shown.
 export function getLearningExamples(topicId: string, point: string | null, questions: Question[]) {

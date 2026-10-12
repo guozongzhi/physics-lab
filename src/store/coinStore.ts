@@ -1,14 +1,6 @@
 import { create } from 'zustand';
-import {
-  CoinTransaction,
-  CoinSource,
-  Challenge,
-  Recruitment,
-  Project,
-  LS_KEYS,
-  loadLS,
-  saveLS,
-} from '../data/mockData';
+import type { CoinTransaction, CoinSource, Challenge, Recruitment, Project } from '../types';
+import { LS_KEYS, loadLS, saveLS } from '../lib/storage';
 import { useGroupStore } from './groupStore';
 import { syncToApi } from '../lib/syncQueue';
 import { coinsApi } from '../lib/apiService';

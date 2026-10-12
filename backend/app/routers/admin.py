@@ -6,6 +6,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
+from ..access import require_class_access
 from ..database import get_db
 from ..deps import require_admin, require_teacher
 from ..models import Class, Group, User
@@ -23,6 +24,7 @@ from ..schemas import (
 )
 from ..security import hash_password
 from ..services import gen_id
+from ..user_views import user_to_out
 
 router = APIRouter(prefix="/api", tags=["admin"])
 
@@ -49,9 +51,10 @@ def rename_class(
     class_id: str,
     payload: ClassRename,
     db: Session = Depends(get_db),
-    _: User = Depends(require_teacher),
+    current: User = Depends(require_teacher),
 ):
     """重命名班级（教师或管理员）。"""
+    require_class_access(current, class_id)
     cls = db.get(Class, class_id)
     if not cls:
         raise HTTPException(status_code=404, detail="班级不存在")
@@ -128,9 +131,10 @@ def move_group_to_class(
 def list_class_students(
     class_id: str,
     db: Session = Depends(get_db),
-    _: User = Depends(require_teacher),
+    current: User = Depends(require_teacher),
 ):
     """按班级查询学生名单（教师或管理员）。"""
+    require_class_access(current, class_id)
     cls = db.get(Class, class_id)
     if not cls:
         raise HTTPException(status_code=404, detail="班级不存在")
@@ -140,7 +144,6 @@ def list_class_students(
         .order_by(User.id)
         .all()
     )
-    from ..routers.groups import user_to_out
     return [user_to_out(u) for u in students]
 
 
@@ -149,7 +152,7 @@ def batch_upload_students(
     class_id: str,
     payload: StudentBatchUpload,
     db: Session = Depends(get_db),
-    _: User = Depends(require_teacher),
+    current: User = Depends(require_teacher),
 ):
     """批量上传学生名单到指定班级（教师或管理员）。
 
@@ -157,6 +160,7 @@ def batch_upload_students(
     - 用户名默认取学生姓名（如未提供，可直接用姓名登录）
     - 密码默认 student_default_password（初始密码 123456，如未提供）
     """
+    require_class_access(current, class_id)
     cls = db.get(Class, class_id)
     if not cls:
         raise HTTPException(status_code=404, detail="班级不存在")
@@ -175,7 +179,6 @@ def batch_upload_students(
 
     created: list[User] = []
     from ..config import settings
-    from ..routers.groups import user_to_out
 
     for item in payload.students:
         name = item.name.strip()
@@ -211,12 +214,13 @@ def batch_upload_students(
 def delete_student(
     user_id: str,
     db: Session = Depends(get_db),
-    _: User = Depends(require_teacher),
+    current: User = Depends(require_teacher),
 ):
     """删除学生账号（教师或管理员）。"""
     user = db.get(User, user_id)
     if not user or user.account_role != "student":
         raise HTTPException(status_code=404, detail="学生不存在")
+    require_class_access(current, user.class_id)
     db.delete(user)
     db.commit()
     return {"ok": True}
@@ -226,7 +230,7 @@ def delete_student(
 def reset_student_password(
     user_id: str,
     db: Session = Depends(get_db),
-    _: User = Depends(require_teacher),
+    current: User = Depends(require_teacher),
 ):
     """教师重置学生密码（学生忘记密码时的唯一出路）。
 
@@ -242,6 +246,7 @@ def reset_student_password(
     if user.account_role != "student":
         raise HTTPException(status_code=400, detail="只能重置学生账号的密码")
 
+    require_class_access(current, user.class_id)
     default_password = settings.student_default_password
     if not default_password:
         raise HTTPException(status_code=500, detail="未配置学生初始密码，无法重置")

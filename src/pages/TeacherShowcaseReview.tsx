@@ -5,7 +5,7 @@ import { useProjectStore } from '@/store/projectStore';
 import { useGroupStore } from '@/store/groupStore';
 import { useUIStore } from '@/store/uiStore';
 import { cn } from '@/lib/utils';
-import type { ShowcaseItem } from '@/data/mockData';
+import type { ShowcaseItem } from '@/types';
 
 type Filter = 'pending' | 'approved' | 'rejected' | 'all';
 

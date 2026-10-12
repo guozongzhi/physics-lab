@@ -8,7 +8,7 @@ import { useGroupStore } from '@/store/groupStore';
 import { useAuthStore } from '@/store/authStore';
 import { useProjectStore } from '@/store/projectStore';
 import { useUIStore } from '@/store/uiStore';
-import { User, Recruitment } from '@/data/mockData';
+import type { User, Recruitment } from '@/types';
 import { cn } from '@/lib/utils';
 import { windowState, windowClosedMessage } from '@/lib/activityWindow';
 

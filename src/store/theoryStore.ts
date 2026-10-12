@@ -1,5 +1,6 @@
 import { create } from 'zustand';
-import { PhysicsTopic, Question, QuizSession, Challenge, ChallengeSubmission, LS_KEYS, loadLS, saveLS } from '../data/mockData';
+import type { PhysicsTopic, Question, QuizSession, Challenge, ChallengeSubmission } from '../types';
+import { LS_KEYS, loadLS, saveLS } from '../lib/storage';
 import { useCoinStore } from './coinStore';
 import { useGroupStore } from './groupStore';
 

@@ -1,16 +1,6 @@
 import { create } from 'zustand';
-import {
-  Project,
-  ProjectStatus,
-  Recruitment,
-  RecruitmentBid,
-  ShowcaseItem,
-  SafetyCategory,
-  EquipmentItem,
-  LS_KEYS,
-  loadLS,
-  saveLS,
-} from '../data/mockData';
+import type { Project, ProjectStatus, Recruitment, RecruitmentBid, ShowcaseItem, SafetyCategory, EquipmentItem } from '../types';
+import { LS_KEYS, loadLS, saveLS } from '../lib/storage';
 import { useCoinStore } from './coinStore';
 import { useGroupStore } from './groupStore';
 import { projectsApi, recruitmentsApi, showcaseApi, groupsApi, usersApi, coinsApi } from '../lib/apiService';
@@ -166,7 +156,7 @@ export const useProjectStore = create<ProjectState>((set, get) => {
         safetyPassed: partial.safetyPassed || {},
         photos: partial.photos || [],
         results: partial.results || '',
-        rewardCoins: partial.rewardCoins || 200,
+        rewardCoins: partial.rewardCoins ?? 200,
       };
       const next = [...projects, project];
       persist(next, recruitments, showcaseItems);

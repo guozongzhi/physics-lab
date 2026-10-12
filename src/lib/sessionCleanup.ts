@@ -8,7 +8,7 @@
  * 是否调用由调用方按 `apiEnabled` 判断：离线模式没有后端可回填，清了会把本地演示数据清光。
  * 这里不自己判断也不 import apiClient，免得形成 sessionCleanup → apiClient 的循环依赖。
  */
-import { LS_KEYS } from '../data/mockData';
+import { clearSessionStorage } from './storage';
 import { useQuestionBankStore } from '../store/questionBankStore';
 import { useTheoryStore } from '../store/theoryStore';
 import { useCoinStore } from '../store/coinStore';
@@ -28,14 +28,5 @@ export function clearBusinessData(): void {
 
 /** 只清 localStorage 里的个人数据。401 分支做整页跳转、拿不到 store 时也能单独用。 */
 export function clearPersonalKeys(): void {
-  try {
-    for (const key of [
-      LS_KEYS.GROUPS, LS_KEYS.TOPICS, LS_KEYS.QUESTIONS, LS_KEYS.CHALLENGES,
-      LS_KEYS.PROJECTS, LS_KEYS.RECRUITMENTS, LS_KEYS.SHOWCASE,
-      LS_KEYS.QUIZ_SESSIONS, LS_KEYS.COIN_TXS, LS_KEYS.CLASS_META,
-      'plab_users_cache', 'plab_safety_questions',
-    ]) localStorage.removeItem(key);
-  } catch {
-    /* 隐私模式等 localStorage 不可用时忽略 */
-  }
+  clearSessionStorage();
 }

@@ -6,7 +6,7 @@
  * 学生不能自己填奖励——若信前端传来的值，改个请求体就能自定奖励。
  * 改动单价档位时，两边都要改。
  */
-import type { ClassMeta, Question } from '../data/mockData';
+import type { ClassMeta, Question } from '../types';
 
 /** 难度 1/2/3 对应简单/中等/困难；越界值向最近档收拢（与后端一致）。 */
 export function challengeRewardFor(questions: Question[], meta: ClassMeta): number {

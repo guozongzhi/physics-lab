@@ -9,7 +9,7 @@ import Checkbox from '@/components/ui/Checkbox';
 import ProgressRing from '@/components/ui/ProgressRing';
 import ReactMarkdown from 'react-markdown';
 import { safetyNotices, sampleExamQuestions } from '@/data/safetyContent';
-import { Question, SafetyCategory } from '@/data/mockData';
+import type { Question, SafetyCategory } from '@/types';
 import { Shield, AlertTriangle, CheckCircle, BookOpen, ClipboardCheck, Unlock, ChevronLeft, ChevronRight, Send, Clock } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';

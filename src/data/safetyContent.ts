@@ -1,4 +1,4 @@
-import { SafetyCategory, Question } from './mockData';
+import type { SafetyCategory, Question } from '../types';
 
 export interface SafetyNoticeContent {
   title: string;

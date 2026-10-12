@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 import { useUIStore } from '@/store/uiStore';
 import { classesApi, teachersApi } from '@/lib/apiService';
-import type { SchoolClass } from '@/data/mockData';
+import type { SchoolClass } from '@/types';
 import { cn } from '@/lib/utils';
 import ClassComposition from './ClassComposition';
 import StudentRoster from './StudentRoster';

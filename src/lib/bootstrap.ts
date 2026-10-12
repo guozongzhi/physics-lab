@@ -10,7 +10,7 @@
  */
 import { apiEnabled, api } from './apiClient';
 import { useQuestionBankStore } from '../store/questionBankStore';
-import type { ReviewableQuestion } from '../data/mockData';
+import type { ReviewableQuestion } from '../types';
 import {
   groupsApi,
   usersApi,
@@ -26,7 +26,7 @@ import { useTheoryStore } from '../store/theoryStore';
 import { useSafetyStore } from '../store/safetyStore';
 import { coinsApi } from './apiService';
 import { reviveDates } from './reviveDates';
-import type { QuizSession } from '../data/mockData';
+import type { QuizSession } from '../types';
 
 let loaded = false;
 let loadingPromise: Promise<void> | null = null;

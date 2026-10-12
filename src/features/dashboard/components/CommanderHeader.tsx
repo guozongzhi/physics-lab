@@ -1,5 +1,5 @@
 import React from "react";
-import { User, Group } from "@/data/mockData";
+import type { User, Group } from '@/types';
 import { BentoCard } from "@/design-system/components/BentoCard";
 import { Badge } from "@/design-system/components/Badge";
 import { Button } from "@/design-system/components/Button";

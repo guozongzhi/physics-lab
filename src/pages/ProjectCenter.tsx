@@ -8,7 +8,7 @@ import { useProjectStore } from '@/store/projectStore';
 import { useGroupStore } from '@/store/groupStore';
 import { useAuthStore } from '@/store/authStore';
 import type { ProjectStatus, Project } from '@/types';
-import type { Group, User as StudentUser } from '@/data/mockData';
+import type { Group, User as StudentUser } from '@/types';
 import { cn } from '@/lib/utils';
 
 type MissionTab = 'overview' | 'tech' | 'milestones';

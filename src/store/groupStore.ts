@@ -1,5 +1,7 @@
 import { create } from 'zustand';
-import { Group, User, ClassMeta, MemberRole, LS_KEYS, loadLS, saveLS, initMockData } from '../data/mockData';
+import type { Group, User, ClassMeta, MemberRole } from '../types';
+import { LS_KEYS, loadLS, saveLS } from '../lib/storage';
+import { initMockData } from '../data/mockData';
 import { groupsApi, usersApi, coinsApi } from '../lib/apiService';
 import { syncToApi } from '../lib/syncQueue';
 import { apiEnabled } from '../lib/apiClient';

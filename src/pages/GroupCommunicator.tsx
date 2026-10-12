@@ -10,7 +10,7 @@ import { useUIStore } from '@/store/uiStore';
 import RecruitDialog from '@/components/ui/RecruitDialog';
 import { Swords, Users, Coins, Send, Trophy, Clock, AlertCircle, X, Plus, Eye, Award } from 'lucide-react';
 
-import type { Challenge, Recruitment, Project, CoinTransaction } from '@/data/mockData';
+import type { Challenge, Recruitment, Project, CoinTransaction } from '@/types';
 import { challengeRewardFor } from '@/lib/challengePricing';
 import { windowState, windowClosedMessage } from '@/lib/activityWindow';
 

@@ -3,7 +3,7 @@ import { BentoCard } from "@/design-system/components/BentoCard";
 import { Badge } from "@/design-system/components/Badge";
 import { Button } from "@/design-system/components/Button";
 import { FileCheck, Snowflake, AlertTriangle, ArrowRight } from "lucide-react";
-import { ReviewableQuestion } from "@/data/mockData";
+import type { ReviewableQuestion } from '@/types';
 
 interface AuditAndAlertBentoProps {
   pendingQuestions: ReviewableQuestion[];

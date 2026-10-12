@@ -1,5 +1,5 @@
 import { applyAvatarFallback } from '@/lib/imageFallback';
-import { User } from '@/data/mockData';
+import type { User } from '@/types';
 import { User as UserIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 

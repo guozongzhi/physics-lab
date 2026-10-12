@@ -1,4 +1,4 @@
-import type { ClassMeta } from '@/data/mockData';
+import type { ClassMeta } from '@/types';
 
 export type WindowKind = 'challenge' | 'recruit' | 'transfer';
 

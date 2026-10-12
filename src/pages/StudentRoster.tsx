@@ -29,7 +29,7 @@ import { useCoinStore } from '@/store/coinStore';
 import { classesApi, usersApi } from '@/lib/apiService';
 import { syncToApi } from '@/lib/syncQueue';
 import { computeEarnedByUser } from '@/lib/earnedCoins';
-import type { SchoolClass, User } from '@/data/mockData';
+import type { SchoolClass, User } from '@/types';
 import { cn } from '@/lib/utils';
 
 const MAX_STUDENTS = 30;

@@ -11,7 +11,7 @@ import { syncToApi } from '@/lib/syncQueue';
 import { cn } from '@/lib/utils';
 import { AWARD_REASONS, DEDUCT_REASONS } from '@/lib/coinReasons';
 import AvatarStack from '@/components/ui/AvatarStack';
-import type { User, SchoolClass } from '@/data/mockData';
+import type { User, SchoolClass } from '@/types';
 
 type DialogKind = 'reset' | 'new' | 'coins' | 'rename' | 'members' | 'disband' | null;
 
