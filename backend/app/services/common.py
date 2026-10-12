@@ -8,5 +8,3 @@ def gen_id(prefix: str = "") -> str:
 
 def _now() -> datetime:
     return datetime.now(timezone.utc)
-
-

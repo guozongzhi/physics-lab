@@ -17,5 +17,3 @@ def question_dict(q: Question) -> dict:
 
 def public_question(q: dict) -> dict:
     return {key: value for key, value in q.items() if key != "answer"}
-
-

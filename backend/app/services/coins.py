@@ -219,5 +219,3 @@ def settle_project_done(db: Session, project: models.Project) -> dict:
         note=f"项目「{project.title}」完成奖励",
     )
     return earnings
-
-

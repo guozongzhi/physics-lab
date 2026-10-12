@@ -84,4 +84,3 @@ export const adminGroupsApi = {
   moveClass: (groupId: string, classId: string) =>
     api.patch<Group>(`/api/groups/${groupId}/class`, { classId }),
 };
-

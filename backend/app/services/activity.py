@@ -32,5 +32,3 @@ def window_state(meta: models.ClassMeta | None) -> dict:
     recruit = _window_open(meta.recruit_window_open, meta.recruit_window_closes_at)
     # 组间转账不单设开关：任一窗口开着就算"课上有监督"
     return {"challenge": challenge, "recruit": recruit, "transfer": challenge or recruit}
-
-

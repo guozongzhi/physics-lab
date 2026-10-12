@@ -219,4 +219,3 @@ export interface CurrentUser {
   /** 学生是否还在用统一初始密码。随登录态持久化，刷新后提示不丢。离线模式不设。 */
   isDefaultPassword?: boolean;
 }
-

@@ -13,5 +13,3 @@ def user_to_out(u: User) -> UserOut:
         role=u.member_role,
         personal_coins=u.personal_coins,
     )
-
-

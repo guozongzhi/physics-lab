@@ -33,4 +33,3 @@ export const theoryApi = {
   submitChallenge: (challengeId: string, answers: Record<string, unknown>) =>
     api.post<Challenge>(`/api/challenges/${challengeId}/submit`, { answers }).then(reviveChallenge),
 };
-

@@ -96,4 +96,3 @@ export interface SafetyQuestionPayload {
   difficulty?: number;
   safetyCategory: SafetyCategory;
 }
-

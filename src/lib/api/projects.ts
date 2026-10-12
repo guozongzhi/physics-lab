@@ -69,4 +69,3 @@ export const showcaseApi = {
     payload: { action: 'approve' | 'reject'; coins?: number; reason?: string }
   ) => api.post<ShowcaseItem>(`/api/showcase/${showcaseId}/review`, payload),
 };
-
