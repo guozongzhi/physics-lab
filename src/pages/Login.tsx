@@ -253,10 +253,10 @@ export default function Login() {
                 remember={remember} onRememberChange={setRemember} onForgotPassword={() => openInfo('帮助')}
                 onSubmit={tab === 'teacher' ? handleTeacherLogin : handleCredentialLogin}
                 submitting={submitting} error={tab === 'teacher' ? teacherErr : credErr} />
-              {tab === 'student' && <div className="login-register-entry">
+              <div className="login-register-entry">
                 <div className="login-divider"><span />或<span /></div>
-                <button type="button" className="login-secondary" onClick={() => { setStudentMode('register'); setStudentErr(''); }}><UserPlus size={22} />注册新账号</button>
-              </div>}
+                {tab === 'student' ? <button type="button" className="login-secondary" onClick={() => { setStudentMode('register'); setStudentErr(''); }}><UserPlus size={22} />注册新账号</button> : <button type="button" className="login-secondary" onClick={() => openInfo('帮助')}><Info size={22} />账号登录帮助</button>}
+              </div>
               <div className="login-account-hint"><Info size={20} /><p>{tab === 'teacher' ? '教师和管理员请使用分配的账号登录。忘记密码请联系系统管理员进行重置。' : '请使用教师分配的用户名和初始密码登录；预置演示账号使用编号（例如 u-01），不是姓名。登录不上请联系老师。'}</p></div>
             </> : studentMode === 'register' && apiEnabled ? <div className="login-register-fields space-y-4">
               <button type="button" className="login-back" onClick={() => { setStudentMode('login'); setRegErr(''); }}>← 返回账号登录</button>

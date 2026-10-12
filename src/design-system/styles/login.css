@@ -97,7 +97,7 @@
 .login-secondary:hover { background-color: #ffffff70; }
 .login-account-hint { display: flex; align-items: start; gap: 10px; margin-top: 20px; padding: 12px 13px; border-radius: 12px; background: #d8e9ffb8; color: #345888; }
 .login-account-hint > svg { flex: none; margin-top: 1px; color: #065dff; }
-.login-account-hint p { margin: 0; font-size: 12px; line-height: 1.55; }
+.login-account-hint p { min-height: 4.65em; margin: 0; font-size: 12px; line-height: 1.55; }
 .login-product-intro { position: absolute; bottom: 28px; left: 40px; display: flex; align-items: center; gap: 16px; padding: 20px 16px; width: 384px; max-width: calc(100% - 80px); border-radius: 24px; border: 1px solid #ffffff55; color: #fff; background: linear-gradient(120deg,#2f2c20b0,#111c3be0); backdrop-filter: blur(18px); text-align: left; box-shadow: 0 15px 35px #00113050; }
 .login-play-icon { display: grid; flex: none; place-items: center; width: 47px; height: 47px; border: 1px solid #ffffffb0; border-radius: 50%; }
 .login-product-intro strong { display: block; font-size: 17px; font-weight: 550; margin-bottom: 2px; }
