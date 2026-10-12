@@ -23,7 +23,7 @@ for (const topic of mockTopics) {
     const examples = getLearningExamples(topic.id, point, questions);
     const publicExamples = getLearningExamples(topic.id, point, questions.map(({answer, ...q}) => q));
     assert.equal(JSON.stringify(publicExamples), JSON.stringify(examples));
-    assert.ok(!JSON.stringify(publicExamples).includes('undefined')); 
+    assert.ok(!JSON.stringify(publicExamples).includes('undefined'));
     assert.equal(getLearningExamples('invalid-topic', point, questions).length, 0);
     const foreign = mockTopics.find((candidate) => candidate.id !== topic.id);
     assert.equal(getLearningExamples(foreign.id, point, questions).length, 0);
