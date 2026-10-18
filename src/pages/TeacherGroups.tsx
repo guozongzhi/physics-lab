@@ -414,7 +414,6 @@ export default function TeacherGroups() {
   return (
     <>
       <div className="space-y-6">
-        <TransferRequests teacher />
         <motion.section
           initial={{ opacity: 0, y: 18 }}
           animate={{ opacity: 1, y: 0 }}
@@ -453,6 +452,8 @@ export default function TeacherGroups() {
             </div>
           </div>
         </motion.section>
+
+        <TransferRequests teacher />
 
         {/* 挑战奖励单价 —— 定价权归教师，学生不能自填 */}
         <motion.section
