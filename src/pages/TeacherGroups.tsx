@@ -725,15 +725,15 @@ export default function TeacherGroups() {
           <div className="space-y-10">
             {groupsByClass.map((bucket) => (
               <section key={bucket.classId}>
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-1 h-7 rounded-full bg-gradient-to-b from-mission-400 to-mission-600" />
-                  <h2 className="text-[19px] font-extrabold text-ink-800">
+                <div className="glass-card flex items-center gap-3 mb-4 px-4 py-3 rounded-2xl">
+                  <div className="w-1 h-7 rounded-full bg-gradient-to-b from-mission-400 to-mission-600 shrink-0" />
+                  <h2 className="text-[18px] md:text-[19px] font-extrabold text-ink-900 tracking-tight">
                     {bucket.className}
-                    <span className="ml-2 text-[13px] font-semibold text-ink-400">
+                    <span className="ml-2 text-[12.5px] font-semibold text-ink-500">
                       {bucket.groups.length} 个小组
                     </span>
                   </h2>
-                  <div className="flex-1 h-px bg-gradient-to-r from-ink-100 to-transparent" />
+                  <div className="flex-1 h-px bg-gradient-to-r from-ink-200/70 to-transparent" />
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
                   {bucket.groups.map((g, idx) => {
