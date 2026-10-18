@@ -328,3 +328,10 @@ class NfcAdminAudit(Base):
     action: Mapped[str] = mapped_column(String, nullable=False)
     target_id: Mapped[str] = mapped_column(String, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=_now)
+
+
+class NfcInventory(Base):
+    __tablename__ = "nfc_inventory"
+    uid_key: Mapped[str] = mapped_column(String(64), primary_key=True)
+    uid_ciphertext: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=_now)

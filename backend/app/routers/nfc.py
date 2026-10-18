@@ -136,6 +136,8 @@ def bind_card(payload: CardBind, db: Session = Depends(get_db), actor: User = De
         db.add(card)
     card.active_user_id = user.id
     card.revoked_at = None
+    from ..nfc_inventory import remember_uid
+    remember_uid(db, key, payload.card_uid)
     audit(db, actor, "card.bind", user.id)
     try:
         db.commit()

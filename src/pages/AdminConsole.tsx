@@ -25,6 +25,7 @@ import type { SchoolClass } from '@/types';
 import { cn } from '@/lib/utils';
 import ClassComposition from './ClassComposition';
 import StudentRoster from './StudentRoster';
+import NfcManagement from './NfcManagement';
 
 interface TeacherInfo {
   id: string;
@@ -33,7 +34,7 @@ interface TeacherInfo {
   avatar: string;
 }
 
-type Tab = 'composition' | 'roster' | 'classes' | 'teachers';
+type Tab = 'composition' | 'roster' | 'classes' | 'teachers' | 'nfc';
 
 export default function AdminConsole() {
   const pushToast = useUIStore((s) => s.pushToast);
@@ -192,6 +193,7 @@ export default function AdminConsole() {
         {[
           { key: 'composition' as Tab, label: '班级构成', description: '查看各班小组与成员分布', icon: Layers },
           { key: 'roster' as Tab, label: '学生名单', description: '检索研究员与归属信息', icon: ClipboardList },
+          { key: 'nfc' as Tab, label: 'NFC 卡片', description: '登记、绑定及 Excel 导入导出', icon: KeyRound },
           { key: 'classes' as Tab, label: '班级管理', description: '创建、重命名与维护班级', icon: School },
           { key: 'teachers' as Tab, label: '教师管理', description: '配置教师账号与权限', icon: Users },
         ].map((t) => {
@@ -234,6 +236,7 @@ export default function AdminConsole() {
 
           {/* ========== 学生名单 ========== */}
           {tab === 'roster' && <StudentRoster />}
+          {tab === 'nfc' && <NfcManagement />}
 
           {/* ========== 班级管理 ========== */}
           {tab === 'classes' && (

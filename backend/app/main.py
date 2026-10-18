@@ -71,3 +71,5 @@ app.include_router(safety.router)
 app.include_router(recruitments.router)
 app.include_router(showcase.router)
 app.include_router(nfc.router)
+from .routers import nfc_registry
+app.include_router(nfc_registry.router)
