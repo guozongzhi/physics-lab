@@ -294,3 +294,37 @@ class ReviewQuestion(Base):
     id: Mapped[str] = mapped_column(String, primary_key=True)
     submitted_by: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
     payload: Mapped[dict] = mapped_column(JSON, default=dict)
+
+
+class NfcDevice(Base):
+    __tablename__ = "nfc_devices"
+
+    id: Mapped[str] = mapped_column(String, primary_key=True)
+    name: Mapped[str] = mapped_column(String, nullable=False)
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True, nullable=False)
+    enabled: Mapped[bool] = mapped_column(Boolean, default=True)
+    allowed_class_ids: Mapped[list] = mapped_column(JSON, default=list)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=_now)
+
+
+class NfcCard(Base):
+    __tablename__ = "nfc_cards"
+
+    # HMAC index only: do not store the raw UID.
+    uid_key: Mapped[str] = mapped_column(String(64), primary_key=True)
+    uid_mask: Mapped[str] = mapped_column(String, nullable=False)
+    user_id: Mapped[str] = mapped_column(String, nullable=False)
+    # Nullable unique key enforces at most one active card per student in the DB.
+    active_user_id: Mapped[str | None] = mapped_column(String, unique=True, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=_now)
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+
+class NfcAdminAudit(Base):
+    __tablename__ = "nfc_admin_audit"
+
+    id: Mapped[str] = mapped_column(String, primary_key=True)
+    actor_id: Mapped[str] = mapped_column(String, nullable=False)
+    action: Mapped[str] = mapped_column(String, nullable=False)
+    target_id: Mapped[str] = mapped_column(String, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=_now)

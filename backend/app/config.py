@@ -21,6 +21,9 @@ class Settings(BaseSettings):
     student_default_password: str = "change-me-via-env"
     admin_password: str = "change-me-via-env"
 
+    # 独立、持久的 NFC UID 索引密钥；未配置时 NFC 接口返回 503，不影响原业务。
+    nfc_uid_secret: str = ""
+
     cors_origins: str = "http://localhost:5173,http://localhost:5174,http://127.0.0.1:5173,http://127.0.0.1:5174"
 
     @property

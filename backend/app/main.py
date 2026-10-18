@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .config import settings
 from .database import init_db
-from .routers import admin, auth, coins, groups, projects, theory, review_questions, quiz, safety, recruitments, showcase
+from .routers import admin, auth, coins, groups, projects, theory, review_questions, quiz, safety, recruitments, showcase, nfc
 
 # 与 config.py 中的开发默认值保持一致；使用默认密钥时启动阶段给出告警
 _DEV_DEFAULT_JWT_SECRET = "physics-mission-control-dev-secret-change-me"
@@ -70,3 +70,4 @@ app.include_router(quiz.router)
 app.include_router(safety.router)
 app.include_router(recruitments.router)
 app.include_router(showcase.router)
+app.include_router(nfc.router)
