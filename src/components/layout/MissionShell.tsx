@@ -584,17 +584,17 @@ export default function MissionShell({ children, requireAuth = true }: MissionSh
                 <span aria-current="page">{pageLabel}</span>
               </nav>
             )}
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={location.pathname}
-                initial={reduceMotion ? false : { opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={reduceMotion ? undefined : { opacity: 0, y: -8 }}
-                transition={{ duration: reduceMotion ? 0 : 0.25 }}
-              >
-                {children}
-              </motion.div>
-            </AnimatePresence>
+            {/* 路由内容只做进入动画：AnimatePresence 的退出等待与懒加载页面的
+                Suspense 会互相锁死——退场中的旧节点仍会通过 Outlet 渲染新页面，
+                新页面挂起时退出动画永远等不到完成，导航就卡住直到刷新。 */}
+            <motion.div
+              key={location.pathname}
+              initial={reduceMotion ? false : { opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: reduceMotion ? 0 : 0.25 }}
+            >
+              {children}
+            </motion.div>
           </div>
         </main>
         <Dialog open={searchOpen} onClose={() => setSearchOpen(false)} title="查找页面" size="lg">
