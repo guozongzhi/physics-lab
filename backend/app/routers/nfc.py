@@ -18,7 +18,7 @@ from sqlalchemy.orm import Session
 from ..access import require_class_access
 from ..config import settings
 from ..database import get_db
-from ..deps import require_admin, require_teacher
+from ..deps import require_teacher, visible_class_id
 from ..models import Class, Group, NfcAdminAudit, NfcCard, NfcDevice, User
 from ..schemas import CamelModel
 
@@ -66,11 +66,20 @@ def device_out(device: NfcDevice) -> dict:
             "allowedClassIds": device.allowed_class_ids}
 
 
+def device_in_scope(actor: User, device: NfcDevice) -> bool:
+    """绑定班级的教师只能管理允许班级完全属于本班的设备。"""
+    scope = visible_class_id(actor)
+    return scope is None or set(device.allowed_class_ids) <= {scope}
+
+
 @router.post("/devices", status_code=201)
 def create_device(payload: DeviceCreate, response: Response, db: Session = Depends(get_db),
-                  actor: User = Depends(require_admin)):
+                  actor: User = Depends(require_teacher)):
     if any(db.get(Class, cid) is None for cid in payload.allowed_class_ids):
         raise HTTPException(400, "班级不存在")
+    scope = visible_class_id(actor)
+    if scope and any(cid != scope for cid in payload.allowed_class_ids):
+        raise HTTPException(403, "只能为本班配置设备")
     token = "nfc_" + secrets.token_urlsafe(32)
     device = NfcDevice(id=uuid4().hex, name=payload.name, token_hash=token_hash(token),
                        allowed_class_ids=list(dict.fromkeys(payload.allowed_class_ids)))
@@ -82,16 +91,18 @@ def create_device(payload: DeviceCreate, response: Response, db: Session = Depen
 
 
 @router.get("/devices")
-def list_devices(db: Session = Depends(get_db), actor: User = Depends(require_admin)):
-    return [device_out(d) for d in db.scalars(select(NfcDevice)).all()]
+def list_devices(db: Session = Depends(get_db), actor: User = Depends(require_teacher)):
+    return [device_out(d) for d in db.scalars(select(NfcDevice)).all() if device_in_scope(actor, d)]
 
 
 @router.patch("/devices/{device_id}")
 def change_device(device_id: str, payload: DeviceUpdate, db: Session = Depends(get_db),
-                  actor: User = Depends(require_admin)):
+                  actor: User = Depends(require_teacher)):
     device = db.get(NfcDevice, device_id)
     if not device:
         raise HTTPException(404, "设备不存在")
+    if not device_in_scope(actor, device):
+        raise HTTPException(403, "只能管理本班设备")
     device.enabled = payload.enabled
     audit(db, actor, "device.enable" if payload.enabled else "device.disable", device.id)
     db.commit()
@@ -100,10 +111,12 @@ def change_device(device_id: str, payload: DeviceUpdate, db: Session = Depends(g
 
 @router.post("/devices/{device_id}/rotate-token")
 def rotate_token(device_id: str, response: Response, db: Session = Depends(get_db),
-                 actor: User = Depends(require_admin)):
+                 actor: User = Depends(require_teacher)):
     device = db.get(NfcDevice, device_id)
     if not device:
         raise HTTPException(404, "设备不存在")
+    if not device_in_scope(actor, device):
+        raise HTTPException(403, "只能管理本班设备")
     token = "nfc_" + secrets.token_urlsafe(32)
     device.token_hash = token_hash(token)
     audit(db, actor, "device.rotate", device.id)

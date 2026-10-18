@@ -92,7 +92,9 @@ def test_scope_teacher_and_student_permissions(client, auth, db):
     assert bind(client, admin, user='u-5').status_code == 403
     assert client.get('/api/nfc/cards', headers=admin).json() == []
     assert client.post('/api/nfc/devices', headers=admin,
-                       json={'name':'x','allowedClassIds':['class-1']}).status_code == 403
+                       json={'name':'x','allowedClassIds':['class-2']}).status_code == 403
+    assert client.post('/api/nfc/devices', headers=admin,
+                       json={'name':'own','allowedClassIds':['class-1']}).status_code == 201
     assert bind(client, auth('u-1')).status_code == 403
 
 

@@ -3,18 +3,19 @@ import type { LucideIcon } from 'lucide-react';
 import { applyAvatarFallback } from '@/lib/imageFallback';
 import { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Rocket, Users, Zap, Crown, Pencil, Trash2, Plus, Minus, RefreshCw, AlertTriangle, X, Trophy, Sparkles, GripVertical, CheckCircle2, Coins, UserPlus, Settings, Shield, UserMinus, RotateCcw } from 'lucide-react';
+import { Rocket, Users, Zap, Crown, Pencil, Trash2, Plus, Minus, RefreshCw, AlertTriangle, X, Trophy, Sparkles, GripVertical, CheckCircle2, Coins, UserPlus, Settings, Shield, UserMinus, RotateCcw, ArrowRightLeft } from 'lucide-react';
 import { useGroupStore } from '@/store/groupStore';
 import { useCoinStore } from '@/store/coinStore';
 import { windowState, formatCloseTime } from '@/lib/activityWindow';
-import { classesApi, usersApi } from '@/lib/apiService';
+import { adminGroupsApi, classesApi, usersApi } from '@/lib/apiService';
+import { bootstrapFromApi } from '@/lib/bootstrap';
 import { syncToApi } from '@/lib/syncQueue';
 import { cn } from '@/lib/utils';
 import { AWARD_REASONS, DEDUCT_REASONS } from '@/lib/coinReasons';
 import AvatarStack from '@/components/ui/AvatarStack';
 import type { User, SchoolClass } from '@/types';
 
-type DialogKind = 'reset' | 'new' | 'coins' | 'rename' | 'members' | 'disband' | null;
+type DialogKind = 'reset' | 'new' | 'coins' | 'rename' | 'members' | 'disband' | 'move' | null;
 
 /**
  * 调币理由选择器：预设按钮 + 可自由填写。
@@ -161,6 +162,7 @@ export default function TeacherGroups() {
   };
   const [resetConfirmStep, setResetConfirmStep] = useState(0);
   const [renameInput, setRenameInput] = useState('');
+  const [moveTargetClass, setMoveTargetClass] = useState('');
   const [newGroupName, setNewGroupName] = useState('');
   const [newGroupMembers, setNewGroupMembers] = useState<string[]>([]);
   const [coinAmount, setCoinAmount] = useState(100);
@@ -392,6 +394,21 @@ export default function TeacherGroups() {
   const openMembers = (groupId: string) => {
     setActiveGroupId(groupId);
     setDialog('members');
+  };
+
+  const doMoveClass = async () => {
+    if (!activeGroup || !moveTargetClass) return;
+    try {
+      await adminGroupsApi.moveClass(activeGroup.id, moveTargetClass);
+      const targetName = classes.find((c) => c.id === moveTargetClass)?.name || moveTargetClass;
+      flashToast(`✔ ${activeGroup.name} 已换到 ${targetName}`);
+      setDialog(null);
+      setMoveTargetClass('');
+      setActiveGroupId(null);
+      await bootstrapFromApi(true);
+    } catch (err) {
+      flashToast(err instanceof Error ? err.message : '换班失败');
+    }
   };
 
   return (
@@ -852,6 +869,17 @@ export default function TeacherGroups() {
                         ±能量币
                       </button>
                     </div>
+                    <button
+                      onClick={() => {
+                        setActiveGroupId(g.id);
+                        setMoveTargetClass('');
+                        setDialog('move');
+                      }}
+                      className="btn-ghost !py-2 !px-3 text-[12px] !rounded-xl w-full mt-2"
+                    >
+                      <ArrowRightLeft size={13} />
+                      换班
+                    </button>
                   </div>
                 </motion.article>
                   );
@@ -1216,6 +1244,62 @@ export default function TeacherGroups() {
                     >
                       <CheckCircle2 size={15} />
                       保存新名称
+                    </button>
+                  </div>
+                </>
+              )}
+
+              {dialog === 'move' && activeGroup && (
+                <>
+                  <div className="flex items-center justify-between mb-5">
+                    <div className="flex items-center gap-3">
+                      <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-mission-400 to-nova-500 flex items-center justify-center text-white shadow-md">
+                        <ArrowRightLeft size={20} />
+                      </div>
+                      <div>
+                        <h3 className="font-extrabold text-[19px] text-ink-900">↔ 小组换班</h3>
+                        <p className="text-[12.5px] text-ink-500">
+                          把 <b className="text-ink-700">{activeGroup.name}</b> 移到其他班级
+                        </p>
+                      </div>
+                      <button onClick={() => setDialog(null)} className="ml-auto w-9 h-9 rounded-xl hover:bg-ink-100 flex items-center justify-center text-ink-400">
+                        <X size={17} />
+                      </button>
+                    </div>
+                  </div>
+                  <div className="mb-5">
+                    {classes.filter((c) => c.id !== activeGroup.classId).length === 0 ? (
+                      <p className="text-[13px] text-ink-500">暂无其他班级可移动。</p>
+                    ) : (
+                      <select
+                        value={moveTargetClass}
+                        onChange={(e) => setMoveTargetClass(e.target.value)}
+                        className="w-full bg-white/80 border border-ink-200 focus:border-mission-400 rounded-xl px-4 py-3 text-[15px] font-semibold text-ink-800 focus:outline-none focus:ring-3 focus:ring-mission-400/25"
+                      >
+                        <option value="">选择目标班级…</option>
+                        {classes
+                          .filter((c) => c.id !== activeGroup.classId)
+                          .map((c) => (
+                            <option key={c.id} value={c.id}>{c.name}</option>
+                          ))}
+                      </select>
+                    )}
+                    <p className="mt-2 text-[12px] text-ink-400">
+                      组内学生的班级归属会同步更新。
+                    </p>
+                  </div>
+                  <div className="flex gap-3">
+                    <button className="btn-ghost flex-1" onClick={() => setDialog(null)}>取消</button>
+                    <button
+                      disabled={!moveTargetClass}
+                      onClick={doMoveClass}
+                      className={cn(
+                        'flex-1 inline-flex items-center justify-center gap-2 font-bold rounded-2xl transition-all py-3 px-5',
+                        moveTargetClass ? 'btn-mission' : 'bg-ink-100 text-ink-400 cursor-not-allowed'
+                      )}
+                    >
+                      <CheckCircle2 size={15} />
+                      确认换班
                     </button>
                   </div>
                 </>

@@ -22,7 +22,7 @@ import { applyAvatarFallback } from '@/lib/imageFallback';
  */
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Users, School, Pencil, Trash2, X, Upload, Loader2, AlertTriangle, CheckCircle2, Zap, RotateCcw, KeyRound } from 'lucide-react';
+import { Users, School, Pencil, Plus, Trash2, X, Upload, Loader2, AlertTriangle, CheckCircle2, Zap, RotateCcw, KeyRound } from 'lucide-react';
 import { useUIStore } from '@/store/uiStore';
 import { useGroupStore } from '@/store/groupStore';
 import { useCoinStore } from '@/store/coinStore';
@@ -63,6 +63,9 @@ export default function StudentRoster() {
 
   // 班级重命名
   const [editingClass, setEditingClass] = useState<{ id: string; name: string } | null>(null);
+  // 新建 / 删除班级
+  const [newClassName, setNewClassName] = useState('');
+  const [deletingClass, setDeletingClass] = useState<{ id: string; name: string } | null>(null);
 
   // 上传学生（针对某个班级）
   const [showUpload, setShowUpload] = useState(false);
@@ -118,6 +121,37 @@ export default function StudentRoster() {
       pushToast('班级重命名成功', 'success');
     } catch (err: unknown) {
       pushToast((err instanceof Error ? err.message : undefined) || '重命名失败', 'error');
+    }
+  };
+
+  const handleCreateClass = async () => {
+    const name = newClassName.trim();
+    if (!name) return;
+    try {
+      const created = await classesApi.create(name);
+      setClasses((prev) => [...prev, created]);
+      setStudentsByClass((prev) => ({ ...prev, [created.id]: [] }));
+      setNewClassName('');
+      pushToast(`班级「${created.name}」创建成功`, 'success');
+    } catch (err: unknown) {
+      pushToast((err instanceof Error ? err.message : undefined) || '创建失败', 'error');
+    }
+  };
+
+  const handleDeleteClass = async () => {
+    if (!deletingClass) return;
+    try {
+      await classesApi.remove(deletingClass.id);
+      setClasses((prev) => prev.filter((c) => c.id !== deletingClass.id));
+      setStudentsByClass((prev) => {
+        const next = { ...prev };
+        delete next[deletingClass.id];
+        return next;
+      });
+      setDeletingClass(null);
+      pushToast(`班级「${deletingClass.name}」已删除`, 'success');
+    } catch (err: unknown) {
+      pushToast((err instanceof Error ? err.message : undefined) || '删除失败', 'error');
     }
   };
 
@@ -280,6 +314,28 @@ export default function StudentRoster() {
         </div>
       )}
 
+      {/* 新建班级 */}
+      <div className="glass-card p-5 rounded-[22px] flex flex-wrap items-center gap-3">
+        <div className="flex items-center gap-2 flex-1 min-w-[200px]">
+          <Plus size={18} className="text-mission-500 shrink-0" />
+          <input
+            type="text"
+            value={newClassName}
+            onChange={(e) => setNewClassName(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleCreateClass()}
+            className="input-field flex-1"
+            placeholder="输入新班级名称，如：高三(3)班"
+          />
+        </div>
+        <button
+          onClick={handleCreateClass}
+          disabled={!newClassName.trim()}
+          className="btn-mission disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-2 !py-2.5"
+        >
+          <Plus size={16} /> 创建班级
+        </button>
+      </div>
+
       {/* 各班级名单分批呈现 */}
       {loading ? (
         <div className="glass-card p-10 rounded-[22px] text-center text-ink-400 flex items-center justify-center gap-2">
@@ -325,6 +381,12 @@ export default function StudentRoster() {
                     className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl glass-card glass-card-hover text-[12px] font-semibold text-ink-600 hover:text-mission-600"
                   >
                     <Pencil size={13} /> 改班级名
+                  </button>
+                  <button
+                    onClick={() => setDeletingClass({ id: c.id, name: c.name })}
+                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl glass-card glass-card-hover text-[12px] font-semibold text-ink-600 hover:text-danger-600"
+                  >
+                    <Trash2 size={13} /> 删除班级
                   </button>
                   <button
                     onClick={() => {
@@ -495,6 +557,17 @@ export default function StudentRoster() {
           </button>
         </div>
       </Modal>
+
+      {/* 删除班级确认 */}
+      <ConfirmModal
+        open={!!deletingClass}
+        onClose={() => setDeletingClass(null)}
+        onConfirm={handleDeleteClass}
+        title="删除班级"
+        message={`删除「${deletingClass?.name || ''}」将同时删除该班所有小组、学生与金币流水，此操作不可撤销。`}
+        confirmText="确认删除"
+        danger
+      />
 
       {/* 删除学生确认 */}
       <ConfirmModal

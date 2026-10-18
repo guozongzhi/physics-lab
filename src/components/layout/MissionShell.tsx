@@ -79,10 +79,11 @@ const TEACHER_NAV_ITEMS: NavItem[] = [
   { id: 't-questions', label: '题库审核', subLabel: '提题审批', icon: FileCheck, to: '/teacher/question-bank' },
   { id: 't-safety', label: '安全考评', subLabel: '题库与任务', icon: Shield, to: '/teacher/safety' },
   { id: 't-showcase', label: '成果审核', subLabel: '作品审批', icon: Medal, to: '/teacher/showcase' },
+  { id: 't-nfc', label: 'NFC 卡片', subLabel: '实体卡登记', icon: KeyRound, to: '/teacher/nfc' },
 ];
 
 const ADMIN_NAV_ITEMS: NavItem[] = [
-  { id: 'admin', label: '管理控制台', subLabel: '权限与班级', icon: Shield, to: '/admin' },
+  { id: 'admin', label: '教师账号', subLabel: '账号管理', icon: Shield, to: '/admin' },
 ];
 
 function MissionHeader({ onOpenNav, onOpenSearch }: { onOpenNav: () => void; onOpenSearch: () => void }) {
@@ -547,7 +548,7 @@ export default function MissionShell({ children, requireAuth = true }: MissionSh
   }, []);
   useEffect(() => { window.scrollTo(0, 0); }, [location.pathname]);
   const homePath = role === 'teacher' ? '/teacher/overview' : role === 'admin' ? '/admin' : '/dashboard';
-  const homeLabel = role === 'teacher' ? '指挥总览' : role === 'admin' ? '管理控制台' : '主控看板';
+  const homeLabel = role === 'teacher' ? '指挥总览' : role === 'admin' ? '教师账号' : '主控看板';
   const navItems = role === 'admin' ? [...TEACHER_NAV_ITEMS, ...ADMIN_NAV_ITEMS] : role === 'teacher' ? TEACHER_NAV_ITEMS : STUDENT_NAV_ITEMS;
   const pageLabel = navItems.find((item) => location.pathname === item.to || location.pathname.startsWith(`${item.to}/`))?.label;
 

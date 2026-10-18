@@ -8,8 +8,9 @@ from pydantic import Field
 from sqlalchemy import text, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
+from ..access import require_class_access
 from ..database import get_db
-from ..deps import require_admin
+from ..deps import require_teacher, visible_class_id
 from ..models import Class, Group, User, NfcCard, NfcInventory
 from ..nfc_inventory import remember_uid, reveal_uid
 from ..schemas import CamelModel
@@ -43,15 +44,24 @@ def version(db):
     return hashlib.sha256(json.dumps([cards, inventory, students], ensure_ascii=False).encode()).hexdigest()
 
 
-def registry_data(db):
-    users = {u.id: u for u in db.query(User).filter(User.account_role == 'student')}
-    classes = {c.id: c.name for c in db.query(Class)}
+def registry_data(db, scope: str | None = None):
+    users_q = db.query(User).filter(User.account_role == 'student')
+    if scope:
+        users_q = users_q.filter(User.class_id == scope)
+    users = {u.id: u for u in users_q}
+    classes_q = db.query(Class)
+    if scope:
+        classes_q = classes_q.filter(Class.id == scope)
+    classes = {c.id: c.name for c in classes_q}
     groups = {g.id: g.name for g in db.query(Group)}
     bindings = {c.uid_key: c for c in db.query(NfcCard)}
     rows = []
     for item in db.query(NfcInventory).order_by(NfcInventory.created_at, NfcInventory.uid_key):
         card = bindings.get(item.uid_key)
         user = users.get(card.active_user_id) if card else None
+        # 班级作用域下，其他班已绑定的卡片不出现在本班登记表里。
+        if scope and card and card.active_user_id and user is None:
+            continue
         rows.append({'cardUid': reveal_uid(item), 'userId': user.id if user else None,
                      'username': user.username if user else '', 'studentName': user.name if user else '',
                      'classId': user.class_id if user else None,
@@ -66,9 +76,9 @@ def registry_data(db):
 
 
 @router.get('')
-def registry(response: Response, db: Session = Depends(get_db), actor: User = Depends(require_admin)):
+def registry(response: Response, db: Session = Depends(get_db), actor: User = Depends(require_teacher)):
     response.headers['Cache-Control'] = 'no-store'
-    return registry_data(db)
+    return registry_data(db, visible_class_id(actor))
 
 
 def apply_batch(payload, db, actor):
@@ -81,6 +91,7 @@ def apply_batch(payload, db, actor):
     if not payload.dry_run and not payload.expected_version:
         raise HTTPException(400, '请先预览再提交更新')
     keys, users, parsed, errors = set(), set(), [], []
+    scope = visible_class_id(actor)
     for index, row in enumerate(payload.rows, 2):
         try:
             key, mask = uid_key(row.card_uid)
@@ -91,10 +102,15 @@ def apply_batch(payload, db, actor):
             if row.user_id:
                 if not user or user.account_role != 'student' or not user.class_id:
                     raise HTTPException(400, '学生不存在或未分班')
+                if scope and user.class_id != scope:
+                    raise HTTPException(403, '只能绑定本班学生')
                 if row.user_id in users:
                     raise HTTPException(400, '同一学生不能绑定多张卡')
                 users.add(row.user_id)
             card = db.get(NfcCard, key)
+            current = db.get(User, card.active_user_id) if card and card.active_user_id else None
+            if scope and current and current.class_id != scope:
+                raise HTTPException(403, '只能解绑本班学生的卡片')
             if card and row.user_id and card.user_id != row.user_id and not payload.allow_transfer:
                 raise HTTPException(409, '卡片已有归属；调整前请勾选允许换绑')
             parsed.append((row, key, mask, card, user))
@@ -134,16 +150,17 @@ def apply_batch(payload, db, actor):
 
 
 @router.post('/batch')
-def batch(payload: Batch, response: Response, db: Session = Depends(get_db), actor: User = Depends(require_admin)):
+def batch(payload: Batch, response: Response, db: Session = Depends(get_db), actor: User = Depends(require_teacher)):
     response.headers['Cache-Control'] = 'no-store'
     return apply_batch(payload, db, actor)
 
 
 @router.post('/random')
-def random_plan(payload: RandomPlan, response: Response, db: Session = Depends(get_db), actor: User = Depends(require_admin)):
+def random_plan(payload: RandomPlan, response: Response, db: Session = Depends(get_db), actor: User = Depends(require_teacher)):
     response.headers['Cache-Control'] = 'no-store'
     if db.get(Class, payload.class_id) is None:
         raise HTTPException(404, '班级不存在')
+    require_class_access(actor, payload.class_id)
     busy = {c.active_user_id for c in db.query(NfcCard) if c.active_user_id}
     active_keys = {c.uid_key for c in db.query(NfcCard) if c.active_user_id}
     # Previously owned/revoked cards stay reserved until explicitly reassigned.
@@ -163,12 +180,16 @@ def random_plan(payload: RandomPlan, response: Response, db: Session = Depends(g
 
 
 @router.get('/export')
-def export(class_id: str | None = None, db: Session = Depends(get_db), actor: User = Depends(require_admin)):
+def export(class_id: str | None = None, db: Session = Depends(get_db), actor: User = Depends(require_teacher)):
     from ..nfc_xlsx import export_xlsx
-    data = registry_data(db)
-    if class_id:
-        data['cards'] = [r for r in data['cards'] if r['classId'] in (None, class_id)]
-        data['students'] = [r for r in data['students'] if r['classId'] == class_id]
+    scope = visible_class_id(actor)
+    if class_id and scope and class_id != scope:
+        raise HTTPException(403, '只能导出本班卡片')
+    target_class = class_id or scope
+    data = registry_data(db, scope)
+    if target_class:
+        data['cards'] = [r for r in data['cards'] if r['classId'] in (None, target_class)]
+        data['students'] = [r for r in data['students'] if r['classId'] == target_class]
     return Response(export_xlsx(data), media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
                     headers={'Content-Disposition': 'attachment; filename="nfc-cards.xlsx"', 'Cache-Control': 'no-store'})
 
@@ -176,7 +197,7 @@ def export(class_id: str | None = None, db: Session = Depends(get_db), actor: Us
 @router.post('/import')
 async def import_xlsx(request: Request, dry_run: bool = True, allow_transfer: bool = False,
                       expected_version: str | None = None, db: Session = Depends(get_db),
-                      actor: User = Depends(require_admin)):
+                      actor: User = Depends(require_teacher)):
     from ..nfc_xlsx import read_xlsx
     body = bytearray()
     async for chunk in request.stream():
@@ -184,11 +205,15 @@ async def import_xlsx(request: Request, dry_run: bool = True, allow_transfer: bo
         if len(body) > 2 * 1024 * 1024:
             raise HTTPException(413, '文件不能超过 2MB')
     entries, file_version = read_xlsx(bytes(body))
-    usernames = {u.username: u.id for u in db.query(User).filter(User.account_role == 'student')}
+    scope = visible_class_id(actor)
+    users_q = db.query(User).filter(User.account_role == 'student')
+    if scope:
+        users_q = users_q.filter(User.class_id == scope)
+    usernames = {u.username: u.id for u in users_q}
     rows, errors = [], []
     for index, (uid, username) in enumerate(entries, 2):
         if username and username not in usernames:
-            errors.append({'row': index, 'message': '学生账号不存在'})
+            errors.append({'row': index, 'message': '学生账号不存在或不属于本班'})
         rows.append(BindingRow(card_uid=uid, user_id=usernames.get(username) if username else None))
     if errors:
         raise HTTPException(400, {'message': '整批未写入，请修正学生账号', 'errors': errors})

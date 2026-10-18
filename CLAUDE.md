@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 项目概况
 
-物理实验室（Physics Mission Control）——面向高中物理教学的**游戏化沉浸式学习平台**。三种角色：**学生**（`/dashboard`）、**教师**（`/teacher/overview`）、**管理员**（`/admin`），三者路由经 `src/app/layouts/AppShell.tsx` 共用一个 `MissionShell`。教师导航 7 项（overview / groups / projects / roster / question-bank / safety / showcase），学生导航 11 项（dashboard / my-team / theory-topics / theory-challenge / communicator / projects / safety-lab / recruit-market / coins / showcase / profile）。重构状态见 `docs/refactoring/PROGRESS.md`；设计细节在 `docs/DESIGN.md`（代码与文档不一致时以代码为准并同步更新文档）。
+物理实验室（Physics Mission Control）——面向高中物理教学的**游戏化沉浸式学习平台**。三种角色：**学生**（`/dashboard`）、**教师**（`/teacher/overview`）、**管理员**（`/admin`），三者路由经 `src/app/layouts/AppShell.tsx` 共用一个 `MissionShell`。教师拥有全部业务管理能力（含班级增删改与 NFC 卡片/设备管理）；管理员 = 教师权限 + **教师账号管理**（`/admin` 仅保留新增/删除教师、重置教师密码）。教师导航 8 项（overview / groups / projects / roster / question-bank / safety / showcase / nfc），学生导航 11 项（dashboard / my-team / theory-topics / theory-challenge / communicator / projects / safety-lab / recruit-market / coins / showcase / profile）。重构状态见 `docs/refactoring/PROGRESS.md`；设计细节在 `docs/DESIGN.md`（代码与文档不一致时以代码为准并同步更新文档）。
 
 单仓库：根目录为 Vite React 前端，`backend/` 为 FastAPI 后端。仓库**公开托管**在 `github.com/shuhua-uiuc/physics-lab`，因此**任何被 git 跟踪的文件都等于对外公开**——真实密码、服务器地址、学生姓名一律不得写进其中（示例文件用占位符）。
 

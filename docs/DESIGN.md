@@ -17,8 +17,8 @@
 | 角色 | role 值 | 入口 | 核心功能 |
 |---|---|---|---|
 | 学生 | `student` | `/dashboard` | 学习路径、答题挑战、项目实验、招募市场、组间转账、成就 |
-| 教师 | `teacher` | `/teacher/overview` | 总览数据台、分组管理、学生名册、题库审核、安全题库维护 |
-| 管理员 | `admin` | `/admin` | 班级/教师/学生账户管理 |
+| 教师 | `teacher` | `/teacher/overview` | 总览数据台、分组管理、学生名册、班级管理、题库审核、安全题库维护、NFC 卡片 |
+| 管理员 | `admin` | `/admin` | 教师账号管理（其余业务能力与教师一致） |
 
 **硬规则**：每班最多 30 名学生；学生不能自行建组（教师建组或直接分配）；小组名/班级名可由教师修改。
 
@@ -204,18 +204,20 @@ cd backend
 
 > `/theory/challenge`（无 `s`）与 `/theory/challenges`（带 `s`）是**两个不同页面**，都在使用，不是新旧拼写关系。
 
-教师端（`MissionShell`，侧边栏 6 项）：
+教师端（`MissionShell`，侧边栏 8 项）：
 
 | 路径 | 页面文件 | 说明 |
 |---|---|---|
 | `/teacher/overview` | TeacherOverview.tsx | 指挥总控台（见 §6.1） |
-| `/teacher/groups` | TeacherGroups.tsx | 分组管理（按班级分区，组内按能量币降序；建组/分配/改名） |
+| `/teacher/groups` | TeacherGroups.tsx | 分组管理（按班级分区，组内按能量币降序；建组/分配/改名/换班） |
 | `/teacher/projects` | TeacherProjects.tsx | 项目管理（审批/冻结/编辑项目） |
-| `/teacher/roster` | StudentRoster.tsx | 学生名册（按班级分区展示、按班级批量选择） |
+| `/teacher/roster` | StudentRoster.tsx | 学生名册 + 班级管理（建班/改名/删班、按班级批量选择） |
 | `/teacher/question-bank` | TeacherQuestionBank.tsx | 题库审核中心（学生提交审核 + 教师上传/导入/导出） |
 | `/teacher/safety` | TeacherSafety.tsx | 安全题库维护（增删改、JSON 批量导入/导出、恢复内置 35 题）+ **考核任务指派** |
+| `/teacher/showcase` | TeacherShowcaseReview.tsx | 成果审核 |
+| `/teacher/nfc` | NfcManagement.tsx | NFC 卡片登记（按班级作用域） |
 
-管理员端：`/admin` → AdminConsole.tsx（班级、教师账户、学生账户管理；`ClassComposition.tsx` 由它以 tab 形式内嵌，不单独占路由）。
+管理员端：`/admin` → AdminConsole.tsx，仅保留**教师账号管理**（新增/删除教师、重置密码）。原「班级构成 / 学生名单 / NFC / 班级管理」标签页已并入教师端；`ClassComposition.tsx` 已删除。
 
 ### 6.1 教师总览页数据来源（TeacherOverview.tsx，已全部真实化）
 

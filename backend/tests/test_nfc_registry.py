@@ -128,8 +128,8 @@ def test_excel_invalid_formula_and_bad_zip(client, auth, db):
     assert client.post('/api/nfc/registry/import',headers=h,content=out.getvalue()).status_code==400
 
 
-def test_admin_only(client, auth):
-    for h in (auth('teacher','teacher123'),auth('u-1')):
-        assert client.get('/api/nfc/registry',headers=h).status_code==403
-        assert preview(client,h,[row()]).status_code==403
-        assert client.get('/api/nfc/registry/export',headers=h).status_code==403
+def test_students_cannot_use_registry(client, auth):
+    h = auth('u-1')
+    assert client.get('/api/nfc/registry', headers=h).status_code == 403
+    assert preview(client, h, [row()]).status_code == 403
+    assert client.get('/api/nfc/registry/export', headers=h).status_code == 403

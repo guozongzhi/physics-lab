@@ -34,6 +34,7 @@ const StudentRoster = lazy(() => import('@/pages/StudentRoster'));
 const TeacherQuestionBank = lazy(() => import('@/pages/TeacherQuestionBank'));
 const TeacherShowcaseReview = lazy(() => import('@/pages/TeacherShowcaseReview'));
 const TeacherSafety = lazy(() => import('@/pages/TeacherSafety'));
+const NfcManagement = lazy(() => import('@/pages/NfcManagement'));
 
 function TeacherOnly() {
   const role = useAuthStore((s) => s.role);
@@ -160,6 +161,7 @@ export default function App() {
             <Route path="teacher/question-bank" element={<TeacherQuestionBank />} />
             <Route path="teacher/showcase" element={<TeacherShowcaseReview />} />
             <Route path="teacher/safety" element={<TeacherSafety />} />
+            <Route path="teacher/nfc" element={<NfcManagement />} />
           </Route>
           <Route element={<AdminOnly />}>
             <Route path="admin" element={<AdminConsole />} />

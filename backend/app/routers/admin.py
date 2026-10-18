@@ -36,9 +36,9 @@ MAX_STUDENTS_PER_CLASS = 30
 def create_class(
     payload: ClassCreate,
     db: Session = Depends(get_db),
-    _: User = Depends(require_admin),
+    _: User = Depends(require_teacher),
 ):
-    """创建班级（仅管理员）。"""
+    """创建班级（教师或管理员）。"""
     cls = Class(id=gen_id("class_"), name=payload.name.strip())
     db.add(cls)
     db.commit()
@@ -68,12 +68,13 @@ def rename_class(
 def delete_class(
     class_id: str,
     db: Session = Depends(get_db),
-    _: User = Depends(require_admin),
+    current: User = Depends(require_teacher),
 ):
-    """删除班级（仅管理员）。
+    """删除班级（教师或管理员；绑定班级的教师只能删除本班）。
 
     级联清理：班级下所有小组及其学生、金币流水一并删除。
     """
+    require_class_access(current, class_id)
     cls = db.get(Class, class_id)
     if not cls:
         raise HTTPException(status_code=404, detail="班级不存在")
@@ -101,9 +102,9 @@ def move_group_to_class(
     group_id: str,
     payload: GroupClassMove,
     db: Session = Depends(get_db),
-    _: User = Depends(require_admin),
+    current: User = Depends(require_teacher),
 ):
-    """将小组移动到另一班级（仅管理员）。
+    """将小组移动到另一班级（教师或管理员）。
 
     同时更新组内所有学生的 class_id，保证班级归属一致。
     """
@@ -113,6 +114,8 @@ def move_group_to_class(
     target_class = db.get(Class, payload.classId)
     if not target_class:
         raise HTTPException(status_code=400, detail="目标班级不存在")
+    require_class_access(current, group.class_id)
+    require_class_access(current, payload.classId)
     if group.class_id == payload.classId:
         raise HTTPException(status_code=400, detail="小组已在该班级中")
 
