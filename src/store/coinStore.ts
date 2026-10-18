@@ -2,8 +2,10 @@ import { create } from 'zustand';
 import type { CoinTransaction, CoinSource, Challenge, Recruitment, Project } from '../types';
 import { LS_KEYS, loadLS, saveLS } from '../lib/storage';
 import { useGroupStore } from './groupStore';
-import { syncToApi } from '../lib/syncQueue';
-import { coinsApi } from '../lib/apiService';
+import { apiEnabled } from '../lib/apiClient';
+import { useAuthStore } from './authStore';
+import type { CoinTransferRequest } from '../lib/api/coins';
+import { coinsApi, groupsApi } from '../lib/apiService';
 import { windowState, windowClosedMessage } from '../lib/activityWindow';
 
 /**
@@ -11,17 +13,20 @@ import { windowState, windowClosedMessage } from '../lib/activityWindow';
  *
  * 后端模式下的记账契约（避免双重记账）：
  *   - 交易记录与小组余额由后端在对应业务端点内统一生成：
- *       · 教师/组间金币变动 → groupStore.updateGroupCoins → POST /groups/{id}/coins
+ *       · 教师金币变动 → groupStore.updateGroupCoins → POST /groups/{id}/coins
  *       · 挑战结算 → POST /challenges/{id}/submit（后端 settle_challenge）
  *       · 招募结算 → PUT /recruitments/{id}/resolve（后端 settle_recruitment）
  *       · 项目完成 → POST /projects/{id}/done（后端 settle_project_done）
- *       · 组间转账 → transferCoins → POST /coins/transfer（后端原子记账，收支共享 refId）
+ *       · 组间转账 → transferCoins 提交申请，教师审核通过后后端原子记账
  *   - 因此本 store 的 addTx / settleXxx 仅做“本地乐观更新”，用于即时展示流水，
  *     不再单独向后端推送交易；下次 bootstrapFromApi 重拉时以后端为准对齐。
  */
 
 interface CoinState {
   coinTxs: CoinTransaction[];
+  transfers: CoinTransferRequest[];
+  loadTransfers: () => Promise<void>;
+  reviewTransfer: (id: string, decision: 'approve' | 'reject', note: string) => Promise<void>;
   addTx: (
     groupId: string,
     tx: { source: CoinSource; refId: string; delta: number; note: string },
@@ -38,14 +43,14 @@ interface CoinState {
     ownerGroupId?: string
   ) => { assigneePay: number; ownerRefund: number };
   settleProjectDone: (project: Project) => Record<string, number>;
-  /** 组间能量币转账：本地乐观更新 + 后端原子记账（source='transfer'，收支共享 refId）。 */
+  /** 提交转账申请，审核通过前不变更余额或流水。 */
   transferCoins: (
     fromGroupId: string,
     toGroupId: string,
     amount: number,
     note: string,
     userId?: string
-  ) => void;
+  ) => Promise<void>;
   getRankings: () => {
     groupRanking: { groupId: string; name: string; totalCoins: number; rank: number }[];
     personalRanking: { userId: string; name: string; personalCoins: number; groupId: string; rank: number }[];
@@ -63,6 +68,48 @@ export const useCoinStore = create<CoinState>((set, get) => {
 
   return {
     coinTxs: initialTxs,
+    transfers: apiEnabled ? [] : loadLS<CoinTransferRequest[]>(LS_KEYS.COIN_TRANSFERS, []),
+    loadTransfers: async () => {
+      if (!apiEnabled) return;
+      const userId = useAuthStore.getState().userId;
+      const [transfers, groups, coinTxs] = await Promise.all([
+        coinsApi.transfers(), groupsApi.list(), coinsApi.transactions(),
+      ]);
+      if (useAuthStore.getState().userId !== userId) return;
+      useGroupStore.setState({ groups });
+      set({ transfers, coinTxs });
+    },
+    reviewTransfer: async (id, decision, note) => {
+      const auth = useAuthStore.getState();
+      if (auth.role !== 'teacher' && auth.role !== 'admin') throw new Error('只有教师可以审核');
+      let reviewed: CoinTransferRequest;
+      if (apiEnabled) {
+        reviewed = await coinsApi.reviewTransfer(id, decision, note);
+        if (useAuthStore.getState().userId !== auth.userId) return;
+      } else {
+        const request = get().transfers.find((t) => t.id === id);
+        if (!request || request.status !== 'pending') throw new Error('该申请已审核，请刷新列表');
+        const { getGroupById } = useGroupStore.getState();
+        const source = getGroupById(request.sourceGroupId);
+        const target = getGroupById(request.targetGroupId);
+        if (!source || !target) throw new Error('转账小组已不存在');
+        if (auth.classId && (source.classId !== auth.classId || target.classId !== auth.classId)) {
+          throw new Error('只能操作本班资源');
+        }
+        if (decision === 'approve') {
+          if (source.totalCoins < request.amount) throw new Error('当前余额不足，无法通过审核');
+          get().addTx(source.id, { source: 'transfer', refId: id, delta: -request.amount,
+            note: `转账给「${target.name}」${request.note ? `：${request.note}` : ''}` }, request.requestedBy);
+          get().addTx(target.id, { source: 'transfer', refId: id, delta: request.amount,
+            note: `收到「${source.name}」转账${request.note ? `：${request.note}` : ''}` });
+        }
+        reviewed = { ...request, status: decision === 'approve' ? 'approved' : 'rejected',
+          reviewedBy: auth.userId || undefined, reviewedAt: new Date(), reviewNote: note.trim() };
+      }
+      const transfers = get().transfers.map((t) => t.id === id ? reviewed : t);
+      set({ transfers });
+      if (!apiEnabled) saveLS(LS_KEYS.COIN_TRANSFERS, transfers);
+    },
 
     addTx: (groupId, tx, userId) => {
       // 仅本地乐观更新（后端由业务端点统一记账），不触发 groupsApi.adjustCoins
@@ -84,59 +131,31 @@ export const useCoinStore = create<CoinState>((set, get) => {
       return newTx;
     },
 
-    transferCoins: (fromGroupId, toGroupId, amount, note, userId) => {
-      const { adjustGroupCoinsLocal, getGroupById } = useGroupStore.getState();
-      // 组间转账不单设开关：任一窗口开着即视为"课上有监督"，两个都关才封
+    transferCoins: async (fromGroupId, toGroupId, amount, note) => {
+      const auth = useAuthStore.getState();
+      const { getGroupById, getUserById } = useGroupStore.getState();
+      const user = auth.userId ? getUserById(auth.userId) : undefined;
+      if (auth.role !== 'student' || user?.role !== 'leader' || user.groupId !== fromGroupId) {
+        throw new Error('只有本组组长可以发起转账申请');
+      }
       if (!windowState(useGroupStore.getState().classMeta).transfer) {
         throw new Error(windowClosedMessage('transfer'));
       }
-      if (!Number.isInteger(amount) || amount <= 0) return;
-      const fromGroup = getGroupById(fromGroupId);
-      if (!fromGroup || fromGroup.totalCoins < amount) return;
-      const toGroup = getGroupById(toGroupId);
-      const refId = uid();
-
-      // 本地乐观更新：余额变更不走 updateGroupCoins（避免触发教师端点同步造成重复记账）
-      const fromBalance = adjustGroupCoinsLocal(fromGroupId, -amount);
-      const toBalance = adjustGroupCoinsLocal(toGroupId, amount);
-
-      const trimmedNote = note.trim();
-      const txOut: CoinTransaction = {
-        id: uid(),
-        groupId: fromGroupId,
-        userId,
-        source: 'transfer',
-        refId,
-        delta: -amount,
-        balanceAfter: fromBalance,
-        createdAt: new Date(),
-        note: `转账给${toGroup?.name ?? toGroupId}${trimmedNote ? `：${trimmedNote}` : ''}`,
-      };
-      const txIn: CoinTransaction = {
-        id: uid(),
-        groupId: toGroupId,
-        source: 'transfer',
-        refId,
-        delta: amount,
-        balanceAfter: toBalance,
-        createdAt: new Date(),
-        note: `收到${fromGroup?.name ?? fromGroupId}转账${trimmedNote ? `：${trimmedNote}` : ''}`,
-      };
-      const nextTxs = [...get().coinTxs, txOut, txIn];
-      persist(nextTxs);
-      set({ coinTxs: nextTxs });
-
-      // 后端原子记账：余额校验、两笔流水均由后端完成
-      syncToApi(
-        () =>
-          coinsApi.transfer({
-            sourceGroupId: fromGroupId,
-            targetGroupId: toGroupId,
-            amount,
-            note: trimmedNote,
-          }),
-        'coins.transfer'
-      );
+      if (!Number.isSafeInteger(amount) || amount <= 0) throw new Error('转账金额必须为正整数');
+      if (fromGroupId === toGroupId) throw new Error('不能转账给自己小组');
+      const source = getGroupById(fromGroupId);
+      const target = getGroupById(toGroupId);
+      if (!source || !target) throw new Error('小组不存在');
+      if (source.classId !== target.classId) throw new Error('只能操作本班资源');
+      if (source.totalCoins < amount) throw new Error('小组能量币不足');
+      const request: CoinTransferRequest = apiEnabled
+        ? await coinsApi.transfer({ sourceGroupId: fromGroupId, targetGroupId: toGroupId, amount, note: note.trim() })
+        : { id: uid(), sourceGroupId: fromGroupId, targetGroupId: toGroupId, amount,
+            note: note.trim(), requestedBy: user.id, status: 'pending', createdAt: new Date(), reviewNote: '' };
+      if (useAuthStore.getState().userId !== auth.userId) return;
+      const transfers = [request, ...get().transfers];
+      set({ transfers });
+      if (!apiEnabled) saveLS(LS_KEYS.COIN_TRANSFERS, transfers);
     },
 
     settleChallenge: (challenge, solverGroupId, accuracy) => {

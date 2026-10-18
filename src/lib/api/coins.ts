@@ -16,6 +16,20 @@ export interface PersonalRankRow {
   rank: number;
 }
 
+export interface CoinTransferRequest {
+  id: string;
+  sourceGroupId: string;
+  targetGroupId: string;
+  requestedBy: string;
+  amount: number;
+  note: string;
+  status: 'pending' | 'approved' | 'rejected';
+  createdAt: string | Date;
+  reviewedBy?: string | null;
+  reviewedAt?: string | Date | null;
+  reviewNote: string;
+}
+
 export const coinsApi = {
   transactions: (groupId?: string) =>
     api.get<CoinTransaction[]>(`/api/coin-transactions${groupId ? `?group_id=${groupId}` : ''}`),
@@ -32,8 +46,11 @@ export const coinsApi = {
     recruitOpen: boolean;
     recruitMinutes: number | null;
   }) => api.put<ClassMeta>('/api/activity-window', payload),
+  transfers: () => api.get<CoinTransferRequest[]>('/api/coins/transfers'),
+  reviewTransfer: (id: string, decision: 'approve' | 'reject', note: string) =>
+    api.post<CoinTransferRequest>(`/api/coins/transfers/${id}/review`, { decision, note }),
   transfer: (payload: { sourceGroupId: string; targetGroupId: string; amount: number; note?: string }) =>
-    api.post<{ refId: string; sourceBalanceAfter: number; targetBalanceAfter: number }>(
+    api.post<CoinTransferRequest>(
       '/api/coins/transfer',
       payload
     ),

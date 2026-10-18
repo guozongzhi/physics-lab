@@ -8,6 +8,7 @@ export const LS_KEYS = {
   PROJECTS: 'plab_projects',
   RECRUITMENTS: 'plab_recruitments',
   COIN_TXS: 'plab_coin_txs',
+  COIN_TRANSFERS: 'plab_coin_transfers',
   SHOWCASE: 'plab_showcase',
   CLASS_META: 'plab_class_meta',
 } as const;
@@ -32,11 +33,14 @@ export function saveLS<T>(key: string, value: T): void {
 }
 
 /** 在线会话结束时移除业务缓存。与 store 解耦，401 处理亦可安全调用。 */
-export function clearSessionStorage(): void {
+export function clearSessionStorage({ preserveCurrentUser = false }: { preserveCurrentUser?: boolean } = {}): void {
   try {
     for (const key of [
       ...Object.values(LS_KEYS), 'plab_users_cache', 'plab_safety_questions',
-    ]) localStorage.removeItem(key);
+    ]) {
+      if (preserveCurrentUser && key === LS_KEYS.CURRENT_USER) continue;
+      localStorage.removeItem(key);
+    }
   } catch {
     /* 存储不可用时由内存状态和登录跳转收尾 */
   }

@@ -9,9 +9,9 @@ import { useTheoryStore } from '../store/theoryStore';
 import { useProjectStore } from '../store/projectStore';
 import { useCoinStore } from '../store/coinStore';
 import ChangePasswordModal from '../components/ui/ChangePasswordModal';
-import { classesApi, safetyApi, groupsApi, coinsApi, SafetyRecord } from '@/lib/apiService';
+import { safetyApi, groupsApi, coinsApi, SafetyRecord } from '@/lib/apiService';
 import { apiEnabled, getToken } from '@/lib/apiClient';
-import type { User, Project, ProjectStatus } from '@/types';
+import type { Project, ProjectStatus } from '@/types';
 import { X, UserPlus, AlertTriangle, Megaphone, ArrowRight, BookOpen, FlaskConical, Zap } from 'lucide-react';
 import { CommanderHeader } from '@/features/dashboard/components/CommanderHeader';
 import { MissionActionCards } from '@/features/dashboard/components/MissionActionCards';
@@ -70,23 +70,17 @@ export default function Dashboard() {
   const users = useGroupStore((s) => s.users);
   const joinGroup = useGroupStore((s) => s.joinGroup);
 
-  // 同班同学弹窗
+  // 同班同学弹窗。名册直接取 store 里的本班学生——
+  // /api/classes/{id}/students 是教师接口，学生自己调用会被 403 拒绝。
   const [showClassmates, setShowClassmates] = useState(false);
-  const [classmates, setClassmates] = useState<User[]>([]);
-  const [loadingClassmates, setLoadingClassmates] = useState(false);
+  const classmates = useMemo(
+    () => (classId ? users.filter((u) => u.classId === classId) : []),
+    [users, classId]
+  );
 
-  const openClassmates = async () => {
+  const openClassmates = () => {
     if (!classId) return;
     setShowClassmates(true);
-    setLoadingClassmates(true);
-    try {
-      const list = await classesApi.listStudents(classId);
-      setClassmates(list);
-    } catch {
-      pushToast('加载同学名单失败', 'error');
-    } finally {
-      setLoadingClassmates(false);
-    }
   };
 
   const joinableGroups = useMemo(
@@ -297,17 +291,19 @@ export default function Dashboard() {
   }, [projects, groupId]);
 
   const teamRanking: TeamRankItem[] = useMemo(() => {
-    return [...groups]
+    return groups
+      .filter((g) => (role !== 'student' || g.classId === classId) && users.some((u) => u.groupId === g.id))
       .sort((a, b) => b.totalCoins - a.totalCoins)
-      .slice(0, 6)
       .map((g, i) => ({
+        id: g.id,
         rank: i + 1,
         name: g.name,
         level: `LV${levelOf(g.totalCoins)}`,
         coins: g.totalCoins,
+        students: users.filter((user) => user.groupId === g.id).map(({ id, name, avatar }) => ({ id, name, avatar })),
         projects: projects.filter((p) => p.ownerGroupId === g.id).length,
       }));
-  }, [groups, projects]);
+  }, [groups, projects, role, classId, users]);
 
   const labNews: LabNewsItem[] = useMemo(() => {
     return [...coinTxs]
@@ -379,6 +375,8 @@ export default function Dashboard() {
       {/* 1. 指挥官概览 */}
       <CommanderHeader
         user={currentUser}
+        rankings={teamRanking}
+        onOpenLeaderboard={() => navigate('/coins')}
         group={myGroup}
         level={level}
         myCoins={myCoins}
@@ -499,8 +497,8 @@ export default function Dashboard() {
               </h3>
               <button type="button" onClick={() => setShowClassmates(false)} className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"><X size={18} /></button>
             </div>
-            {loadingClassmates ? (
-              <div className="py-8 text-center text-xs text-slate-400">正在检索班级档案…</div>
+            {classmates.length === 0 ? (
+              <div className="py-8 text-center text-xs text-slate-400">本班暂无其他研究员档案</div>
             ) : (
               <div className="grid grid-cols-2 gap-2.5">
                 {classmates.map((c) => (

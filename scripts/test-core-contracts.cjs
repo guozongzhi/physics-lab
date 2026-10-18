@@ -21,7 +21,7 @@ function load(file) {
 }
 const { parseApiDate, autoReviveDate } = load('src/lib/dateReviver.ts');
 const { reviveDates } = load('src/lib/reviveDates.ts');
-const { LS_KEYS } = load('src/lib/storage.ts');
+const { LS_KEYS, clearSessionStorage } = load('src/lib/storage.ts');
 const { api, ApiError, getToken, setToken } = load('src/lib/apiClient.ts');
 const { projectsApi } = load('src/lib/api/projects.ts');
 async function run() {
@@ -39,6 +39,16 @@ async function run() {
   assert.equal(parseApiDate('invalid'), 'invalid');
   assert.equal(parseApiDate(null), null);
   const date = new Date(); assert.equal(autoReviveDate(date), date);
+
+  // 刷新业务快照仍须保留当前身份，外壳挂载后会重新读取它。
+  for (const key of Object.values(LS_KEYS)) context.localStorage.setItem(key, 'private');
+  clearSessionStorage({ preserveCurrentUser: true });
+  assert.equal(context.localStorage.getItem(LS_KEYS.CURRENT_USER), 'private');
+  for (const key of Object.values(LS_KEYS).filter((key) => key !== LS_KEYS.CURRENT_USER)) {
+    assert.equal(context.localStorage.getItem(key), null);
+  }
+  clearSessionStorage();
+  assert.equal(context.localStorage.getItem(LS_KEYS.CURRENT_USER), null);
 
   context.fetch = async () => ({ status: 502, ok: false, statusText: 'Bad Gateway', text: async () => '<html>gateway</html>' });
   await assert.rejects(api.get('/api/test'), (error) => error instanceof ApiError && error.status === 502);

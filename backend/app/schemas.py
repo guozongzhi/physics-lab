@@ -235,12 +235,17 @@ class CoinDelta(BaseModel):
 
 
 class CoinTransfer(CamelModel):
-    """组间能量币转账：两笔交易共享同一 ref_id，由后端原子记账。"""
+    """组长发起转账申请，教师审核通过后原子记账。"""
 
     source_group_id: str
     target_group_id: str
     amount: int = Field(ge=1)
     note: str = Field(default="", max_length=100)
+
+
+class CoinTransferReview(CamelModel):
+    decision: Literal["approve", "reject"]
+    note: str = Field(default="", max_length=200)
 
 
 # ---------- Topic / Question ----------

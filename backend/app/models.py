@@ -68,6 +68,24 @@ class User(Base):
     group: Mapped["Group | None"] = relationship(back_populates="users")
 
 
+class CoinTransferRequest(Base):
+    """待审核转账独立保存；只有审核通过才写入资金流水。"""
+
+    __tablename__ = "coin_transfer_requests"
+
+    id: Mapped[str] = mapped_column(String, primary_key=True)
+    source_group_id: Mapped[str] = mapped_column(ForeignKey("groups.id"), index=True)
+    target_group_id: Mapped[str] = mapped_column(ForeignKey("groups.id"), index=True)
+    requested_by: Mapped[str] = mapped_column(String)
+    amount: Mapped[int] = mapped_column(Integer)
+    note: Mapped[str] = mapped_column(Text, default="")
+    status: Mapped[str] = mapped_column(String, default="pending", index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+    reviewed_by: Mapped[str | None] = mapped_column(String, nullable=True)
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    review_note: Mapped[str] = mapped_column(Text, default="")
+
+
 class CoinTransaction(Base):
     __tablename__ = "coin_transactions"
 

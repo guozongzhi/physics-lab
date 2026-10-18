@@ -1,3 +1,4 @@
+import TransferRequests from '@/components/coins/TransferRequests';
 import type { LucideIcon } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -310,7 +311,10 @@ export default function GroupCommunicator() {
     navigate(`/theory/challenge/${challengeId}/accept`);
   };
   
-  const handleTransfer = () => {
+  const [transferBusy, setTransferBusy] = useState(false);
+  const canTransfer = role === 'student' && isLeader;
+  const handleTransfer = async () => {
+    if (transferBusy || !canTransfer) return;
     if (!groupId) return;
     if (!win.transfer) return pushToast(windowClosedMessage('transfer'), 'warning');
     if (!transferForm.targetGroupId) return pushToast('请选择目标小组', 'warning');
@@ -318,17 +322,17 @@ export default function GroupCommunicator() {
     if (transferForm.amount <= 0) return pushToast('转账金额必须大于0', 'warning');
     if (myCoins < transferForm.amount) return pushToast('能量币不足', 'warning');
 
-    transferCoins(
-      groupId,
-      transferForm.targetGroupId,
-      transferForm.amount,
-      transferForm.note,
-      userId
-    );
-
-    pushToast('转账成功！', 'success');
-    setActiveDialog(null);
-    setTransferForm({ targetGroupId: '', amount: 0, note: '' });
+    setTransferBusy(true);
+    try {
+      await transferCoins(groupId, transferForm.targetGroupId, transferForm.amount, transferForm.note, userId);
+      pushToast('转账申请已提交，等待老师审核', 'success');
+      setActiveDialog(null);
+      setTransferForm({ targetGroupId: '', amount: 0, note: '' });
+    } catch (error) {
+      pushToast(error instanceof Error ? error.message : '提交失败，请重试', 'error');
+    } finally {
+      setTransferBusy(false);
+    }
   };
   
   const handlePlaceBid = () => {
@@ -591,21 +595,23 @@ export default function GroupCommunicator() {
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <h2 className="font-serif text-lg font-semibold text-physics-800">能量币转账</h2>
-              <button
+              {canTransfer && <button
                 onClick={() => setActiveDialog('createTransfer')}
                 className="btn-primary text-sm"
               >
                 <Send size={16} />
-                发起转账
-              </button>
+                发起转账申请
+              </button>}
             </div>
 
+            <TransferRequests />
             <div className="rounded-[24px] bg-gradient-to-br from-nova-50/70 via-white/90 to-mission-50/50 border border-nova-100/50 p-6">
               <h3 className="font-serif font-semibold text-physics-800 mb-1 flex items-center gap-2">
                 <Coins size={18} className="text-nova-500" />
                 能量币流水
               </h3>
-              <p className="text-xs text-ink-500 mb-4">本组全部收支记录（含组间转账、挑战、招募、项目结算）</p>
+              <button type="button" className="btn-ghost-mission text-sm mb-3" onClick={() => navigate('/coins?view=ledger')}>查看全部流水与余额</button>
+              <p className="text-xs text-ink-500 mb-4">本组最近 10 笔收支记录（含组间转账、挑战、招募、项目结算）</p>
               {myCoinTxs.length === 0 ? (
                 <div className="text-center py-8 text-ink-400">
                   <Coins size={32} className="mx-auto mb-2 opacity-40" />
@@ -623,10 +629,10 @@ export default function GroupCommunicator() {
               )}
             </div>
 
-            <div className="rounded-[24px] bg-gradient-to-br from-energy-50/70 via-white/90 to-alert-50/50 border border-energy-100/50 p-6">
+            {canTransfer && <div className="rounded-[24px] bg-gradient-to-br from-energy-50/70 via-white/90 to-alert-50/50 border border-energy-100/50 p-6">
               <h3 className="font-serif font-semibold text-physics-800 mb-4 flex items-center gap-2">
                 <Send size={18} className="text-energy-500" />
-                快速转账
+                快速申请转账
               </h3>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                 {otherGroups.map((g) => (
@@ -664,7 +670,7 @@ export default function GroupCommunicator() {
                   </div>
                 ))}
               </div>
-            </div>
+            </div>}
 
           </div>
         )}
@@ -761,7 +767,7 @@ export default function GroupCommunicator() {
         </div>
       )}
       
-      {activeDialog === 'createTransfer' && (
+      {activeDialog === 'createTransfer' && canTransfer && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink-900/40 backdrop-blur-sm">
           <div className="bg-white rounded-2xl shadow-cardLifted w-full max-w-md">
             <div className="flex items-center justify-between p-5 border-b border-ink-100">
@@ -801,13 +807,14 @@ export default function GroupCommunicator() {
                   value={transferForm.note}
                   onChange={(e) => setTransferForm({ ...transferForm, note: e.target.value })}
                   className="input"
+                  maxLength={100}
                   placeholder="例如：友谊赛奖励"
                 />
               </div>
             </div>
             <div className="p-5 border-t border-ink-100 flex justify-end gap-3">
               <button onClick={() => setActiveDialog(null)} className="btn-ghost">取消</button>
-              <button onClick={handleTransfer} className="btn-primary">确认转账</button>
+              <button onClick={handleTransfer} disabled={transferBusy} className="btn-primary">{transferBusy ? '提交中…' : '提交老师审核'}</button>
             </div>
           </div>
         </div>

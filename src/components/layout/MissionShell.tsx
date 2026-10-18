@@ -139,6 +139,9 @@ function MissionHeader({ onOpenNav, onOpenSearch }: { onOpenNav: () => void; onO
       if (apiEnabled) {
         const profile = await usersApi.updateAvatar(userId, selectedAvatar);
         setAccountProfile(profile);
+        useGroupStore.setState((state) => ({
+          users: state.users.map((user) => user.id === profile.id ? { ...user, avatar: profile.avatar } : user),
+        }));
       } else {
         useGroupStore.getState().updateUserAvatar(userId, selectedAvatar);
       }

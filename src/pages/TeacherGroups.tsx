@@ -1,3 +1,4 @@
+import TransferRequests from '@/components/coins/TransferRequests';
 import type { LucideIcon } from 'lucide-react';
 import { applyAvatarFallback } from '@/lib/imageFallback';
 import { useEffect, useMemo, useState } from 'react';
@@ -396,6 +397,7 @@ export default function TeacherGroups() {
   return (
     <>
       <div className="space-y-6">
+        <TransferRequests teacher />
         <motion.section
           initial={{ opacity: 0, y: 18 }}
           animate={{ opacity: 1, y: 0 }}
@@ -574,7 +576,7 @@ export default function TeacherGroups() {
           </div>
 
           <p className="mt-4 text-[12px] text-ink-500">
-            开关和时长改完立刻生效，不需要保存。组间转账不单设开关：任一窗口开着时学生即可转账。
+            开关和时长改完立刻生效，不需要保存。组间转账不单设开关：任一窗口开着时组长即可提交转账申请，老师审核通过后生效。
           </p>
         </motion.section>
 

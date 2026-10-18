@@ -115,12 +115,23 @@ def test_transfer_success(client, auth, db):
     )
     assert resp.status_code == 200
     body = resp.json()
-    assert body["sourceBalanceAfter"] == 450
-    assert body["targetBalanceAfter"] == 350
+    assert body["status"] == "pending"
+    assert _balances(client, auth)["g-1"] == 500
+    assert _balances(client, auth)["g-2"] == 300
+    assert db.query(CoinTransaction).count() == 0
+    reviewed = client.post(f"/api/coins/transfers/{body['id']}/review",
+                           json={"decision": "approve", "note": "同意"},
+                           headers=auth("teacher", "teacher123"))
+    assert reviewed.status_code == 200
+    assert reviewed.json()["status"] == "approved"
+    assert reviewed.json()["reviewedBy"] == "teacher"
+    assert reviewed.json()["reviewNote"] == "同意"
+    assert _balances(client, auth)["g-1"] == 450
+    assert _balances(client, auth)["g-2"] == 350
 
-    # 收支两笔流水共享同一 refId
+    # 收支两笔流水共享同一申请 id
     db.expire_all()
-    txs = db.query(CoinTransaction).filter(CoinTransaction.ref_id == body["refId"]).all()
+    txs = db.query(CoinTransaction).filter(CoinTransaction.ref_id == body["id"]).all()
     assert {t.delta for t in txs} == {50, -50}
     assert {t.source for t in txs} == {"transfer"}
 

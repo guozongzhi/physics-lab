@@ -52,3 +52,12 @@ TEACHER_PASSWORD=
 STUDENT_DEFAULT_PASSWORD=
 CORS_ORIGINS=http://localhost:5173,http://localhost:5174
 ```
+
+## 能量币转账审核
+
+- `POST /api/coins/transfer`：仅学生组长可从本组向本班其他小组提交申请，返回 `pending`，不改余额、不生成资金流水；沿用课堂开放窗口限制。
+- `GET /api/coins/transfers`：学生查看本组收付款申请，教师按班级权限查看审核记录。
+- `POST /api/coins/transfers/{id}/review`：教师提交 `{"decision":"approve"或"reject","note":"审核意见"}`。通过时重新校验余额，同一事务完成审核状态和双方流水；余额不足保留待审核状态，重复审核返回 409。窗口关闭不阻止教师审核已有申请。
+- 教师仍可用 `POST /api/groups/{id}/coins`、`POST /api/users/{id}/coins` 直接增减小组或个人能量币，无需转账审核；前端入口在教师“小组管理”的“±能量币”及成员管理中。
+
+后端启动时自动创建转账申请表，保留既有余额与流水。前后端需一并更新，旧客户端应刷新页面后使用。

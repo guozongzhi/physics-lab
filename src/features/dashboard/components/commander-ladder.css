@@ -1,0 +1,28 @@
+.commander-ladder-panel { padding: 10px; border: 1px solid #fff9; border-radius: 15px; background: linear-gradient(145deg,#ffffffb8,#eff5ff70); box-shadow: 0 4px 16px #31558f08,inset 0 1px 0 #fff9; }
+.commander-ladder-heading { display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-bottom: 7px; }
+.commander-ladder-heading h2 { display: flex; align-items: center; gap: 6px; color: #29436a; font-size: 12px; font-weight: 750; white-space: nowrap; }
+.commander-ladder-emblem { display: grid; place-items: center; width: 24px; height: 24px; border: 1px solid #f5cf7966; border-radius: 8px; background: linear-gradient(145deg,#fff5d8,#ffe6ad); color: #a57518; }
+.commander-ladder-heading button { display: inline-flex; align-items: center; gap: 1px; border-radius: 5px; color: #5475ba; font-size: 10px; white-space: nowrap; }
+.commander-ladder-heading button:hover { color: #245cdb; }
+.commander-ladder-heading button:focus-visible { outline: 2px solid #4779eb; outline-offset: 3px; }
+.commander-ladder-list { display: grid; gap: 3px; max-height: 157px; overflow-y: auto; scrollbar-width: thin; }
+.commander-ladder-team { display: flex; align-items: center; gap: 7px; min-width: 0; padding: 1px 5px; border: 1px solid transparent; border-radius: 8px; color: #5c7090; }
+.commander-ladder-team.is-mine { border-color: #acc5ff80; background: linear-gradient(100deg,#dbe8ffb0,#eff3ffb0); color: #315bc1; }
+.commander-ladder-medal { display: grid; place-items: center; flex-shrink: 0; width: 19px; height: 19px; border-radius: 6px; font-size: 10px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.commander-ladder-medal.place-1 { color: #8f5b0c; background: linear-gradient(135deg,#fff7d4,#edbf61); box-shadow: inset 0 0 0 1px #e8bb5980,0 1px 2px #bc883c20; }
+.commander-ladder-medal.place-2 { color: #506781; background: linear-gradient(135deg,#f7fbff,#bfd0e3); box-shadow: inset 0 0 0 1px #acbfd280; }
+.commander-ladder-medal.place-3 { color: #92552f; background: linear-gradient(135deg,#ffecdb,#dcae89); box-shadow: inset 0 0 0 1px #ca956c66; }
+.commander-ladder-medal.place-4 { color: #8093b2; }
+.commander-ladder-detail { flex: 1; min-width: 0; }
+.commander-ladder-name { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; line-height: 14px; font-weight: 550; }
+.commander-ladder-track { display: block; height: 2px; margin-top: 2px; overflow: hidden; border-radius: 3px; background: #c8d6ed55; }
+.commander-ladder-track > span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg,#a4bce9,#6f96de); }
+.commander-ladder-team:first-child .commander-ladder-track > span { background: linear-gradient(90deg,#efce86,#d4a543); }
+.commander-ladder-team.is-mine .commander-ladder-track > span { background: linear-gradient(90deg,#7da5ff,#7465e5); }
+.commander-ladder-coins { display: flex; align-items: center; gap: 4px; flex-shrink: 0; font-size: 11px; font-weight: 750; font-variant-numeric: tabular-nums; color: #344d77; }
+.commander-ladder-coin { display: grid; place-items: center; width: 12px; height: 12px; border: 1px solid #dfb34e; border-radius: 50%; color: #9e6c14; background: linear-gradient(135deg,#fff4c7,#f0cd72); font-size: 10px; line-height: 1; box-shadow: inset 0 0 0 1px #fff3bf; }
+.dark .commander-ladder-panel { border-color: #7893be30; background: linear-gradient(145deg,#253e5dba,#152c4970); box-shadow: inset 0 1px 0 #abc4ec15; }
+.dark .commander-ladder-heading h2,.dark .commander-ladder-coins { color: #d9e6fb; }
+.dark .commander-ladder-heading button { color: #9cbaff; }
+.dark .commander-ladder-team { color: #a5b9d7; }
+.dark .commander-ladder-team.is-mine { color: #c1d6ff; border-color: #688cda66; background: #3c62a533; }

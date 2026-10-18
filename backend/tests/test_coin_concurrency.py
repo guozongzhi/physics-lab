@@ -72,3 +72,39 @@ def test_rollback_reverts_balance_and_ledger(sessions):
     with sessions() as db:
         assert db.get(Group, 'g').total_coins == 100
         assert db.query(CoinTransaction).count() == 0
+
+
+def test_concurrent_transfer_reviews_settle_once(sessions):
+    from fastapi import HTTPException
+    from app.models import CoinTransferRequest, User
+    from app.routers.coins import review_transfer
+    from app.schemas import CoinTransferReview
+
+    with sessions() as db:
+        db.add(Group(id='target', name='收款组', total_coins=0))
+        db.add(CoinTransferRequest(id='request', source_group_id='g', target_group_id='target',
+                                   requested_by='leader', amount=80))
+        db.commit()
+    ready = Barrier(2)
+
+    def approve(index):
+        with sessions() as db:
+            # 两个会话都提前读到 pending，验证条件更新而非内存状态检查。
+            assert db.get(CoinTransferRequest, 'request').status == 'pending'
+            ready.wait(timeout=5)
+            teacher = User(id=f'teacher-{index}', account_role='teacher', class_id=None)
+            try:
+                review_transfer('request', CoinTransferReview(decision='approve'), db, teacher)
+                return 200
+            except HTTPException as exc:
+                db.rollback()
+                return exc.status_code
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        outcomes = list(pool.map(approve, range(2)))
+    assert sorted(outcomes) == [200, 409]
+    with sessions() as db:
+        assert db.get(Group, 'g').total_coins == 20
+        assert db.get(Group, 'target').total_coins == 80
+        assert db.query(CoinTransaction).count() == 2
+        assert db.get(CoinTransferRequest, 'request').status == 'approved'

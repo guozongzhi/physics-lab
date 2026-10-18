@@ -22,8 +22,9 @@ export function clearBusinessData(): void {
   useProjectStore.setState({ projects: [], recruitments: [], showcaseItems: [] });
   useTheoryStore.setState({ topics: [], questions: [], challenges: [], quizSessions: [] });
   useSafetyStore.setState({ questions: [] });
-  useCoinStore.setState({ coinTxs: [] });
-  clearPersonalKeys();
+  useCoinStore.setState({ coinTxs: [], transfers: [] });
+  // 数据重新引导时外壳还会 initAuth，必须保留当前登录身份。
+  clearSessionStorage({ preserveCurrentUser: true });
 }
 
 /** 只清 localStorage 里的个人数据。401 分支做整页跳转、拿不到 store 时也能单独用。 */

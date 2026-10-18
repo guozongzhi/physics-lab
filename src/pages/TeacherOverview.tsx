@@ -169,6 +169,7 @@ export default function TeacherOverview() {
         coins: g.totalCoins,
         classId: g.classId,
         memberCount: users.filter((u) => u.groupId === g.id).length,
+        students: users.filter((user) => user.groupId === g.id).map(({ id, name, avatar }) => ({ id, name, avatar })),
       }))
       .filter((g) => g.memberCount > 0);
   }, [groups, users]);

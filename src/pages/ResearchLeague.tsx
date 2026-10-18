@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import EnergyLedger from '@/components/coins/EnergyLedger';
 import { motion } from 'framer-motion';
 import {
   Trophy,
@@ -15,6 +17,8 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts';
+import EnergyLadder from '@/components/leaderboard/EnergyLadder';
+import type { EnergyStudent } from '@/components/leaderboard/RankAvatars';
 import AvatarStack from '@/components/ui/AvatarStack';
 import { useGroupStore } from '@/store/groupStore';
 import { useAuthStore } from '@/store/authStore';
@@ -23,13 +27,12 @@ import { classesApi } from '@/lib/apiService';
 import type { SchoolClass } from '@/types';
 import { cn, formatAxisTick } from '@/lib/utils';
 
-type TabKey = 'total' | 'month' | 'week' | 'personal';
+type TabKey = 'total' | 'month' | 'week';
 
 const TABS: Array<{ key: TabKey; label: string }> = [
   { key: 'total', label: '小组总榜' },
   { key: 'month', label: '月榜' },
   { key: 'week', label: '周榜' },
-  { key: 'personal', label: '个人榜' },
 ];
 
 const GROUP_COLORS = [
@@ -44,8 +47,10 @@ const GROUP_COLORS = [
 export default function ResearchLeague() {
   const { groups, users, classMeta } = useGroupStore();
   const { coinTxs } = useCoinStore();
-  const { classId: myClassId, role } = useAuthStore();
+  const { classId: myClassId, role, groupId } = useAuthStore();
   const [tab, setTab] = useState<TabKey>('total');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const showLedger = searchParams.get('view') === 'ledger';
   const DAY = 86400000;
 
   const [classes, setClasses] = useState<SchoolClass[]>([]);
@@ -84,30 +89,16 @@ export default function ResearchLeague() {
     const coinOf = (g: { id: string; totalCoins: number }) =>
       tab === 'week' ? periodSum.week[g.id] || 0 :
       tab === 'month' ? periodSum.month[g.id] || 0 : g.totalCoins;
-    const map: Record<string, { classId: string; className: string; rows: { groupId: string; name: string; coins: number; memberCount: number }[] }> = {};
+    const map: Record<string, { classId: string; className: string; rows: { groupId: string; name: string; coins: number; memberCount: number; students: EnergyStudent[] }[] }> = {};
     for (const g of memberedGroups) {
       const cid = g.classId || 'unknown';
       if (!map[cid]) map[cid] = { classId: cid, className: cid === 'unknown' ? '未分班小组' : classesById[cid] || cid, rows: [] };
-      map[cid].rows.push({ groupId: g.id, name: g.name, coins: coinOf(g), memberCount: g.memberCount });
+      map[cid].rows.push({ groupId: g.id, name: g.name, coins: coinOf(g), memberCount: g.memberCount, students: users.filter((user) => user.groupId === g.id).map(({ id, name, avatar }) => ({ id, name, avatar })) });
     }
     return Object.values(map)
       .map((c) => ({ ...c, rows: [...c.rows].sort((a, b) => b.coins - a.coins) }))
       .sort((a, b) => a.className.localeCompare(b.className));
-  }, [memberedGroups, classesById, tab, periodSum]);
-
-  // 个人榜：按 personalCoins，按班级分组
-  const personalByClass = useMemo(() => {
-    const map: Record<string, { classId: string; className: string; rows: { userId: string; name: string; coins: number }[] }> = {};
-    for (const u of users) {
-      if (!(isStaff || u.classId === myClassId)) continue;
-      const cid = u.classId || 'unknown';
-      if (!map[cid]) map[cid] = { classId: cid, className: cid === 'unknown' ? '未分班小组' : classesById[cid] || cid, rows: [] };
-      map[cid].rows.push({ userId: u.id, name: u.name, coins: u.personalCoins });
-    }
-    return Object.values(map)
-      .map((c) => ({ ...c, rows: [...c.rows].sort((a, b) => b.coins - a.coins) }))
-      .sort((a, b) => a.className.localeCompare(b.className));
-  }, [users, classesById, myClassId, isStaff]);
+  }, [memberedGroups, classesById, tab, periodSum, users]);
 
   // 近 30 天各小组「真实余额」走势。
   // 流水只记录增减，不能从 0 累加——那算出的是净增减，会出现负值，也和排行榜余额对不上。
@@ -176,8 +167,6 @@ export default function ResearchLeague() {
       .slice(0, 3);
   }, [memberedGroups, periodSum]);
 
-  const isPersonal = tab === 'personal';
-
   return (
     <>
       <div className="space-y-6">
@@ -205,15 +194,19 @@ export default function ResearchLeague() {
             <div className="flex flex-wrap items-end justify-between gap-6">
               <div>
                 <h1 className="text-[32px] md:text-[36px] font-extrabold text-ink-900 leading-[1.1] tracking-tight">
-                  Research League
-                  <span className="block text-gradient-mission mt-1">科研联赛榜</span>
+                  {showLedger ? '能量币账本' : '小组能量天梯'}
+                  <span className="block text-gradient-mission mt-1 text-[18px] md:text-[22px]">科研联赛 · 每一份努力都算数</span>
                 </h1>
                 <p className="mt-2 text-[14px] text-ink-500 max-w-lg">
-                  按小组能量币排定的赛季排名。前三甲将获得年度学术晚宴邀请函 🏆
+                  按小组能量排名争夺冠亚季军，查看各组成员头像，也可查阅每笔能量币收支。
                 </p>
               </div>
               <div className="glass-card !shadow-none p-1.5 rounded-2xl border-mission-100/70 flex flex-wrap gap-1">
-                {TABS.map((t) => (
+                <button type="button" aria-pressed={showLedger} onClick={() => setSearchParams(showLedger ? {} : { view: 'ledger' })}
+                  className="px-4 py-2 rounded-xl text-[13px] font-semibold bg-white/80 text-mission-700">
+                  {showLedger ? '返回小组排名' : '详细流水'}
+                </button>
+                {!showLedger && TABS.map((t) => (
                   <button
                     key={t.key}
                     onClick={() => setTab(t.key)}
@@ -232,13 +225,13 @@ export default function ResearchLeague() {
           </div>
         </motion.section>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          <div className="col-span-12 xl:col-span-8 space-y-6">
+        {showLedger ? <EnergyLedger /> : <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
+          <div className="min-w-0 xl:col-span-8 space-y-6">
             <div className="space-y-5">
-              {(isPersonal ? personalByClass : rankingByClass).length === 0 ? (
+              {rankingByClass.length === 0 ? (
                 <div className="glass-card p-10 text-center text-ink-400 text-[13px]">暂无排名数据</div>
               ) : (
-                (isPersonal ? personalByClass : rankingByClass).map((cls) => (
+                rankingByClass.map((cls) => (
                   <motion.section
                     key={cls.classId}
                     initial={{ opacity: 0, y: 20 }}
@@ -252,56 +245,22 @@ export default function ResearchLeague() {
                         {cls.className}
                       </h3>
                       <span className="text-[11px] text-ink-400">
-                        {cls.rows.length} {isPersonal ? '人' : '个小组'} · {tab === 'week' ? '本周' : tab === 'month' ? '本月' : '累计'}
+                        {cls.rows.length} 个小组 · {tab === 'week' ? '本周' : tab === 'month' ? '本月' : '累计'}
                       </span>
                     </div>
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-[13px]">
-                        <thead>
-                          <tr className="text-[11px] text-ink-400 font-semibold uppercase tracking-wider">
-                            <th className="text-left py-3 px-2 font-medium">名次</th>
-                            <th className="text-left py-3 px-2 font-medium">{isPersonal ? '学生' : '小组'}</th>
-                            {!isPersonal && <th className="text-left py-3 px-2 font-medium">组员</th>}
-                            <th className="text-right py-3 px-2 font-medium">能量 ⚡</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {cls.rows.map((r, i) => (
-                            <motion.tr
-                              key={('groupId' in r ? r.groupId : r.userId)}
-                              initial={{ opacity: 0, x: -10 }}
-                              animate={{ opacity: 1, x: 0 }}
-                              transition={{ duration: 0.35, delay: 0.15 + i * 0.05 }}
-                              className="border-t border-ink-100/60 hover:bg-mission-50/30 transition rounded-lg"
-                            >
-                              <td className="py-3 px-2">
-                                <div className={cn(
-                                  'w-8 h-8 rounded-xl flex items-center justify-center font-black tabular-nums text-[14px]',
-                                  i === 0 ? 'bg-gradient-to-br from-alert-400 to-energy-500 text-white' :
-                                  i === 1 ? 'bg-gradient-to-br from-ink-300 to-ink-500 text-white' :
-                                  i === 2 ? 'bg-gradient-to-br from-orange-400 to-orange-600 text-white' :
-                                  'bg-ink-100 text-ink-600'
-                                )}>
-                                  {i + 1}
-                                </div>
-                              </td>
-                              <td className="py-3 px-2 font-semibold text-ink-800">{r.name}</td>
-                              {!isPersonal && <td className="py-3 px-2 text-ink-500">{('memberCount' in r ? r.memberCount : 0)} 人</td>}
-                              <td className="py-3 px-2 text-right font-bold tabular-nums text-ink-800">
-                                {r.coins.toLocaleString()} ⚡
-                              </td>
-                            </motion.tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
+                    <EnergyLadder
+                      key={tab}
+                      rows={cls.rows.map((row) => ({ ...row, id: row.groupId }))}
+                      highlightId={groupId}
+                      metric={tab === 'week' ? '近 7 天净增' : tab === 'month' ? '近 30 天净增' : '小组累计能量'}
+                    />
                   </motion.section>
                 ))
               )}
             </div>
           </div>
 
-          <div className="col-span-12 xl:col-span-4 space-y-6">
+          <div className="min-w-0 xl:col-span-4 space-y-6">
             <motion.section
               initial={{ opacity: 0, x: 16 }}
               animate={{ opacity: 1, x: 0 }}
@@ -311,7 +270,7 @@ export default function ResearchLeague() {
               <div className="flex items-center justify-between mb-4">
                 <h3 className="flex items-center gap-2 text-[15px] font-bold text-ink-800">
                   <TrendingUp size={18} className="text-mission-500" />
-                  Season Trends
+                  能量成长轨迹
                 </h3>
                 <span className="text-[10px] font-mono text-ink-400">近 30 天余额</span>
               </div>
@@ -409,7 +368,7 @@ export default function ResearchLeague() {
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="flex items-center gap-2 text-[15px] font-bold text-ink-800">
                     <Flame size={18} className="text-energy-500" />
-                    Most Valuable Teams
+                    本周活跃小组
                   </h3>
                   <span className="chip-growth !py-0.5 !px-2 text-[10px]">本周 MVP</span>
                 </div>
@@ -464,7 +423,7 @@ export default function ResearchLeague() {
               </div>
             </motion.section>
           </div>
-        </div>
+        </div>}
       </div>
     </>
   );
