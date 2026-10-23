@@ -1,5 +1,19 @@
-import { api } from '../apiClient';
+import { api, ApiError, getToken } from '../apiClient';
 import type { Project, Recruitment, ShowcaseCategory, ShowcaseItem } from '../../types';
+
+const RAW_BASE = (import.meta.env.VITE_API_BASE_URL || '').trim();
+const API_BASE = RAW_BASE === '/' ? '' : RAW_BASE.replace(/\/$/, '');
+
+/** 将相对视频路径 `/api/showcase/video/...` 解析为可跨端口播放的完整 URL */
+export function resolveShowcaseVideoUrl(src: string): string {
+  const trimmed = (src || '').trim();
+  if (!trimmed) return '';
+  if (trimmed.startsWith('/api/') && API_BASE) {
+    return `${API_BASE}${trimmed}`;
+  }
+  return trimmed;
+}
+
 
 // ---------- Projects / Recruitments / Showcase ----------
 export const projectsApi = {
@@ -69,4 +83,51 @@ export const showcaseApi = {
     showcaseId: string,
     payload: { action: 'approve' | 'reject'; coins?: number; reason?: string }
   ) => api.post<ShowcaseItem>(`/api/showcase/${showcaseId}/review`, payload),
+  /** 流式上传最大 100 MB 的实验视频文件，支持实时进度回调 (0~100) */
+  uploadVideo: (
+    file: File,
+    onProgress?: (percent: number) => void
+  ): Promise<{ url: string; filename: string; size: number }> => {
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', `${API_BASE}/api/showcase/video`, true);
+      const token = getToken();
+      if (token) {
+        xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+      }
+      if (onProgress) {
+        xhr.upload.onprogress = (ev) => {
+          if (ev.lengthComputable && ev.total > 0) {
+            onProgress(Math.min(100, Math.round((ev.loaded / ev.total) * 100)));
+          }
+        };
+      }
+      xhr.onload = () => {
+        let data: { url?: string; filename?: string; size?: number; detail?: string } = {};
+        try {
+          data = JSON.parse(xhr.responseText || '{}');
+        } catch {
+          // ignore
+        }
+        if (xhr.status >= 200 && xhr.status < 300 && data.url) {
+          resolve({
+            url: data.url,
+            filename: data.filename || '',
+            size: data.size || file.size,
+          });
+        } else {
+          reject(
+            new ApiError(
+              xhr.status || 400,
+              typeof data.detail === 'string' ? data.detail : `视频上传失败 (HTTP ${xhr.status})`
+            )
+          );
+        }
+      };
+      xhr.onerror = () => reject(new TypeError('网络连接失败，视频上传中断'));
+      const formData = new FormData();
+      formData.append('file', file);
+      xhr.send(formData);
+    });
+  },
 };

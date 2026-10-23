@@ -370,12 +370,123 @@ def build_showcase(db: Session, projects: list[Project], groups: list[Group]) ->
                 loves=8 + i * 3,
                 loved_by=[],
                 created_at=_now() - timedelta(days=i + 1),
-                # 种子作品视为已通过审批，避免全新库一上来全是"待审批"
                 status="approved",
                 reject_reason="",
-                awarded_coins=0,
+                awarded_coins=30 if i == 0 else 0,
+                category="award" if i == 0 else "photo",
             )
         )
+
+    first_gid = groups[0].id if groups else ""
+    second_gid = groups[1].id if len(groups) > 1 else first_gid
+    multimodal_demos = [
+        ShowcaseItem(
+            id="sc-demo-optics",
+            project_id="",
+            title="平台内置 Demo：几何光学三棱镜色散与折射率仿真",
+            cover_image=SHOWCASE_IMAGES[0],
+            group_id="",
+            author_user_id="admin",
+            demo_kind="optics",
+            html_content="",
+            description="支持实时拖动入射角与材质折射率 n，动态观察白光色散、临界全反射与光强变化。",
+            loves=26,
+            loved_by=[],
+            created_at=_now() - timedelta(days=2),
+            status="approved",
+            reject_reason="",
+            awarded_coins=0,
+            category="photo",
+        ),
+        ShowcaseItem(
+            id="sc-demo-motor",
+            project_id="",
+            title="平台内置 Demo：直流电动机通电线圈转矩与换向器仿真",
+            cover_image=SHOWCASE_IMAGES[1],
+            group_id="",
+            author_user_id="admin",
+            demo_kind="motor",
+            html_content="",
+            description="调节磁感应强度 B 与电枢电流 I，实时显示转子角速度 ω、转矩 τ 及电磁感应状态。",
+            loves=22,
+            loved_by=[],
+            created_at=_now() - timedelta(days=2),
+            status="approved",
+            reject_reason="",
+            awarded_coins=0,
+            category="photo",
+        ),
+        ShowcaseItem(
+            id="sc-demo-paper-em",
+            project_id="",
+            title="洛伦兹力与环形磁场约束电子束比荷测定报告",
+            cover_image=SHOWCASE_IMAGES[2],
+            group_id=first_gid,
+            author_user_id="",
+            demo_kind="",
+            html_content=(
+                "<!--PAPER_MD--># 洛伦兹力与环形磁场约束电子束比荷测定报告\n\n"
+                "## 一、实验目的与原理\n"
+                "利用亥姆霍兹线圈产生均匀磁场 $B$，观测加速电子束在洛伦兹力作用下的圆周运动半径 $R$：\n"
+                "- 向心力平衡方程：`q * v * B = m * v^2 / R`\n"
+                "- 比荷计算公式：`q / m = 2U / (B^2 * R^2)`\n\n"
+                "## 二、实验测量数据记录\n"
+                "| 实验组次 | 加速电压 U (V) | 励磁电流 I (A) | 磁感应强度 B (mT) | 轨迹半径 R (cm) | 相对误差 (%) |\n"
+                "| :--- | :--- | :--- | :--- | :--- | :--- |\n"
+                "| 第 1 组 | 150.0 | 1.20 | 1.42 | 5.82 | 1.4% |\n"
+                "| 第 2 组 | 200.0 | 1.40 | 1.65 | 5.76 | 1.1% |\n"
+                "| 第 3 组 | 250.0 | 1.60 | 1.89 | 5.64 | 0.9% |\n\n"
+                "## 三、误差分析与结论\n"
+                "通过正反向励磁电流消除地磁场垂直分量系统误差后，比荷实测平均值与公认值吻合度达 **98.9%**。"
+            ),
+            description="包含完整公式推导、3 组正反向消磁实测数据表格与不确定度评估的电磁学标准研究论文范例。",
+            loves=19,
+            loved_by=[],
+            created_at=_now() - timedelta(days=1),
+            status="approved",
+            reject_reason="",
+            awarded_coins=40,
+            category="paper",
+        ),
+        ShowcaseItem(
+            id="sc-demo-model-helmholtz",
+            project_id="",
+            title="亥姆霍兹双线圈匀强磁场实验台三维模型",
+            cover_image=SHOWCASE_IMAGES[3],
+            group_id=second_gid,
+            author_user_id="",
+            demo_kind="",
+            html_content="<!--MODEL_3D:preset-->helmholtz",
+            description="平行同轴双圆环励磁线圈（间距等于半径 R）与中心霍尔传感器探测杆三维结构模型，支持 360° 旋转与线框检视。",
+            loves=17,
+            loved_by=[],
+            created_at=_now() - timedelta(days=1),
+            status="approved",
+            reject_reason="",
+            awarded_coins=35,
+            category="model",
+        ),
+        ShowcaseItem(
+            id="sc-demo-model-cyclotron",
+            project_id="",
+            title="回旋加速器双 D 形盒真空电极三维结构",
+            cover_image=SHOWCASE_IMAGES[0],
+            group_id=first_gid,
+            author_user_id="",
+            demo_kind="",
+            html_content="<!--MODEL_3D:preset-->cyclotron",
+            description="展示劳伦斯回旋加速器双半圆柱真空 D 形磁极盒与高频交变电场加速狭缝结构。",
+            loves=15,
+            loved_by=[],
+            created_at=_now() - timedelta(days=1),
+            status="approved",
+            reject_reason="",
+            awarded_coins=0,
+            category="model",
+        ),
+    ]
+    for item in multimodal_demos:
+        db.add(item)
 
 
 def ensure_safety_questions(db: Session) -> int:

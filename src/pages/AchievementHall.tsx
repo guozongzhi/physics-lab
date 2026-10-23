@@ -7,6 +7,7 @@ import VideoShowcasePlayer from '@/components/showcase/VideoShowcasePlayer';
 import PaperArticleReader from '@/components/showcase/PaperArticleReader';
 import Model3DViewer from '@/components/showcase/Model3DViewer';
 import ShowcaseContentRenderer from '@/components/showcase/ShowcaseContentRenderer';
+import UploadGuidePanel from '@/components/showcase/UploadGuidePanel';
 import { motion } from 'framer-motion';
 import {
   Trophy,
@@ -52,8 +53,11 @@ import { showcaseApi } from '@/lib/api/projects';
 import { reviveDates } from '@/lib/reviveDates';
 import {
   MAX_SHOWCASE_PAYLOAD_BYTES,
+  MAX_VIDEO_FILE_BYTES,
   PAPER_MARKDOWN_TEMPLATE,
+  PAPER_TEMPLATES,
   HTML_SIM_TEMPLATE,
+  HTML_SIM_TEMPLATES,
   PRESET_3D_MODELS,
   captureVideoFrame,
   encodeShowcaseMedia,
@@ -180,6 +184,8 @@ export default function AchievementHall() {
   const [htmlError, setHtmlError] = useState('');
   const [saveError, setSaveError] = useState('');
   const [saving, setSaving] = useState(false);
+  const [videoUploading, setVideoUploading] = useState(false);
+  const [videoUploadProgress, setVideoUploadProgress] = useState(0);
   const [showHtmlCodeEditor, setShowHtmlCodeEditor] = useState(false);
   const [paperPreviewMode, setPaperPreviewMode] = useState(false);
 
@@ -324,23 +330,41 @@ export default function AchievementHall() {
     const file = e.target.files?.[0];
     if (!file) return;
     e.target.value = '';
-    if (!file.type.startsWith('video/') && !/\.(mp4|webm|mov|ogg)$/i.test(file.name)) {
+    if (!file.type.startsWith('video/') && !/\.(mp4|webm|mov)$/i.test(file.name)) {
       setHtmlError('请选择有效的视频文件（.mp4 / .webm / .mov）');
       return;
     }
-    const reader = new FileReader();
-    reader.onloadend = async () => {
-      const dataUrl = reader.result as string;
-      const encoded = encodeShowcaseMedia({ kind: 'video', videoSrc: dataUrl });
-      if (!setEncodedMedia(encoded)) return;
-      if (!uploadForm.imageUrl) {
-        const poster = await captureVideoFrame(file);
-        if (poster) {
-          setUploadForm((prev) => ({ ...prev, imageUrl: prev.imageUrl || poster }));
-        }
+    if (file.size > MAX_VIDEO_FILE_BYTES) {
+      setHtmlError('视频文件超出 100 MB 上限，请适当压缩或裁剪后再上传');
+      return;
+    }
+    setHtmlError('');
+    if (!uploadForm.imageUrl) {
+      const poster = await captureVideoFrame(file);
+      if (poster) {
+        setUploadForm((prev) => ({ ...prev, imageUrl: prev.imageUrl || poster }));
       }
-    };
-    reader.readAsDataURL(file);
+    }
+    if (apiEnabled) {
+      setVideoUploading(true);
+      setVideoUploadProgress(1);
+      try {
+        const uploaded = await showcaseApi.uploadVideo(file, (pct) => {
+          setVideoUploadProgress(pct);
+        });
+        setEncodedMedia(encodeShowcaseMedia({ kind: 'video', videoSrc: uploaded.url }));
+      } catch (err) {
+        setHtmlError(
+          err instanceof Error ? err.message : '视频上传失败，请检查网络连接后重试'
+        );
+      } finally {
+        setVideoUploading(false);
+        setVideoUploadProgress(0);
+      }
+    } else {
+      const blobUrl = URL.createObjectURL(file);
+      setEncodedMedia(encodeShowcaseMedia({ kind: 'video', videoSrc: blobUrl }));
+    }
   };
 
   const handlePaperFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -986,6 +1010,12 @@ export default function AchievementHall() {
                   </div>
                 </div>
 
+                {/* ============ 分类联动上传规范指引与实时格式体检 ============ */}
+                <UploadGuidePanel
+                  category={uploadForm.type}
+                  htmlContent={uploadForm.htmlContent}
+                />
+
                 {myGroupProjects.length > 0 && (
                   <div>
                     <label className="block text-[12px] font-semibold text-ink-700 mb-2">
@@ -1109,19 +1139,34 @@ export default function AchievementHall() {
                           encodeShowcaseMedia({ kind: 'video', videoSrc: e.target.value })
                         )
                       }
-                      placeholder="输入 MP4/WebM 视频直链地址 (https://...) 或在下方选择本地短视频..."
+                      placeholder="输入 MP4/WebM 视频流地址 (https://...) 或在下方上传最大 100 MB 本地实验视频..."
                       className="w-full px-3.5 py-2 rounded-lg bg-white border border-sky-200 text-xs text-slate-800"
                     />
                     <label className="block text-xs font-medium text-sky-800">
-                      上传本地实验短视频（.mp4 / .webm，不超过 1 MB，自动抓取首帧封面）：
+                      上传本地实拍实验视频（支持 .mp4 / .webm / .mov，最大 100 MB，自动流式存储并抓取首帧封面）：
                       <input
                         aria-label="上传实验视频"
                         type="file"
+                        disabled={videoUploading}
                         accept="video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov"
                         className="block w-full text-xs mt-1.5"
                         onChange={handleVideoFileUpload}
                       />
                     </label>
+                    {videoUploading && (
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between text-xs text-sky-800 font-semibold">
+                          <span>正在流式上传实验视频至服务器…</span>
+                          <span>{videoUploadProgress}%</span>
+                        </div>
+                        <div className="w-full h-2 rounded-full bg-sky-200 overflow-hidden">
+                          <div
+                            className="h-full bg-sky-600 transition-all"
+                            style={{ width: `${Math.max(4, videoUploadProgress)}%` }}
+                          />
+                        </div>
+                      </div>
+                    )}
                     {parsedFormMedia.kind === 'video' && (
                       <VideoShowcasePlayer
                         src={parsedFormMedia.videoSrc}
@@ -1162,6 +1207,25 @@ export default function AchievementHall() {
                           {paperPreviewMode ? '返回编辑正文' : '预览学术排版'}
                         </button>
                       </div>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {PAPER_TEMPLATES.map((tpl) => (
+                        <button
+                          key={tpl.id}
+                          type="button"
+                          onClick={() =>
+                            setEncodedMedia(
+                              encodeShowcaseMedia({
+                                kind: 'paper',
+                                markdown: tpl.markdown,
+                              })
+                            )
+                          }
+                          className="px-2.5 py-1 rounded-lg bg-white border border-indigo-200 text-indigo-800 hover:bg-indigo-100/70 text-[11.5px] font-semibold transition"
+                        >
+                          范例：{tpl.name}
+                        </button>
+                      ))}
                     </div>
                     <label className="block text-xs text-indigo-800">
                       导入本地 Markdown / 文本论文（.md / .txt）：
@@ -1316,6 +1380,26 @@ export default function AchievementHall() {
                   <p className="text-xs text-blue-800 leading-5">
                     支持内嵌 CSS、JavaScript 和 data 图片的单文件演示，大小不超过 1 MB；不加载外部脚本、网络接口或同目录文件。光学和电机为平台内置 Demo。
                   </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {HTML_SIM_TEMPLATES.map((tpl) => (
+                      <button
+                        key={tpl.id}
+                        type="button"
+                        onClick={() => {
+                          setHtmlError('');
+                          setUploadForm((prev) => ({
+                            ...prev,
+                            htmlContent: tpl.html,
+                            title: prev.title || tpl.name,
+                            description: prev.description || tpl.description,
+                          }));
+                        }}
+                        className="px-2.5 py-1.5 rounded-lg bg-white border border-blue-200 text-blue-800 hover:bg-blue-100/70 text-[11.5px] font-semibold transition"
+                      >
+                        Demo：{tpl.name}（{tpl.tag.split(' · ')[0]}）
+                      </button>
+                    ))}
+                  </div>
                   {showHtmlCodeEditor && (
                     <textarea
                       aria-label="HTML 源码编辑"

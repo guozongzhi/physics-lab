@@ -1,5 +1,6 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Video, Gauge, Repeat, AlertCircle } from 'lucide-react';
+import { resolveShowcaseVideoUrl } from '@/lib/api/projects';
 
 const SPEEDS = [0.5, 1, 1.25, 1.5, 2] as const;
 
@@ -16,6 +17,11 @@ export default function VideoShowcasePlayer({
   const [speed, setSpeed] = useState<number>(1);
   const [loop, setLoop] = useState(false);
   const [loadErr, setLoadErr] = useState(false);
+  const resolvedSrc = resolveShowcaseVideoUrl(src);
+
+  useEffect(() => {
+    setLoadErr(false);
+  }, [resolvedSrc]);
 
   const changeSpeed = (nextSpeed: number) => {
     setSpeed(nextSpeed);
@@ -74,7 +80,7 @@ export default function VideoShowcasePlayer({
       ) : (
         <video
           ref={videoRef}
-          src={src}
+          src={resolvedSrc}
           poster={poster}
           controls
           playsInline

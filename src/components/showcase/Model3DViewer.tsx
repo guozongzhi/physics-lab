@@ -150,6 +150,89 @@ function buildPresetMesh(presetId: string): MeshData {
     return normalizeMesh(vertices, faces);
   }
 
+  if (presetId === 'helmholtz') {
+    // 亥姆霍兹双平行同轴圆环线圈 + 中心均匀场检测台
+    const addTorusZ = (zOffset: number, R: number, r: number) => {
+      const base = vertices.length;
+      const majorSegs = 24;
+      const minorSegs = 10;
+      for (let i = 0; i < majorSegs; i++) {
+        const u = (i / majorSegs) * Math.PI * 2;
+        for (let j = 0; j < minorSegs; j++) {
+          const v = (j / minorSegs) * Math.PI * 2;
+          const x = (R + r * Math.cos(v)) * Math.cos(u);
+          const y = (R + r * Math.cos(v)) * Math.sin(u);
+          const z = zOffset + r * Math.sin(v);
+          vertices.push([x, y, z]);
+        }
+      }
+      for (let i = 0; i < majorSegs; i++) {
+        const nextI = (i + 1) % majorSegs;
+        for (let j = 0; j < minorSegs; j++) {
+          const nextJ = (j + 1) % minorSegs;
+          const a = base + i * minorSegs + j;
+          const b = base + nextI * minorSegs + j;
+          const c = base + nextI * minorSegs + nextJ;
+          const d = base + i * minorSegs + nextJ;
+          faces.push([a, b, c], [a, c, d]);
+        }
+      }
+    };
+    addTorusZ(-0.42, 0.78, 0.1);
+    addTorusZ(0.42, 0.78, 0.1);
+    // 中心霍尔传感器探测杆
+    const base = vertices.length;
+    const pts: Vec3[] = [
+      [-0.65, -0.06, -0.06], [0.65, -0.06, -0.06], [0.65, 0.06, -0.06], [-0.65, 0.06, -0.06],
+      [-0.65, -0.06, 0.06], [0.65, -0.06, 0.06], [0.65, 0.06, 0.06], [-0.65, 0.06, 0.06],
+    ];
+    pts.forEach((p) => vertices.push(p));
+    const q = [[0,1,2,3],[4,7,6,5],[0,4,5,1],[1,5,6,2],[2,6,7,3],[3,7,4,0]];
+    q.forEach(([a,b,c,d]) => faces.push([base+a,base+b,base+c],[base+a,base+c,base+d]));
+    return normalizeMesh(vertices, faces);
+  }
+
+  if (presetId === 'cyclotron') {
+    // 回旋加速器双 D 形半圆柱磁极盒（中间留有高频加速狭缝）
+    const addDee = (sign: 1 | -1) => {
+      const base = vertices.length;
+      const segs = 16;
+      const R = 0.85;
+      const gap = 0.09 * sign;
+      const h = 0.22;
+      for (let layer = 0; layer < 2; layer++) {
+        const y = layer === 0 ? -h : h;
+        for (let i = 0; i <= segs; i++) {
+          const theta = -Math.PI / 2 + (i / segs) * Math.PI;
+          const x = gap + sign * R * Math.cos(theta);
+          const z = R * Math.sin(theta);
+          vertices.push([x, y, z]);
+        }
+      }
+      const stride = segs + 1;
+      for (let i = 0; i < segs; i++) {
+        const a = base + i;
+        const b = base + i + 1;
+        const c = base + stride + i + 1;
+        const d = base + stride + i;
+        faces.push([a, b, c], [a, c, d]);
+        // 顶面与底面扇形三角化
+        if (i > 0 && i < segs) {
+          faces.push([base, base + i, base + i + 1]);
+          faces.push([base + stride, base + stride + i + 1, base + stride + i]);
+        }
+      }
+      // 狭缝端面封闭
+      faces.push(
+        [base, base + segs, base + stride + segs],
+        [base, base + stride + segs, base + stride]
+      );
+    };
+    addDee(1);
+    addDee(-1);
+    return normalizeMesh(vertices, faces);
+  }
+
   // Default: tokamak torus mesh
   const majorSegs = 28;
   const minorSegs = 14;

@@ -1,16 +1,41 @@
 from datetime import datetime, timezone
+from pathlib import Path
+import re
+import secrets
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
 from .. import services
 from ..access import require_group_write
+from ..config import settings
 from ..database import get_db
 from ..deps import get_current_user, require_teacher
 from ..models import Group, Project, ShowcaseItem, User
 from ..schemas import ShowcaseCreate, ShowcaseOut, ShowcaseReview, ShowcaseUpdate
 
 router = APIRouter(prefix="/api", tags=["showcase"])
+
+ALLOWED_VIDEO_EXTS: dict[str, str] = {
+    ".mp4": "video/mp4",
+    ".webm": "video/webm",
+    ".mov": "video/quicktime",
+}
+_SAFE_VIDEO_FILENAME_RE = re.compile(r"^vid_[a-zA-Z0-9_-]{8,48}\.(mp4|webm|mov)$")
+
+
+def _is_valid_video_header(header: bytes, ext: str) -> bool:
+    """校验视频文件头魔数，阻断伪造后缀的文本或脚本文件。"""
+    if len(header) < 8:
+        return False
+    if ext == ".webm":
+        # WebM / Matroska EBML Header: 0x1A 0x45 0xDF 0xA3
+        return header.startswith(b"\x1a\x45\xdf\xa3")
+    # MP4 / MOV ISO Base Media File Format: bytes 4..8 为原子类型 (ftyp / moov / mdat / wide / free / skip / pnot)
+    box_type = header[4:8]
+    return box_type in {b"ftyp", b"moov", b"mdat", b"wide", b"free", b"skip", b"pnot"}
+
 
 # ---------- Showcase ----------
 @router.get("/showcase", response_model=list[ShowcaseOut])
@@ -208,3 +233,76 @@ def toggle_love(showcase_id: str, db: Session = Depends(get_db), current: User =
     db.commit()
     db.refresh(item)
     return item
+
+
+@router.post("/showcase/video")
+def upload_showcase_video(
+    file: UploadFile = File(...),
+    current: User = Depends(get_current_user),
+):
+    """流式接收最大 100 MB 的实验视频文件并持久化至独立视频目录，返回轻量流式访问 URL。"""
+    _ = current
+    ext = Path(file.filename or "").suffix.lower()
+    if ext not in ALLOWED_VIDEO_EXTS:
+        raise HTTPException(status_code=400, detail="仅支持上传 .mp4、.webm 或 .mov 格式的视频文件")
+
+    upload_dir = Path(settings.video_upload_dir)
+    upload_dir.mkdir(parents=True, exist_ok=True)
+    fname = f"vid_{secrets.token_hex(12)}{ext}"
+    dest = upload_dir / fname
+
+    max_bytes = settings.max_video_bytes
+    total = 0
+    first_chunk = b""
+
+    try:
+        with dest.open("wb") as out:
+            while True:
+                chunk = file.file.read(1024 * 1024)  # 1 MB 分块
+                if not chunk:
+                    break
+                if not first_chunk:
+                    first_chunk = chunk[:64]
+                    if not _is_valid_video_header(first_chunk, ext):
+                        raise HTTPException(
+                            status_code=400,
+                            detail="视频文件头校验未通过，请确认文件为有效的 MP4 / WebM / MOV 视频",
+                        )
+                total += len(chunk)
+                if total > max_bytes:
+                    raise HTTPException(
+                        status_code=413,
+                        detail=f"视频文件超出上限（最大支持 {max_bytes // (1024 * 1024)} MB）",
+                    )
+                out.write(chunk)
+        if total == 0:
+            raise HTTPException(status_code=400, detail="上传的视频文件为空")
+    except HTTPException:
+        dest.unlink(missing_ok=True)
+        raise
+    except Exception as exc:
+        dest.unlink(missing_ok=True)
+        raise HTTPException(status_code=500, detail="保存视频文件失败") from exc
+
+    return {
+        "url": f"/api/showcase/video/{fname}",
+        "filename": fname,
+        "size": total,
+    }
+
+
+@router.get("/showcase/video/{filename}")
+def get_showcase_video(filename: str):
+    """提供支持 HTTP Range (206 Partial Content) 的实验视频流式播放响应。"""
+    if not _SAFE_VIDEO_FILENAME_RE.match(filename):
+        raise HTTPException(status_code=404, detail="视频不存在")
+    target = Path(settings.video_upload_dir) / filename
+    if not target.is_file():
+        raise HTTPException(status_code=404, detail="视频不存在")
+    ext = target.suffix.lower()
+    return FileResponse(
+        path=target,
+        media_type=ALLOWED_VIDEO_EXTS.get(ext, "application/octet-stream"),
+        filename=filename,
+    )
+

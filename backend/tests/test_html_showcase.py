@@ -118,3 +118,56 @@ def test_multimodal_paper_video_model_and_project_binding(client, auth):
     assert unloved['loves'] == 0 and 'u-1' not in unloved['lovedBy']
 
 
+def test_video_file_upload_stream_and_validation(client, auth, tmp_path, monkeypatch):
+    from app.config import settings
+
+    monkeypatch.setattr(settings, 'video_upload_dir', str(tmp_path))
+
+    # 1. 未登录不可上传
+    mp4_bytes = b'\x00\x00\x00\x18ftypmp42\x00\x00\x00\x00mp42isom' + (b'\x00' * 2048)
+    assert client.post(
+        '/api/showcase/video',
+        files={'file': ('exp.mp4', mp4_bytes, 'video/mp4')},
+    ).status_code in (401, 403)
+
+    # 2. 非法后缀或伪造文件头应被拦截
+    bad_ext = client.post(
+        '/api/showcase/video',
+        headers=auth('u-1'),
+        files={'file': ('bad.exe', mp4_bytes, 'application/octet-stream')},
+    )
+    assert bad_ext.status_code == 400
+
+    fake_header = client.post(
+        '/api/showcase/video',
+        headers=auth('u-1'),
+        files={'file': ('fake.mp4', b'<script>alert(1)</script>', 'video/mp4')},
+    )
+    assert fake_header.status_code == 400
+
+    # 3. 合法 MP4 上传成功并可通过流式接口 + Range 请求读取
+    ok = client.post(
+        '/api/showcase/video',
+        headers=auth('u-1'),
+        files={'file': ('pendulum.mp4', mp4_bytes, 'video/mp4')},
+    )
+    assert ok.status_code == 200, ok.text
+    video_url = ok.json()['url']
+    assert video_url.startswith('/api/showcase/video/vid_')
+    assert ok.json()['size'] == len(mp4_bytes)
+
+    stream_res = client.get(video_url, headers={'Range': 'bytes=0-15'})
+    assert stream_res.status_code == 206
+    assert len(stream_res.content) == 16
+
+    # 4. 超出上限拦截并自动清理残留文件
+    monkeypatch.setattr(settings, 'max_video_bytes', 1024)
+    too_large = client.post(
+        '/api/showcase/video',
+        headers=auth('u-1'),
+        files={'file': ('big.mp4', mp4_bytes, 'video/mp4')},
+    )
+    assert too_large.status_code == 413
+
+
+
