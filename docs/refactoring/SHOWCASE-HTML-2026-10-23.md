@@ -16,9 +16,24 @@
 
 支持自包含的 .html/.htm 文件，UTF-8 总大小不超过 1,000,000 字节。CSS、JavaScript 和图片需内嵌；不支持 ZIP、多文件项目、外部脚本/CDN 或网络接口。HTML 在 sandbox iframe 中运行，不授予同源、弹窗、表单和顶层导航权限；CSP 限制外部资源及网络接口。自编 HTML 的内部响应式布局由作品自身决定。
 
-## 修复
+## 多模态成果展示全品类升级
 
-- 编辑按钮阻止事件冒泡，避免同时打开作品预览。
+1. **多模态协议编解码 (`src/lib/showcaseMedia.ts`)**：
+   - 在保持数据库 `showcase_items.html_content` 单列结构（兼容旧库幂等迁移与 1MB UTF-8 限制）的前提下，支持 4 类多模态载荷：
+     - `<!--VIDEO_SRC-->`：视频地址或本地小视频 DataURL，配合 `captureVideoFrame` 自动提取视频首帧生成高清缩略封面。
+     - `<!--PAPER_MD-->`：Markdown 学术研究报告/论文，内置标准学术论文模板。
+     - `<!--MODEL_3D:obj|stl|preset-->`：Wavefront `.obj`、ASCII `.stl` 三维网格及 3 款内置三维实验装置模型（托卡马克磁约束环、开普勒折射望远镜、双振子耦合支架）。
+     - 标准单文件 HTML 交互仿真（内置简谐振子阻尼相空间模板）。
+2. **专用交互渲染器组件群 (`src/components/showcase/`)**：
+   - `VideoShowcasePlayer.tsx`：支持 0.5x~2.0x 倍速切换、循环播放、异常兜底。
+   - `PaperArticleReader.tsx`：基于 `react-markdown` 渲染章节排版、自动提取 `#/##/###` 目录大纲跳转、字数统计与 `.md` 导出。
+   - `Model3DViewer.tsx`：Canvas 3D 透视投影检视器，支持拖拽 360° 旋转、滚轮缩放、线框/实体着色切换、自动旋转与视角复位。
+   - `HtmlDemo.tsx`：新增「重置运行」「查看源码」「全屏演示」工具栏。
+   - `ShowcaseContentRenderer.tsx`：统一多模态分发渲染组件，同时服务于学生端「成果展览馆」与教师端「成果审批」。
+3. **业务闭环增强**：
+   - 点赞持久化：对接 `POST /api/showcase/{id}/love`，支持全员持久化点赞/取消点赞与 `lovedBy` 状态同步。
+   - 课题绑定：上传与编辑作品支持绑定/解绑本组研究课题（`projectId`），后端严格校验课题归属小组。
+   - 获奖作品聚合：`award` 分类视图自动聚合显式获奖作品与教师审核授予能量币（`awardedCoins > 0`）的嘉奖作品。
 - 上传/编辑弹窗通过 portal 放到页面顶层，避免页面动画容器影响定位。
 - 新建表单清空上次编辑状态；标题、说明和上传入口补充可访问名称。
 - 在线提交等待服务器确认，保存中禁用提交；失败保留表单并显示错误。

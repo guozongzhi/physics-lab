@@ -60,7 +60,7 @@ export const showcaseApi = {
   /** 学生修改本组作品（改后置回待审批）；教师/管理员修改则保留原状态 */
   update: (
     showcaseId: string,
-    payload: { htmlContent?: string; title?: string; coverImage?: string; description?: string; category?: ShowcaseCategory }
+    payload: { projectId?: string; htmlContent?: string; title?: string; coverImage?: string; description?: string; category?: ShowcaseCategory }
   ) => api.put<ShowcaseItem>(`/api/showcase/${showcaseId}`, payload),
   /** 教师下架作品；已奖励的能量币不回滚 */
   remove: (showcaseId: string) => api.delete<{ ok: boolean }>(`/api/showcase/${showcaseId}`),

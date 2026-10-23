@@ -509,6 +509,7 @@ class ShowcaseUpdate(BaseModel):
     """
 
     htmlContent: ShowcaseHtml | None = Field(default=None, max_length=1_000_000)
+    projectId: str | None = None
     title: str | None = None
     coverImage: str | None = None
     description: str | None = None

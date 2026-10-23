@@ -53,7 +53,7 @@ interface ProjectState {
    */
   updateShowcaseItem: (
     id: string,
-    patch: Partial<Pick<ShowcaseItem, 'title' | 'coverImage' | 'description' | 'category' | 'htmlContent'>>,
+    patch: Partial<Pick<ShowcaseItem, 'title' | 'coverImage' | 'description' | 'category' | 'htmlContent' | 'projectId'>>,
     keepStatus?: boolean
   ) => void;
   /** 教师/管理员下架作品；已奖励的能量币不回滚 */

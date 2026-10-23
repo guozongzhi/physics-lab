@@ -1,12 +1,28 @@
-import HtmlDemo from '@/components/showcase/HtmlDemo';
+import ShowcaseContentRenderer from '@/components/showcase/ShowcaseContentRenderer';
 import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Trophy, Check, X, Zap, AlertTriangle, Image as ImageIcon, Pencil, Trash2 } from 'lucide-react';
+import {
+  Trophy,
+  Check,
+  X,
+  Zap,
+  AlertTriangle,
+  Image as ImageIcon,
+  Pencil,
+  Trash2,
+  FolderKanban,
+} from 'lucide-react';
 import { useProjectStore } from '@/store/projectStore';
 import { useGroupStore } from '@/store/groupStore';
 import { useUIStore } from '@/store/uiStore';
 import { cn } from '@/lib/utils';
-import type { ShowcaseItem } from '@/types';
+import type { ShowcaseCategory, ShowcaseItem } from '@/types';
+import {
+  MAX_SHOWCASE_PAYLOAD_BYTES,
+  getMediaBadgeLabel,
+  parseShowcaseMedia,
+  utf8ByteLength,
+} from '@/lib/showcaseMedia';
 
 type Filter = 'pending' | 'approved' | 'rejected' | 'all';
 
@@ -16,13 +32,31 @@ const STATUS_META: Record<ShowcaseItem['status'], { label: string; chip: string 
   rejected: { label: '已驳回', chip: 'chip-danger' },
 };
 
+const CATEGORY_OPTIONS: Array<{ key: ShowcaseCategory; label: string }> = [
+  { key: 'photo', label: '照片展' },
+  { key: 'video', label: '视频' },
+  { key: 'paper', label: '论文' },
+  { key: 'model', label: '模型' },
+  { key: 'award', label: '获奖作品' },
+];
+
+const CATEGORY_LABEL: Record<ShowcaseCategory, string> = Object.fromEntries(
+  CATEGORY_OPTIONS.map((c) => [c.key, c.label])
+) as Record<ShowcaseCategory, string>;
+
 /**
  * 成果审批 —— 学生在成果展览馆提交的作品在这里排队等教师处理。
  * 通过时可以奖励该小组能量币（走 reviewShowcaseItem → 后端 add_tx 真实记账）。
  */
 export default function TeacherShowcaseReview() {
   const [htmlPreview, setHtmlPreview] = useState<string | null>(null);
-  const { showcaseItems, reviewShowcaseItem, updateShowcaseItem, deleteShowcaseItem } = useProjectStore();
+  const {
+    showcaseItems,
+    projects,
+    reviewShowcaseItem,
+    updateShowcaseItem,
+    deleteShowcaseItem,
+  } = useProjectStore();
   const getGroupById = useGroupStore((s) => s.getGroupById);
   const pushToast = useUIStore((s) => s.pushToast);
 
@@ -32,7 +66,14 @@ export default function TeacherShowcaseReview() {
   const [rejectTarget, setRejectTarget] = useState<ShowcaseItem | null>(null);
   const [reason, setReason] = useState('');
   const [editTarget, setEditTarget] = useState<ShowcaseItem | null>(null);
-  const [editForm, setEditForm] = useState({ title: '', coverImage: '', description: '' });
+  const [editForm, setEditForm] = useState({
+    title: '',
+    category: 'photo' as ShowcaseCategory,
+    projectId: '',
+    coverImage: '',
+    description: '',
+    htmlContent: '',
+  });
   const [deleteTarget, setDeleteTarget] = useState<ShowcaseItem | null>(null);
 
   const counts = useMemo(
@@ -49,7 +90,10 @@ export default function TeacherShowcaseReview() {
     () =>
       [...showcaseItems]
         .filter((s) => filter === 'all' || s.status === filter)
-        .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()),
+        .sort(
+          (a, b) =>
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        ),
     [showcaseItems, filter]
   );
 
@@ -57,7 +101,11 @@ export default function TeacherShowcaseReview() {
 
   const doApprove = () => {
     if (!approveTarget) return;
-    reviewShowcaseItem(approveTarget.id, 'approve', approveTarget.groupId ? Math.max(0, coins) : 0);
+    reviewShowcaseItem(
+      approveTarget.id,
+      'approve',
+      approveTarget.groupId ? Math.max(0, coins) : 0
+    );
     pushToast(
       coins > 0
         ? `已通过「${approveTarget.title}」，奖励 ${coins}⚡`
@@ -83,8 +131,11 @@ export default function TeacherShowcaseReview() {
     setEditTarget(item);
     setEditForm({
       title: item.title,
+      category: item.category || 'photo',
+      projectId: item.projectId || '',
       coverImage: item.coverImage,
       description: item.description,
+      htmlContent: item.htmlContent || '',
     });
   };
 
@@ -95,10 +146,21 @@ export default function TeacherShowcaseReview() {
       pushToast('作品标题不能为空', 'warning');
       return;
     }
+    if (utf8ByteLength(editForm.htmlContent) > MAX_SHOWCASE_PAYLOAD_BYTES) {
+      pushToast('多模态/HTML 内容不得超过 1 MB', 'warning');
+      return;
+    }
     // 教师是审批人，改内容不重新送审——保留原状态（已通过的仍已通过）
     updateShowcaseItem(
       editTarget.id,
-      { title, coverImage: editForm.coverImage.trim(), description: editForm.description },
+      {
+        title,
+        category: editForm.category,
+        projectId: editForm.projectId,
+        coverImage: editForm.coverImage.trim(),
+        description: editForm.description,
+        htmlContent: editForm.htmlContent,
+      },
       true
     );
     pushToast(`已更新「${title}」`, 'success');
@@ -119,6 +181,14 @@ export default function TeacherShowcaseReview() {
     { key: 'all', label: `全部 (${counts.all})` },
   ];
 
+  const targetGroupProjects = useMemo(
+    () =>
+      editTarget?.groupId
+        ? projects.filter((p) => p.ownerGroupId === editTarget.groupId)
+        : [],
+    [projects, editTarget]
+  );
+
   return (
     <div className="space-y-6">
       {/* ============ 标题 ============ */}
@@ -138,7 +208,7 @@ export default function TeacherShowcaseReview() {
             成果展览馆审批
           </h1>
           <p className="mt-2 text-[13.5px] text-ink-500 max-w-lg leading-relaxed">
-            学生提交的作品需经审批才正式展出。通过时可奖励该小组能量币（会真实计入小组总能量与流水）。
+            学生提交的照片、实验视频、研究论文、3D 模型与交互 HTML 作品需经审批才正式展出。通过时可奖励该小组能量币。
           </p>
 
           <div className="flex flex-wrap gap-2 mt-5">
@@ -169,6 +239,21 @@ export default function TeacherShowcaseReview() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {list.map((item, idx) => {
             const meta = STATUS_META[item.status];
+            const media = parseShowcaseMedia(item.htmlContent);
+            const mediaBadge = getMediaBadgeLabel(item.htmlContent, item.demoKind);
+            const linkedProject = item.projectId
+              ? projects.find((p) => p.id === item.projectId)
+              : undefined;
+            const hasRichPreview = media.kind !== 'none' || Boolean(item.demoKind);
+            const previewBtnText =
+              htmlPreview === item.id
+                ? media.kind === 'html'
+                  ? '关闭 HTML 预览'
+                  : '关闭作品预览'
+                : media.kind === 'html'
+                ? '预览 HTML 交互作品'
+                : `预览${mediaBadge ? mediaBadge.split(' · ')[0] : '作品内容'}`;
+
             return (
               <motion.div
                 key={item.id}
@@ -184,7 +269,9 @@ export default function TeacherShowcaseReview() {
                       src={item.coverImage}
                       alt={item.title}
                       loading="lazy"
-                      onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                      }}
                       className="relative w-full h-full object-cover"
                     />
                   )}
@@ -192,13 +279,57 @@ export default function TeacherShowcaseReview() {
 
                 <div className="min-w-0 flex-1">
                   <div className="flex items-start gap-2 flex-wrap">
-                    <h3 className="text-[14.5px] font-extrabold text-ink-900 leading-snug">{item.title}</h3>
-                    <span className={cn(meta.chip, '!py-0 !px-1.5 !text-[10px]')}>{meta.label}</span>
+                    <h3 className="text-[14.5px] font-extrabold text-ink-900 leading-snug">
+                      {item.title}
+                    </h3>
+                    <span className={cn(meta.chip, '!py-0 !px-1.5 !text-[10px]')}>
+                      {meta.label}
+                    </span>
+                    <span className="chip-mission !py-0 !px-1.5 !text-[10px]">
+                      {CATEGORY_LABEL[item.category] || '照片展'}
+                    </span>
+                    {mediaBadge && (
+                      <span className="chip-growth !py-0 !px-1.5 !text-[10px]">
+                        {mediaBadge}
+                      </span>
+                    )}
                   </div>
-                  <div className="text-[12px] text-ink-500 mt-1">{item.authorUserId || groupNameOf(item.groupId)}</div>
-                  {item.htmlContent && <div className="my-3"><button className="btn-outline" onClick={() => setHtmlPreview(htmlPreview === item.id ? null : item.id)}>{htmlPreview === item.id ? '关闭 HTML 预览' : '预览 HTML 交互作品'}</button>{htmlPreview === item.id && <HtmlDemo html={item.htmlContent} title={item.title} />}</div>}
+                  <div className="text-[12px] text-ink-500 mt-1 flex flex-wrap items-center gap-2">
+                    <span>{item.authorUserId || groupNameOf(item.groupId)}</span>
+                    {linkedProject && (
+                      <span className="inline-flex items-center gap-1 text-mission-600 font-medium">
+                        <FolderKanban size={11} />
+                        {linkedProject.title}
+                      </span>
+                    )}
+                  </div>
+                  {hasRichPreview && (
+                    <div className="my-3 space-y-2">
+                      <button
+                        className="btn-outline"
+                        onClick={() =>
+                          setHtmlPreview(htmlPreview === item.id ? null : item.id)
+                        }
+                      >
+                        {previewBtnText}
+                      </button>
+                      {htmlPreview === item.id && (
+                        <ShowcaseContentRenderer
+                          title={item.title}
+                          imageUrl={item.coverImage}
+                          htmlContent={item.htmlContent}
+                          demoKind={item.demoKind}
+                          description={item.description}
+                          category={item.category}
+                          author={item.authorUserId || groupNameOf(item.groupId)}
+                        />
+                      )}
+                    </div>
+                  )}
                   {item.description && (
-                    <p className="text-[12px] text-ink-400 mt-1 line-clamp-2 leading-relaxed">{item.description}</p>
+                    <p className="text-[12px] text-ink-400 mt-1 line-clamp-2 leading-relaxed">
+                      {item.description}
+                    </p>
                   )}
                   {item.status === 'rejected' && item.rejectReason && (
                     <p className="text-[12px] text-danger-600 mt-1.5 leading-relaxed">
@@ -215,16 +346,24 @@ export default function TeacherShowcaseReview() {
                     {item.status === 'pending' && (
                       <>
                         <button
-                          onClick={() => { setApproveTarget(item); setCoins(item.groupId ? 50 : 0); }}
+                          onClick={() => {
+                            setApproveTarget(item);
+                            setCoins(item.groupId ? 50 : 0);
+                          }}
                           className="px-3.5 py-1.5 rounded-xl text-[12.5px] font-bold text-white bg-gradient-to-br from-growth-400 to-growth-600 inline-flex items-center gap-1"
                         >
-                          <Check size={13} />通过
+                          <Check size={13} />
+                          通过
                         </button>
                         <button
-                          onClick={() => { setRejectTarget(item); setReason(''); }}
+                          onClick={() => {
+                            setRejectTarget(item);
+                            setReason('');
+                          }}
                           className="px-3.5 py-1.5 rounded-xl text-[12.5px] font-bold text-danger-700 bg-danger-50 hover:bg-danger-100 inline-flex items-center gap-1 transition-colors"
                         >
-                          <X size={13} />驳回
+                          <X size={13} />
+                          驳回
                         </button>
                       </>
                     )}
@@ -232,13 +371,15 @@ export default function TeacherShowcaseReview() {
                       onClick={() => openEdit(item)}
                       className="px-3.5 py-1.5 rounded-xl text-[12.5px] font-bold text-ink-600 bg-ink-50 hover:bg-ink-100 inline-flex items-center gap-1 transition-colors"
                     >
-                      <Pencil size={13} />编辑
+                      <Pencil size={13} />
+                      编辑
                     </button>
                     <button
                       onClick={() => setDeleteTarget(item)}
                       className="px-3.5 py-1.5 rounded-xl text-[12.5px] font-bold text-danger-700 bg-danger-50 hover:bg-danger-100 inline-flex items-center gap-1 transition-colors"
                     >
-                      <Trash2 size={13} />下架
+                      <Trash2 size={13} />
+                      下架
                     </button>
                   </div>
                 </div>
@@ -254,7 +395,10 @@ export default function TeacherShowcaseReview() {
           className="fixed inset-0 z-[220] flex items-center justify-center bg-ink-900/40 backdrop-blur-sm p-4"
           onClick={() => setApproveTarget(null)}
         >
-          <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl" onClick={(e) => e.stopPropagation()}>
+          <div
+            className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex items-center gap-3 mb-4">
               <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-growth-400 to-growth-600 flex items-center justify-center text-white">
                 <Check size={20} />
@@ -272,7 +416,11 @@ export default function TeacherShowcaseReview() {
             </div>
 
             <p className="text-[12.5px] text-ink-600 mb-3">
-              奖励给 <b className="text-ink-800">{approveTarget.authorUserId || groupNameOf(approveTarget.groupId)}</b> 的能量币（填 0 表示只通过不奖励）：
+              奖励给{' '}
+              <b className="text-ink-800">
+                {approveTarget.authorUserId || groupNameOf(approveTarget.groupId)}
+              </b>{' '}
+              的能量币（填 0 表示只通过不奖励）：
             </p>
             <input
               type="number"
@@ -284,12 +432,15 @@ export default function TeacherShowcaseReview() {
               className="input w-full mb-5"
             />
             <div className="flex gap-2">
-              <button className="btn-ghost flex-1" onClick={() => setApproveTarget(null)}>取消</button>
+              <button className="btn-ghost flex-1" onClick={() => setApproveTarget(null)}>
+                取消
+              </button>
               <button
                 onClick={doApprove}
                 className="flex-1 py-2.5 rounded-xl font-semibold text-white bg-gradient-to-br from-growth-400 to-growth-600 inline-flex items-center justify-center gap-1.5"
               >
-                <Zap size={14} />确认通过
+                <Zap size={14} />
+                确认通过
               </button>
             </div>
           </div>
@@ -302,7 +453,10 @@ export default function TeacherShowcaseReview() {
           className="fixed inset-0 z-[220] flex items-center justify-center bg-ink-900/40 backdrop-blur-sm p-4"
           onClick={() => setRejectTarget(null)}
         >
-          <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl" onClick={(e) => e.stopPropagation()}>
+          <div
+            className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex items-center gap-3 mb-4">
               <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-danger-400 to-alert-500 flex items-center justify-center text-white">
                 <AlertTriangle size={20} />
@@ -319,7 +473,9 @@ export default function TeacherShowcaseReview() {
               </button>
             </div>
 
-            <label className="text-[12px] font-bold text-ink-600 mb-1.5 block">驳回理由（学生能看到）</label>
+            <label className="text-[12px] font-bold text-ink-600 mb-1.5 block">
+              驳回理由（学生能看到）
+            </label>
             <textarea
               value={reason}
               onChange={(e) => setReason(e.target.value)}
@@ -328,7 +484,9 @@ export default function TeacherShowcaseReview() {
               className="input w-full mb-5 resize-none"
             />
             <div className="flex gap-2">
-              <button className="btn-ghost flex-1" onClick={() => setRejectTarget(null)}>取消</button>
+              <button className="btn-ghost flex-1" onClick={() => setRejectTarget(null)}>
+                取消
+              </button>
               <button
                 onClick={doReject}
                 className="flex-1 py-2.5 rounded-xl font-semibold text-white bg-gradient-to-br from-danger-400 to-danger-600"
@@ -346,14 +504,19 @@ export default function TeacherShowcaseReview() {
           className="fixed inset-0 z-[220] flex items-center justify-center bg-ink-900/40 backdrop-blur-sm p-4"
           onClick={() => setEditTarget(null)}
         >
-          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl max-h-[88vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+          <div
+            className="bg-white rounded-2xl p-6 w-full max-w-lg shadow-xl max-h-[88vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex items-center gap-3 mb-5">
               <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-mission-400 to-nova-500 flex items-center justify-center text-white">
                 <Pencil size={19} />
               </div>
               <div className="min-w-0">
                 <h3 className="font-extrabold text-[17px] text-ink-900">编辑作品</h3>
-                <p className="text-[12px] text-ink-500 truncate">{editTarget.authorUserId || groupNameOf(editTarget.groupId)}</p>
+                <p className="text-[12px] text-ink-500 truncate">
+                  {editTarget.authorUserId || groupNameOf(editTarget.groupId)}
+                </p>
               </div>
               <button
                 onClick={() => setEditTarget(null)}
@@ -363,28 +526,100 @@ export default function TeacherShowcaseReview() {
               </button>
             </div>
 
-            <label className="text-[12px] font-bold text-ink-600 mb-1.5 block">作品标题</label>
+            <label className="text-[12px] font-bold text-ink-600 mb-1.5 block">
+              作品分类
+            </label>
+            <div className="flex flex-wrap gap-1.5 mb-4">
+              {CATEGORY_OPTIONS.map((opt) => (
+                <button
+                  key={opt.key}
+                  type="button"
+                  onClick={() => setEditForm({ ...editForm, category: opt.key })}
+                  className={cn(
+                    'px-3 py-1.5 rounded-lg text-xs font-semibold transition',
+                    editForm.category === opt.key
+                      ? 'bg-mission-500 text-white'
+                      : 'bg-ink-50 text-ink-600 hover:bg-ink-100'
+                  )}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+
+            {targetGroupProjects.length > 0 && (
+              <>
+                <label className="text-[12px] font-bold text-ink-600 mb-1.5 block">
+                  关联课题
+                </label>
+                <select
+                  aria-label="关联课题"
+                  value={editForm.projectId}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, projectId: e.target.value })
+                  }
+                  className="input w-full mb-4"
+                >
+                  <option value="">-- 不关联特定课题 --</option>
+                  {targetGroupProjects.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.title}
+                    </option>
+                  ))}
+                </select>
+              </>
+            )}
+
+            <label className="text-[12px] font-bold text-ink-600 mb-1.5 block">
+              作品标题
+            </label>
             <input
+              aria-label="作品标题"
               value={editForm.title}
               onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
               className="input w-full mb-4"
             />
 
-            <label className="text-[12px] font-bold text-ink-600 mb-1.5 block">封面图片地址</label>
+            <label className="text-[12px] font-bold text-ink-600 mb-1.5 block">
+              封面图片地址
+            </label>
             <input
+              aria-label="封面图片地址"
               value={editForm.coverImage}
-              onChange={(e) => setEditForm({ ...editForm, coverImage: e.target.value })}
+              onChange={(e) =>
+                setEditForm({ ...editForm, coverImage: e.target.value })
+              }
               placeholder="留空则不显示封面"
               className="input w-full mb-4"
             />
 
-            <label className="text-[12px] font-bold text-ink-600 mb-1.5 block">作品说明</label>
+            <label className="text-[12px] font-bold text-ink-600 mb-1.5 block">
+              作品说明
+            </label>
             <textarea
+              aria-label="作品说明"
               value={editForm.description}
-              onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+              onChange={(e) =>
+                setEditForm({ ...editForm, description: e.target.value })
+              }
               rows={3}
-              className="input w-full mb-3 resize-none"
+              className="input w-full mb-4 resize-none"
             />
+
+            {editForm.htmlContent && (
+              <div className="mb-4 p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between text-xs">
+                <span className="text-slate-600 font-medium">
+                  已包含多模态/HTML 载荷（{utf8ByteLength(editForm.htmlContent)} 字节）
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setEditForm({ ...editForm, htmlContent: '' })}
+                  className="text-danger-600 font-semibold hover:underline"
+                >
+                  移除附加内容
+                </button>
+              </div>
+            )}
 
             <p className="text-[11.5px] text-ink-400 mb-5 leading-relaxed">
               教师的修改<b className="text-ink-600">不会改变审批状态</b>
@@ -392,12 +627,15 @@ export default function TeacherShowcaseReview() {
             </p>
 
             <div className="flex gap-2">
-              <button className="btn-ghost flex-1" onClick={() => setEditTarget(null)}>取消</button>
+              <button className="btn-ghost flex-1" onClick={() => setEditTarget(null)}>
+                取消
+              </button>
               <button
                 onClick={doEdit}
                 className="flex-1 py-2.5 rounded-xl font-semibold text-white bg-gradient-to-br from-mission-500 to-nova-500 inline-flex items-center justify-center gap-1.5"
               >
-                <Check size={14} />保存修改
+                <Check size={14} />
+                保存修改
               </button>
             </div>
           </div>
@@ -410,7 +648,10 @@ export default function TeacherShowcaseReview() {
           className="fixed inset-0 z-[220] flex items-center justify-center bg-ink-900/40 backdrop-blur-sm p-4"
           onClick={() => setDeleteTarget(null)}
         >
-          <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl" onClick={(e) => e.stopPropagation()}>
+          <div
+            className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex items-center gap-3 mb-4">
               <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-danger-400 to-danger-600 flex items-center justify-center text-white">
                 <Trash2 size={19} />
@@ -439,7 +680,9 @@ export default function TeacherShowcaseReview() {
             <p className="text-[12px] text-ink-400 mb-5">此操作不可撤销。</p>
 
             <div className="flex gap-2">
-              <button className="btn-ghost flex-1" onClick={() => setDeleteTarget(null)}>取消</button>
+              <button className="btn-ghost flex-1" onClick={() => setDeleteTarget(null)}>
+                取消
+              </button>
               <button
                 onClick={doDelete}
                 className="flex-1 py-2.5 rounded-xl font-semibold text-white bg-gradient-to-br from-danger-400 to-danger-600"

@@ -89,6 +89,14 @@ def update_showcase(
     if not is_teacher and (not item.group_id or current.group_id != item.group_id):
         raise HTTPException(status_code=403, detail="只能修改本组的作品")
 
+    if payload.projectId is not None:
+        if payload.projectId:
+            if not item.group_id:
+                raise HTTPException(status_code=400, detail="平台公共作品不关联小组项目")
+            project = db.get(Project, payload.projectId)
+            if not project or project.owner_group_id != item.group_id:
+                raise HTTPException(status_code=400, detail="项目与作品小组不匹配")
+        item.project_id = payload.projectId
     if payload.htmlContent is not None:
         item.html_content = payload.htmlContent
     if payload.title is not None:
