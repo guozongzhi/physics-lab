@@ -18,7 +18,7 @@ export default function HtmlDemo({ html, title }: { html: string; title: string 
         fullscreen && 'fixed inset-4 z-[260] shadow-2xl'
       )}
     >
-      <div className="flex items-center justify-between gap-2 px-3.5 py-2 bg-slate-800/90 border-b border-slate-700/80 text-xs text-slate-200">
+      <div className="flex items-center justify-between gap-2 pl-3.5 pr-14 py-2 bg-slate-800/90 border-b border-slate-700/80 text-xs text-slate-200">
         <div className="flex items-center gap-2 min-w-0">
           <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0" />
           <span className="font-semibold truncate">{title}</span>

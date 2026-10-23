@@ -2,6 +2,54 @@ import { useMemo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { FileText, Download, BookOpen, Hash } from 'lucide-react';
 
+function renderMarkdownBlocks(markdown: string) {
+  const lines = markdown.split('\n');
+  const blocks: Array<{ type: 'md'; content: string } | { type: 'table'; headers: string[]; rows: string[][] }> = [];
+  let mdBuffer: string[] = [];
+  let i = 0;
+
+  const flushMd = () => {
+    if (mdBuffer.length > 0) {
+      blocks.push({ type: 'md', content: mdBuffer.join('\n') });
+      mdBuffer = [];
+    }
+  };
+
+  const parseRow = (line: string) =>
+    line
+      .trim()
+      .replace(/^\|/, '')
+      .replace(/\|$/, '')
+      .split('|')
+      .map((cell) => cell.trim());
+
+  while (i < lines.length) {
+    const line = lines[i].trim();
+    const nextLine = i + 1 < lines.length ? lines[i + 1].trim() : '';
+    if (
+      line.startsWith('|') &&
+      line.endsWith('|') &&
+      nextLine.startsWith('|') &&
+      /^\|[\s:|-]+\|$/.test(nextLine)
+    ) {
+      flushMd();
+      const headers = parseRow(line);
+      const rows: string[][] = [];
+      i += 2;
+      while (i < lines.length && lines[i].trim().startsWith('|')) {
+        rows.push(parseRow(lines[i]));
+        i += 1;
+      }
+      blocks.push({ type: 'table', headers, rows });
+      continue;
+    }
+    mdBuffer.push(lines[i]);
+    i += 1;
+  }
+  flushMd();
+  return blocks;
+}
+
 export default function PaperArticleReader({
   markdown,
   title,
@@ -25,6 +73,7 @@ export default function PaperArticleReader({
       });
   }, [markdown]);
 
+  const blocks = useMemo(() => renderMarkdownBlocks(markdown), [markdown]);
   const charCount = useMemo(() => markdown.replace(/\s+/g, '').length, [markdown]);
 
   const handleDownloadMd = () => {
@@ -39,7 +88,7 @@ export default function PaperArticleReader({
 
   return (
     <div className="rounded-xl border border-slate-200 bg-slate-50 overflow-hidden">
-      <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 bg-slate-900 text-slate-100 text-xs">
+      <div className="flex flex-wrap items-center justify-between gap-2 pl-4 pr-14 py-2.5 bg-slate-900 text-slate-100 text-xs">
         <div className="flex items-center gap-2 min-w-0">
           <FileText size={14} className="text-indigo-400 shrink-0" />
           <span className="font-semibold truncate">{title}</span>
@@ -88,44 +137,74 @@ export default function PaperArticleReader({
             headings.length > 0 ? 'md:col-span-9' : 'md:col-span-12'
           } p-6 md:p-8 bg-white text-slate-800 text-sm leading-relaxed space-y-3`}
         >
-          <ReactMarkdown
-            components={{
-              h1: ({ children }) => (
-                <h1 className="text-xl font-extrabold text-slate-900 pb-2 border-b border-slate-200 mb-3">
-                  {children}
-                </h1>
-              ),
-              h2: ({ children }) => (
-                <h2 className="text-base font-bold text-slate-900 mt-5 mb-2 flex items-center gap-1.5">
-                  <span className="w-1 h-4 rounded-full bg-indigo-600 inline-block" />
-                  {children}
-                </h2>
-              ),
-              h3: ({ children }) => (
-                <h3 className="text-sm font-bold text-slate-800 mt-3 mb-1">{children}</h3>
-              ),
-              p: ({ children }) => <p className="text-slate-700 leading-7 mb-2.5">{children}</p>,
-              ul: ({ children }) => <ul className="list-disc pl-5 space-y-1 mb-3 text-slate-700">{children}</ul>,
-              ol: ({ children }) => <ol className="list-decimal pl-5 space-y-1 mb-3 text-slate-700">{children}</ol>,
-              code: ({ children }) => (
-                <code className="px-1.5 py-0.5 rounded bg-slate-100 text-indigo-700 font-mono text-xs">
-                  {children}
-                </code>
-              ),
-              pre: ({ children }) => (
-                <pre className="p-3.5 rounded-xl bg-slate-900 text-slate-100 font-mono text-xs overflow-x-auto my-3">
-                  {children}
-                </pre>
-              ),
-              blockquote: ({ children }) => (
-                <blockquote className="pl-3.5 border-l-3 border-indigo-400 bg-indigo-50/50 py-1.5 pr-3 rounded-r-lg text-slate-600 italic my-2">
-                  {children}
-                </blockquote>
-              ),
-            }}
-          >
-            {markdown}
-          </ReactMarkdown>
+          {blocks.map((block, bIdx) =>
+            block.type === 'table' ? (
+              <div key={bIdx} className="overflow-x-auto my-3 rounded-lg border border-slate-200">
+                <table className="w-full border-collapse text-xs text-left">
+                  <thead className="bg-slate-100 text-slate-700 font-bold border-b border-slate-200">
+                    <tr>
+                      {block.headers.map((h, hi) => (
+                        <th key={hi} className="px-3 py-2">
+                          {h}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-200">
+                    {block.rows.map((row, ri) => (
+                      <tr key={ri} className="hover:bg-slate-50">
+                        {row.map((cell, ci) => (
+                          <td key={ci} className="px-3 py-2 text-slate-700 tabular-nums">
+                            {cell}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <ReactMarkdown
+                key={bIdx}
+                components={{
+                  h1: ({ children }) => (
+                    <h1 className="text-xl font-extrabold text-slate-900 pb-2 border-b border-slate-200 mb-3">
+                      {children}
+                    </h1>
+                  ),
+                  h2: ({ children }) => (
+                    <h2 className="text-base font-bold text-slate-900 mt-5 mb-2 flex items-center gap-1.5">
+                      <span className="w-1 h-4 rounded-full bg-indigo-600 inline-block" />
+                      {children}
+                    </h2>
+                  ),
+                  h3: ({ children }) => (
+                    <h3 className="text-sm font-bold text-slate-800 mt-3 mb-1">{children}</h3>
+                  ),
+                  p: ({ children }) => <p className="text-slate-700 leading-7 mb-2.5">{children}</p>,
+                  ul: ({ children }) => <ul className="list-disc pl-5 space-y-1 mb-3 text-slate-700">{children}</ul>,
+                  ol: ({ children }) => <ol className="list-decimal pl-5 space-y-1 mb-3 text-slate-700">{children}</ol>,
+                  code: ({ children }) => (
+                    <code className="px-1.5 py-0.5 rounded bg-slate-100 text-indigo-700 font-mono text-xs">
+                      {children}
+                    </code>
+                  ),
+                  pre: ({ children }) => (
+                    <pre className="p-3.5 rounded-xl bg-slate-900 text-slate-100 font-mono text-xs overflow-x-auto my-3">
+                      {children}
+                    </pre>
+                  ),
+                  blockquote: ({ children }) => (
+                    <blockquote className="pl-3.5 border-l-3 border-indigo-400 bg-indigo-50/50 py-1.5 pr-3 rounded-r-lg text-slate-600 italic my-2">
+                      {children}
+                    </blockquote>
+                  ),
+                }}
+              >
+                {block.content}
+              </ReactMarkdown>
+            )
+          )}
         </article>
       </div>
     </div>

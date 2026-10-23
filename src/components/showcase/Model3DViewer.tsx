@@ -296,7 +296,7 @@ export default function Model3DViewer({
 
   return (
     <div className="rounded-xl overflow-hidden border border-slate-200 bg-slate-950 text-slate-100 select-none">
-      <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-2 bg-slate-900 border-b border-slate-800 text-xs">
+      <div className="flex flex-wrap items-center justify-between gap-2 pl-4 pr-14 py-2 bg-slate-900 border-b border-slate-800 text-xs">
         <div className="flex items-center gap-2 min-w-0">
           <Box size={14} className="text-cyan-400 shrink-0" />
           <span className="font-semibold truncate">{title}</span>
