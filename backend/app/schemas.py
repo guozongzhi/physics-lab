@@ -5,9 +5,9 @@
 """
 
 from datetime import datetime
-from typing import Any, Literal
+from typing import Annotated, Any, Literal
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field, model_validator
+from pydantic import AfterValidator, BaseModel, ConfigDict, EmailStr, Field, model_validator
 from pydantic.alias_generators import to_camel
 
 
@@ -463,7 +463,17 @@ class RecruitmentOut(CamelModel):
 ShowcaseCategory = Literal["photo", "video", "paper", "model", "award"]
 
 
+def validate_showcase_html(value: str) -> str:
+    if len(value.encode("utf-8")) > 1_000_000:
+        raise ValueError("HTML 作品不得超过 1 MB")
+    return value
+
+
+ShowcaseHtml = Annotated[str, AfterValidator(validate_showcase_html)]
+
+
 class ShowcaseCreate(BaseModel):
+    htmlContent: ShowcaseHtml = Field(default="", max_length=1_000_000)
     demoKind: Literal["", "optics", "motor"] = ""
     projectId: str | None = ""
     title: str
@@ -474,6 +484,7 @@ class ShowcaseCreate(BaseModel):
 
 
 class ShowcaseOut(CamelModel):
+    html_content: str = ""
     author_user_id: str = ""
     demo_kind: str = ""
     id: str
@@ -497,6 +508,7 @@ class ShowcaseUpdate(BaseModel):
     与其它请求模型一致：不继承 CamelModel，字段直接用字面 camelCase。
     """
 
+    htmlContent: ShowcaseHtml | None = Field(default=None, max_length=1_000_000)
     title: str | None = None
     coverImage: str | None = None
     description: str | None = None

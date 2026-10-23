@@ -51,6 +51,7 @@ def create_showcase(payload: ShowcaseCreate, db: Session = Depends(get_db), curr
         group_id=payload.groupId,
         author_user_id=current.id if not payload.groupId else "",
         demo_kind=payload.demoKind,
+        html_content=payload.htmlContent,
         description=payload.description or "",
         loves=0,
         loved_by=[],
@@ -88,6 +89,8 @@ def update_showcase(
     if not is_teacher and (not item.group_id or current.group_id != item.group_id):
         raise HTTPException(status_code=403, detail="只能修改本组的作品")
 
+    if payload.htmlContent is not None:
+        item.html_content = payload.htmlContent
     if payload.title is not None:
         item.title = payload.title
     if payload.coverImage is not None:

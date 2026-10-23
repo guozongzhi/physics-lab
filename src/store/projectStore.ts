@@ -53,7 +53,7 @@ interface ProjectState {
    */
   updateShowcaseItem: (
     id: string,
-    patch: Partial<Pick<ShowcaseItem, 'title' | 'coverImage' | 'description' | 'category'>>,
+    patch: Partial<Pick<ShowcaseItem, 'title' | 'coverImage' | 'description' | 'category' | 'htmlContent'>>,
     keepStatus?: boolean
   ) => void;
   /** 教师/管理员下架作品；已奖励的能量币不回滚 */
@@ -380,6 +380,7 @@ export const useProjectStore = create<ProjectState>((set, get) => {
         projectId: partial.projectId || '',
         title: partial.title,
         coverImage: partial.coverImage,
+        htmlContent: partial.htmlContent || '',
         groupId: partial.groupId,
         description: partial.description || '',
         loves: 0,
@@ -399,6 +400,7 @@ export const useProjectStore = create<ProjectState>((set, get) => {
           projectId: item.projectId || undefined,
           title: item.title,
           coverImage: item.coverImage,
+          htmlContent: item.htmlContent,
           groupId: item.groupId,
           description: item.description,
           category: item.category,

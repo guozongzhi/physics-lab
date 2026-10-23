@@ -1,3 +1,4 @@
+import HtmlDemo from '@/components/showcase/HtmlDemo';
 import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Trophy, Check, X, Zap, AlertTriangle, Image as ImageIcon, Pencil, Trash2 } from 'lucide-react';
@@ -20,6 +21,7 @@ const STATUS_META: Record<ShowcaseItem['status'], { label: string; chip: string 
  * 通过时可以奖励该小组能量币（走 reviewShowcaseItem → 后端 add_tx 真实记账）。
  */
 export default function TeacherShowcaseReview() {
+  const [htmlPreview, setHtmlPreview] = useState<string | null>(null);
   const { showcaseItems, reviewShowcaseItem, updateShowcaseItem, deleteShowcaseItem } = useProjectStore();
   const getGroupById = useGroupStore((s) => s.getGroupById);
   const pushToast = useUIStore((s) => s.pushToast);
@@ -194,6 +196,7 @@ export default function TeacherShowcaseReview() {
                     <span className={cn(meta.chip, '!py-0 !px-1.5 !text-[10px]')}>{meta.label}</span>
                   </div>
                   <div className="text-[12px] text-ink-500 mt-1">{item.authorUserId || groupNameOf(item.groupId)}</div>
+                  {item.htmlContent && <div className="my-3"><button className="btn-outline" onClick={() => setHtmlPreview(htmlPreview === item.id ? null : item.id)}>{htmlPreview === item.id ? '关闭 HTML 预览' : '预览 HTML 交互作品'}</button>{htmlPreview === item.id && <HtmlDemo html={item.htmlContent} title={item.title} />}</div>}
                   {item.description && (
                     <p className="text-[12px] text-ink-400 mt-1 line-clamp-2 leading-relaxed">{item.description}</p>
                   )}

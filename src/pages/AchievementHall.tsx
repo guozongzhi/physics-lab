@@ -2,6 +2,7 @@ import type { LucideIcon } from 'lucide-react';
 import { applyAvatarFallback } from '@/lib/imageFallback';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import HtmlDemo from '@/components/showcase/HtmlDemo';
 import PhysicsDemo from '@/components/showcase/PhysicsDemo';
 import { motion } from 'framer-motion';
 import { Trophy, Heart, Image as ImageIcon, Video, FileText, Box, Medal, Sparkles, MessageSquare, LineChart, BarChart3, Activity, BookOpen, Upload, X, Plus, Pencil } from 'lucide-react';
@@ -13,6 +14,8 @@ import { useAuthStore } from '@/store/authStore';
 import { useUIStore } from '@/store/uiStore';
 import type { ShowcaseCategory } from '@/types';
 import { cn } from '@/lib/utils';
+import { apiEnabled, getToken } from '@/lib/apiClient';
+import { showcaseApi } from '@/lib/api/projects';
 
 type GalleryTab = ShowcaseCategory;
 
@@ -38,6 +41,7 @@ const CATEGORY_LABEL: Record<ShowcaseCategory, string> = Object.fromEntries(
 ) as Record<ShowcaseCategory, string>;
 
 interface ShowcaseCard {
+  htmlContent?: string;
   authorUserId?: string;
   demoKind?: "" | "optics" | "motor";
   id: string;
@@ -65,6 +69,7 @@ export default function AchievementHall() {
   const hallOfFame = useMemo(
     () =>
       showcaseItems
+        .filter((item) => item.status === 'approved')
         .slice()
         .sort((a, b) => b.loves - a.loves)
         .slice(0, 3)
@@ -104,11 +109,15 @@ export default function AchievementHall() {
   const [lightbox, setLightbox] = useState<ShowcaseCard | null>(null);
   const [lovedCards, setLovedCards] = useState<Set<string>>(new Set());
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
+  const [htmlError, setHtmlError] = useState('');
+  const [saveError, setSaveError] = useState('');
+  const [saving, setSaving] = useState(false);
   const [uploadForm, setUploadForm] = useState({
     type: 'photo' as GalleryTab,
     title: '',
     description: '',
     imageUrl: '',
+    htmlContent: '',
   });
   // 非空表示正在修改这条作品（本组的），而不是新建
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -116,12 +125,15 @@ export default function AchievementHall() {
   /** 打开修改弹窗并预填现有内容 */
   const openEdit = (card: { id: string; title: string; imageUrl: string; groupId: string }) => {
     const item = showcaseItems.find((s) => s.id === card.id);
+    setHtmlError('');
+    setSaveError('');
     setEditingId(card.id);
     setUploadForm({
       type: (item?.category || 'photo') as GalleryTab,
       title: item?.title || card.title,
       description: item?.description || '',
       imageUrl: item?.coverImage || card.imageUrl || '',
+      htmlContent: item?.htmlContent || '',
     });
     setUploadDialogOpen(true);
   };
@@ -170,33 +182,44 @@ export default function AchievementHall() {
     }
   };
 
-  const handleUpload = () => {
-    if (!uploadForm.title.trim()) return pushToast('请填写作品标题', 'warning');
-    if (!uploadForm.imageUrl) return pushToast('请上传图片', 'warning');
-    if (!groupId) return pushToast('请先登录', 'warning');
-
-    if (editingId) {
-      updateShowcaseItem(editingId, {
-        title: uploadForm.title.trim(),
-        coverImage: uploadForm.imageUrl,
-        description: uploadForm.description.trim(),
-        category: uploadForm.type,
-      });
-      pushToast('已保存，需等待教师重新审批', 'success');
-    } else {
-      addShowcaseItem({
-        title: uploadForm.title.trim(),
-        coverImage: uploadForm.imageUrl,
-        groupId,
-        description: uploadForm.description.trim(),
-        category: uploadForm.type,
-      });
-      pushToast('作品已提交，等待教师审批', 'success');
+  const handleUpload = async () => {
+    if (saving) return;
+    setSaveError('');
+    if (!uploadForm.title.trim()) return setSaveError('请填写作品标题');
+    if (!uploadForm.imageUrl && !uploadForm.htmlContent) return setSaveError('请上传封面图片或 HTML 作品');
+    if (!groupId) return setSaveError('请先加入小组后提交作品');
+    const payload = {
+      title: uploadForm.title.trim(),
+      coverImage: uploadForm.imageUrl || showcaseFallback,
+      htmlContent: uploadForm.htmlContent,
+      description: uploadForm.description.trim(),
+      category: uploadForm.type,
+    };
+    setSaving(true);
+    const token = getToken();
+    try {
+      if (apiEnabled) {
+        const saved = editingId
+          ? await showcaseApi.update(editingId, payload)
+          : await showcaseApi.create({ ...payload, groupId });
+        if (getToken() !== token) return;
+        useProjectStore.setState(state => ({ showcaseItems: editingId
+          ? state.showcaseItems.map(item => item.id === editingId ? saved : item)
+          : [...state.showcaseItems, saved] }));
+      } else if (editingId) {
+        updateShowcaseItem(editingId, payload);
+      } else {
+        addShowcaseItem({ ...payload, groupId });
+      }
+      pushToast(editingId ? '已保存，需等待教师重新审批' : '作品已提交，等待教师审批', 'success');
+      setUploadDialogOpen(false);
+      setEditingId(null);
+      setUploadForm({ type: 'photo', title: '', description: '', imageUrl: '', htmlContent: '' });
+    } catch (error) {
+      setSaveError(error instanceof TypeError ? '网络连接失败，内容已保留，请检查网络后重试' : error instanceof Error ? `保存失败：${error.message}` : '保存失败，请重试');
+    } finally {
+      setSaving(false);
     }
-
-    setUploadDialogOpen(false);
-    setEditingId(null);
-    setUploadForm({ type: 'photo', title: '', description: '', imageUrl: '' });
   };
 
   const distributeByWaterfall = (list: ShowcaseCard[], cols: number) => {
@@ -219,6 +242,7 @@ export default function AchievementHall() {
       groupId: item.groupId,
       authorUserId: item.authorUserId,
       demoKind: item.demoKind,
+      htmlContent: item.htmlContent,
       loves: item.loves,
       description: item.description,
       category: item.category,
@@ -294,10 +318,10 @@ export default function AchievementHall() {
                   );
                 })}
                 <button
-                  onClick={() => setUploadDialogOpen(true)}
+                  onClick={() => { setHtmlError(''); setSaveError(''); setEditingId(null); setUploadForm({ type: 'photo', title: '', description: '', imageUrl: '', htmlContent: '' }); setUploadDialogOpen(true); }}
                   className={cn(
                     'px-3.5 py-2 rounded-xl text-[12.5px] font-semibold transition-all flex items-center gap-1.5',
-                    'bg-gradient-to-br from-emerald-500 to-teal-500 text-white shadow-glowEmerald hover:shadow-glowEmerald/80'
+                    'bg-gradient-to-br from-blue-600 to-sky-500 text-white shadow-glowEmerald hover:shadow-glowEmerald/80'
                   )}
                 >
                   <Upload size={14} />
@@ -398,7 +422,7 @@ export default function AchievementHall() {
                               </span>
                             </button>
                             <div className="flex items-center gap-1 text-[12px] text-ink-500 font-semibold">
-                              <span className="text-[11px]">{card.demoKind ? '打开交互演示 →' : CATEGORY_LABEL[card.category]}</span>
+                              <span className="text-[11px]">{card.demoKind || card.htmlContent ? '打开交互演示 →' : CATEGORY_LABEL[card.category]}</span>
                             </div>
                           </div>
                           <div className="flex items-center gap-2">
@@ -407,7 +431,7 @@ export default function AchievementHall() {
                             </div>
                             {isMine && (
                               <button
-                                onClick={() => openEdit(card)}
+                                onClick={(event) => { event.stopPropagation(); openEdit(card); }}
                                 className="w-7 h-7 rounded-lg flex items-center justify-center text-ink-400 hover:text-mission-600 hover:bg-mission-50 transition"
                                 title="修改本组作品（改后需教师重新审批）"
                                 aria-label={`修改作品 ${card.title}`}
@@ -615,12 +639,12 @@ export default function AchievementHall() {
           </div>
         </div>
       </div>
-    {uploadDialogOpen && (
+    {uploadDialogOpen && createPortal(
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          className="fixed inset-0 z-[200] flex items-center justify-center p-4"
         >
           <div className="absolute inset-0 bg-ink-900/60 backdrop-blur-sm" onClick={() => setUploadDialogOpen(false)} />
           <motion.div
@@ -628,9 +652,11 @@ export default function AchievementHall() {
             animate={{ scale: 1, y: 0 }}
             exit={{ scale: 0.95, y: 20 }}
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            className="relative w-full max-w-md glass-card rounded-[28px] p-6 shadow-2xl"
+            role="dialog" aria-modal="true" aria-label={editingId ? '编辑作品' : '上传作品'}
+            className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-slate-50 border border-blue-200 rounded-[28px] p-6 shadow-2xl"
           >
             <button
+              aria-label="关闭作品编辑"
               onClick={() => setUploadDialogOpen(false)}
               className="absolute top-4 right-4 w-8 h-8 rounded-full bg-ink-100/50 flex items-center justify-center text-ink-500 hover:bg-ink-200 transition-colors"
             >
@@ -638,12 +664,12 @@ export default function AchievementHall() {
             </button>
             
             <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center text-white shadow-lg shadow-emerald-500/20">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-sky-500 flex items-center justify-center text-white shadow-lg shadow-emerald-500/20">
                 <Upload size={20} />
               </div>
               <div>
-                <h3 className="font-bold text-ink-800 text-lg">上传作品</h3>
-                <p className="text-[12px] text-ink-500">分享你的研究成果</p>
+                <h3 className="font-bold text-ink-800 text-lg">{editingId ? '编辑作品' : '上传作品'}</h3>
+                <p className="text-[12px] text-ink-500">填写信息 → 上传内容并预览 → 提交审核</p>
               </div>
             </div>
             
@@ -677,6 +703,7 @@ export default function AchievementHall() {
                 <label className="block text-[12px] font-semibold text-ink-700 mb-2">作品标题</label>
                 <input
                   type="text"
+                  aria-label="作品标题"
                   value={uploadForm.title}
                   onChange={(e) => setUploadForm((prev) => ({ ...prev, title: e.target.value }))}
                   placeholder="输入作品标题..."
@@ -687,6 +714,7 @@ export default function AchievementHall() {
               <div>
                 <label className="block text-[12px] font-semibold text-ink-700 mb-2">作品描述</label>
                 <textarea
+                  aria-label="作品描述"
                   value={uploadForm.description}
                   onChange={(e) => setUploadForm((prev) => ({ ...prev, description: e.target.value }))}
                   placeholder="描述你的作品..."
@@ -696,31 +724,50 @@ export default function AchievementHall() {
               </div>
               
               <div>
-                <label className="block text-[12px] font-semibold text-ink-700 mb-2">作品图片</label>
+                <label className="block text-[12px] font-semibold text-ink-700 mb-2">封面图片（HTML 作品可选）</label>
                 <div className="relative">
                   {uploadForm.imageUrl ? (
-                    <div className="aspect-video rounded-xl overflow-hidden ring-2 ring-mission-400/50">
+                    <div className="h-28 rounded-xl overflow-hidden ring-2 ring-mission-400/50">
                       <img src={uploadForm.imageUrl} alt="预览" className="w-full h-full object-cover" />
+                      <label className="absolute bottom-2 right-2 rounded-lg bg-white px-3 py-2 text-blue-700 text-xs cursor-pointer">更换封面<input aria-label="更换封面" type="file" accept="image/*" className="hidden" onChange={handleImageUpload} /></label>
                     </div>
                   ) : (
                     <label className="flex flex-col items-center justify-center w-full h-32 rounded-xl border-2 border-dashed border-ink-300 bg-ink-50/50 hover:border-mission-400 hover:bg-mission-50/50 transition-all cursor-pointer">
                       <Plus size={24} className="text-ink-400 mb-2" />
                       <span className="text-[12px] text-ink-500">点击上传图片</span>
-                      <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+                      <input aria-label="上传封面图片" type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
                     </label>
                   )}
                 </div>
               </div>
               
+              <div className="rounded-xl border border-blue-200 bg-blue-50/60 p-4 space-y-3">
+                <label className="block text-sm font-bold text-blue-900">交互作品 HTML
+                  <input aria-label="上传 HTML 作品" type="file" accept=".html,.htm,text/html" className="block w-full text-xs mt-3" onChange={async e => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    e.target.value = '';
+                    if (!/\.html?$/i.test(file.name) || file.size > 1_000_000) { setHtmlError('请选择不超过 1 MB 的 HTML 文件'); return; }
+                    setHtmlError('');
+                    try { const html = await file.text(); setUploadForm(prev => ({ ...prev, htmlContent: html })); }
+                    catch { setHtmlError('读取 HTML 文件失败，请重新选择'); }
+                  }} />
+                </label>
+                <p className="text-xs text-blue-800 leading-5">支持内嵌 CSS、JavaScript 和 data 图片的单文件演示，大小不超过 1 MB；不加载外部脚本、网络接口或同目录文件。光学和电机为平台内置 Demo。</p>
+                {htmlError && <p role="alert" className="text-sm text-red-700">{htmlError}</p>}
+                {uploadForm.htmlContent && <><HtmlDemo html={uploadForm.htmlContent} title="HTML 作品预览" /><button type="button" className="text-sm text-blue-700 underline" onClick={() => setUploadForm(prev => ({ ...prev, htmlContent: '' }))}>移除 HTML 作品</button></>}
+              </div>
+              {saveError && <p role="alert" className="text-sm text-red-700">{saveError}</p>}
               <button
+                disabled={saving}
                 onClick={handleUpload}
-                className="w-full py-3 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 text-white font-semibold shadow-lg shadow-emerald-500/25 hover:shadow-xl hover:shadow-emerald-500/30 transition-all"
+                className="w-full py-3 rounded-xl bg-gradient-to-br from-blue-600 to-sky-500 text-white font-semibold shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30 transition-all"
               >
-                确认上传
+                {saving ? '正在保存…' : editingId ? '保存作品' : '提交作品审核'}
               </button>
             </div>
           </motion.div>
-        </motion.div>
+        </motion.div>, document.body
       )}
       {/* 点作品放大：大图 + 作者小组 + 说明（原先点卡片没有任何反应） */}
       {lightbox && createPortal(
@@ -740,7 +787,7 @@ export default function AchievementHall() {
             >
               <X size={18} />
             </button>
-            {lightbox.demoKind ? <PhysicsDemo kind={lightbox.demoKind} /> : <div className="relative w-full min-h-[240px] bg-ink-100 flex items-center justify-center">
+            {lightbox.htmlContent ? <HtmlDemo html={lightbox.htmlContent} title={lightbox.title} /> : lightbox.demoKind ? <PhysicsDemo kind={lightbox.demoKind} /> : <div className="relative w-full min-h-[240px] bg-ink-100 flex items-center justify-center">
               <img
                 src={lightbox.imageUrl || showcaseFallback}
                 alt={lightbox.title}

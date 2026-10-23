@@ -75,6 +75,8 @@ def _run_lightweight_migrations() -> None:
                 conn.execute(text("ALTER TABLE showcase_items ADD COLUMN reject_reason TEXT DEFAULT ''"))
             if "awarded_coins" not in sc_columns:
                 conn.execute(text("ALTER TABLE showcase_items ADD COLUMN awarded_coins INTEGER DEFAULT 0"))
+            if "html_content" not in sc_columns:
+                conn.execute(text("ALTER TABLE showcase_items ADD COLUMN html_content TEXT DEFAULT ''"))
             if "category" not in sc_columns:
                 conn.execute(text("ALTER TABLE showcase_items ADD COLUMN category VARCHAR DEFAULT 'photo'"))
                 conn.execute(text("CREATE INDEX IF NOT EXISTS ix_showcase_items_category ON showcase_items (category)"))

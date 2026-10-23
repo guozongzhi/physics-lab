@@ -226,6 +226,6 @@ def test_showcase_upgrade_preserves_existing_records_and_is_idempotent(monkeypat
     database._run_lightweight_migrations()
     with legacy.connect() as conn:
         row = conn.execute(text("SELECT * FROM showcase_items")).mappings().one()
-        assert dict(row) == {"id": "old", "group_id": "g-1", "status": "approved", "reject_reason": "", "awarded_coins": 50, "category": "photo", "author_user_id": "", "demo_kind": ""}
+        assert dict(row) == {"id": "old", "group_id": "g-1", "status": "approved", "reject_reason": "", "awarded_coins": 50, "category": "photo", "author_user_id": "", "demo_kind": "", "html_content": ""}
         assert conn.execute(text("PRAGMA integrity_check")).scalar() == "ok"
     legacy.dispose()

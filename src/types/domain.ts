@@ -164,6 +164,7 @@ export interface Recruitment {
 }
 
 export interface ShowcaseItem {
+  htmlContent?: string;
   authorUserId?: string;
   demoKind?: "" | "optics" | "motor";
   id: string;

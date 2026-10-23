@@ -212,6 +212,7 @@ class ShowcaseItem(Base):
     group_id: Mapped[str] = mapped_column(String, index=True)
     author_user_id: Mapped[str] = mapped_column(String, default="")
     demo_kind: Mapped[str] = mapped_column(String, default="")
+    html_content: Mapped[str] = mapped_column(Text, default="")
     description: Mapped[str] = mapped_column(Text, default="")
     loves: Mapped[int] = mapped_column(Integer, default=0)
     loved_by: Mapped[list] = mapped_column(JSON, default=list)
