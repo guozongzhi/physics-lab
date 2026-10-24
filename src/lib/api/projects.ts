@@ -59,6 +59,7 @@ export const recruitmentsApi = {
 };
 
 export const showcaseApi = {
+  videoTicket: (filename: string) => api.post<{ url: string }>(`/api/showcase/video/${encodeURIComponent(filename)}/ticket`),
   list: () => api.get<ShowcaseItem[]>('/api/showcase'),
   create: (payload: {
     projectId?: string;
@@ -86,10 +87,16 @@ export const showcaseApi = {
   /** 流式上传最大 100 MB 的实验视频文件，支持实时进度回调 (0~100) */
   uploadVideo: (
     file: File,
-    onProgress?: (percent: number) => void
+    onProgress?: (percent: number) => void,
+    signal?: AbortSignal
   ): Promise<{ url: string; filename: string; size: number }> => {
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
+      if (signal?.aborted) { reject(new DOMException('已取消上传', 'AbortError')); return; }
+      const abort = () => xhr.abort();
+      signal?.addEventListener('abort', abort, { once: true });
+      xhr.onloadend = () => signal?.removeEventListener('abort', abort);
+      xhr.onabort = () => reject(new DOMException('已取消上传', 'AbortError'));
       xhr.open('POST', `${API_BASE}/api/showcase/video`, true);
       const token = getToken();
       if (token) {

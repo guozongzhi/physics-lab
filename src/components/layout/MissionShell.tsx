@@ -589,7 +589,7 @@ export default function MissionShell({ children, requireAuth = true }: MissionSh
                 新页面挂起时退出动画永远等不到完成，导航就卡住直到刷新。 */}
             <motion.div
               key={location.pathname}
-              initial={reduceMotion ? false : { opacity: 0, y: 12 }}
+              initial={reduceMotion || location.pathname === '/teacher/groups' ? false : { opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: reduceMotion ? 0 : 0.25 }}
             >

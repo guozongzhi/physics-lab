@@ -18,6 +18,11 @@ html, body, #root {
   height: 100%;
 }
 
+/* Keep page width steady when lazy routes or dialogs change scrollbar visibility. */
+html {
+  scrollbar-gutter: stable;
+}
+
 body {
   font-family: "Inter", "Noto Sans SC", -apple-system, system-ui, sans-serif;
   background-color: var(--ink-bg-1);

@@ -24,12 +24,19 @@ export function captureVideoFrame(file: File): Promise<string> {
   return new Promise((resolve) => {
     const url = URL.createObjectURL(file);
     const video = document.createElement('video');
-    video.preload = 'metadata';
+    video.preload = 'auto';
     video.muted = true;
     video.playsInline = true;
     video.src = url;
 
+    const timer = window.setTimeout(() => { cleanup(); resolve(''); }, 5000);
     const cleanup = () => {
+      window.clearTimeout(timer);
+      video.onloadeddata = null;
+      video.onseeked = null;
+      video.onerror = null;
+      video.removeAttribute('src');
+      video.load();
       URL.revokeObjectURL(url);
     };
 

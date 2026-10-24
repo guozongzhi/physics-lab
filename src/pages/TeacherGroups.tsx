@@ -77,23 +77,6 @@ const FLEET_THEMES = [
   { color: '#06B6D4', grad: 'from-cyan-400 via-cyan-500 to-mission-500' },
 ];
 
-function useTicker(target: number, duration = 900) {
-  const [val, setVal] = useState(0);
-  useEffect(() => {
-    let raf: number;
-    const t0 = performance.now();
-    const step = (now: number) => {
-      const p = Math.min(1, (now - t0) / duration);
-      const ease = 1 - Math.pow(1 - p, 3);
-      setVal(Math.round(target * ease));
-      if (p < 1) raf = requestAnimationFrame(step);
-    };
-    raf = requestAnimationFrame(step);
-    return () => cancelAnimationFrame(raf);
-  }, [target, duration]);
-  return val;
-}
-
 /** 开放窗口的"自动关闭"选项。value 为空＝不限时。 */
 const WINDOW_MINUTE_OPTIONS: Array<{ label: string; value: number | null }> = [
   { label: '30 分钟', value: 30 },
@@ -413,54 +396,36 @@ export default function TeacherGroups() {
 
   return (
     <>
-      <div className="space-y-6">
-        <motion.section
-          initial={{ opacity: 0, y: 18 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="glass-card p-6 md:p-8 rounded-[28px] relative overflow-hidden"
-        >
-          <div className="absolute -top-20 -right-10 w-96 h-96 rounded-full bg-nova-400/12 blur-3xl pointer-events-none" />
-          <div className="absolute -bottom-24 -left-10 w-96 h-96 rounded-full bg-mission-400/10 blur-3xl pointer-events-none" />
-          <div className="relative z-10 flex flex-wrap items-center gap-5">
-            <div className="relative shrink-0">
-              <div className="absolute -inset-2 rounded-3xl bg-gradient-to-br from-mission-400/20 via-nova-400/15 to-energy-400/20 blur-lg" />
-              <div className="relative w-[84px] h-[84px] rounded-[26px] bg-gradient-to-br from-mission-500 via-nova-500 to-energy-500 flex items-center justify-center shadow-glowMission">
-                <Rocket size={38} className="text-white relative z-10" strokeWidth={2.2} />
-                <Sparkles size={18} className="absolute top-3 right-3 text-white/80" strokeWidth={2.4} />
-              </div>
+      <div className="space-y-5">
+        <section className="glass-card p-4 md:p-5 rounded-[22px] relative overflow-hidden">
+          <div className="absolute -top-20 -right-10 w-64 h-64 rounded-full bg-nova-400/10 blur-3xl pointer-events-none" />
+          <div className="relative z-10 flex flex-wrap items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl shrink-0 bg-gradient-to-br from-mission-500 via-nova-500 to-energy-500 flex items-center justify-center shadow-glowMission">
+              <Rocket size={24} className="text-white" strokeWidth={2} />
             </div>
-            <div className="flex-1 min-w-[260px]">
-              <span className="mission-label">
-                <GripVertical size={12} />
-                FLEET MANAGEMENT · 小组编组 · SEASON 2026
+            <div className="flex-1 min-w-0">
+              <span className="inline-flex items-center gap-1 text-[10px] font-semibold tracking-wider text-mission-600">
+                <GripVertical size={11} /> FLEET MANAGEMENT
               </span>
-              <h1 className="mt-3 text-[30px] md:text-[36px] font-extrabold text-ink-900 leading-[1.1] tracking-tight">
-                Fleet Management
-                <span className="block text-gradient-mission mt-1">物理创新班 · 小组编组指挥台</span>
-              </h1>
-              <p className="mt-3 text-[14px] md:text-[15px] text-ink-500 leading-relaxed max-w-2xl">
-                当前 <b className="text-ink-700">{groups.length} 个</b> 小组 ·{' '}
-                <b className="text-ink-700">{totalMembers} 名</b> 已分组研究员 ·{' '}
-                <b className="text-alert-600">{unassigned.length} 名</b> 待分配
+              <h1 className="mt-1 text-[20px] md:text-[22px] font-bold text-ink-900 leading-snug">分组调度</h1>
+              <p className="mt-1 text-[12px] text-ink-500 leading-relaxed">
+                {groups.length} 个小组 · {totalMembers} 人已分组 ·{' '}
+                <span className={unassigned.length ? 'font-semibold text-alert-600' : ''}>{unassigned.length} 人待分配</span>
               </p>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 w-full lg:w-auto [&>*:last-child]:col-span-2 sm:[&>*:last-child]:col-span-1">
+            <div className="grid grid-cols-3 gap-2 w-full xl:w-auto">
               <FleetStat label="总小组" val={groups.length} unit="个" grad="from-mission-400 to-nova-500" icon={Rocket} />
               <FleetStat label="已分组" val={totalMembers} unit="人" grad="from-energy-400 to-alert-500" icon={Users} />
               <FleetStat label="能量池" val={energyPool} unit="⚡" grad="from-growth-400 to-mission-500" icon={Coins} />
             </div>
           </div>
-        </motion.section>
+        </section>
 
         <TransferRequests teacher />
 
         {/* 挑战奖励单价 —— 定价权归教师，学生不能自填 */}
-        <motion.section
-          initial={{ opacity: 0, y: 14 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.45, delay: 0.04 }}
-          className="glass-card p-5 md:p-6 rounded-[22px]"
+        <section
+          className="glass-card p-4 md:p-5 rounded-[22px]"
         >
           <div className="flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-energy-400 to-alert-500 flex items-center justify-center text-white shadow-md shrink-0">
@@ -495,7 +460,7 @@ export default function TeacherGroups() {
                 </div>
               </label>
             ))}
-            <button className="btn-growth !py-2.5 !px-5" onClick={saveRates}>
+            <button className="btn-growth !py-2.5 !px-4 !text-[13px]" onClick={saveRates}>
               保存单价
             </button>
             <span className="text-[12px] text-ink-500 pb-1">
@@ -504,14 +469,11 @@ export default function TeacherGroups() {
               <b className="text-energy-600 tabular-nums">{rateHard * 10}</b> ⚡ 之间
             </span>
           </div>
-        </motion.section>
+        </section>
 
         {/* 开放窗口 —— 防学生在无人监督时反复刷币 */}
-        <motion.section
-          initial={{ opacity: 0, y: 14 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.45, delay: 0.05 }}
-          className="glass-card p-5 md:p-6 rounded-[22px]"
+        <section
+          className="glass-card p-4 md:p-5 rounded-[22px]"
         >
           <div className="flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-mission-400 to-nova-500 flex items-center justify-center text-white shadow-md shrink-0">
@@ -596,15 +558,12 @@ export default function TeacherGroups() {
           <p className="mt-4 text-[12px] text-ink-500">
             开关和时长改完立刻生效，不需要保存。组间转账不单设开关：任一窗口开着时组长即可提交转账申请，老师审核通过后生效。
           </p>
-        </motion.section>
+        </section>
 
         {/* 未分组学生 */}
         {unassigned.length > 0 && (
-          <motion.section
-            initial={{ opacity: 0, y: 14 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.45, delay: 0.05 }}
-            className="glass-card p-5 md:p-6 rounded-[22px] border-2 border-alert-200/60"
+          <section
+            className="glass-card p-4 md:p-5 rounded-[22px] border-2 border-alert-200/60"
           >
             <div className="flex items-center gap-2 mb-3">
               <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-alert-400 to-energy-500 flex items-center justify-center text-white shadow-md">
@@ -660,14 +619,11 @@ export default function TeacherGroups() {
                 </div>
               ))}
             </div>
-          </motion.section>
+          </section>
         )}
 
         {/* 工具栏 */}
-        <motion.section
-          initial={{ opacity: 0, y: 14 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.45, delay: 0.08 }}
+        <section
           className="glass-card p-4 md:p-5 rounded-[22px] flex flex-wrap items-center gap-3 md:gap-4"
         >
           <div className="flex items-center gap-2.5 bg-gradient-to-br from-energy-50 via-white to-mission-50 border border-energy-200/60 rounded-[16px] px-4 py-3">
@@ -695,7 +651,7 @@ export default function TeacherGroups() {
               setResetConfirmStep(0);
               setDialog('reset');
             }}
-            className="btn-danger inline-flex items-center gap-2"
+            className="btn-danger !text-[13px] !px-4 !py-2.5 inline-flex items-center gap-2"
           >
             <RefreshCw size={15} />
             批量重置所有小组能量
@@ -709,12 +665,12 @@ export default function TeacherGroups() {
               setNewGroupMembers([]);
               setDialog('new');
             }}
-            className="btn-mission ml-auto inline-flex items-center gap-2"
+            className="btn-mission !text-[13px] !px-4 !py-2.5 ml-auto inline-flex items-center gap-2"
           >
             <Plus size={15} />
             新建小组
           </button>
-        </motion.section>
+        </section>
 
         {groups.length === 0 ? (
           <div className="glass-card p-10 rounded-[24px] text-center text-ink-500">
@@ -722,12 +678,12 @@ export default function TeacherGroups() {
             还没有任何小组，点击右上角「新建小组」开始编组。
           </div>
         ) : (
-          <div className="space-y-10">
+          <div className="space-y-7">
             {groupsByClass.map((bucket) => (
               <section key={bucket.classId}>
                 <div className="glass-card flex items-center gap-3 mb-4 px-4 py-3 rounded-2xl">
                   <div className="w-1 h-7 rounded-full bg-gradient-to-b from-mission-400 to-mission-600 shrink-0" />
-                  <h2 className="text-[18px] md:text-[19px] font-extrabold text-ink-900 tracking-tight">
+                  <h2 className="text-[16px] font-bold text-ink-900 tracking-tight">
                     {bucket.className}
                     <span className="ml-2 text-[12.5px] font-semibold text-ink-500">
                       {bucket.groups.length} 个小组
@@ -735,27 +691,24 @@ export default function TeacherGroups() {
                   </h2>
                   <div className="flex-1 h-px bg-gradient-to-r from-ink-200/70 to-transparent" />
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                   {bucket.groups.map((g, idx) => {
                     const members = usersByGroup[g.id] || [];
                     const leader = members.find((u) => u.role === 'leader') || members[0];
                     const theme = FLEET_THEMES[idx % FLEET_THEMES.length];
                     const maxCoins = Math.max(1, ...bucket.groups.map((x) => x.totalCoins));
               return (
-                <motion.article
+                <article
                   key={g.id}
-                  initial={{ opacity: 0, y: 22, scale: 0.97 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  transition={{ duration: 0.4, delay: 0.12 + idx * 0.05, type: 'spring', stiffness: 90 }}
-                  className="glass-card glass-card-hover rounded-[24px] p-0 overflow-hidden relative"
+                  className="glass-card transition-shadow hover:shadow-lg rounded-[20px] p-0 overflow-hidden relative"
                 >
-                  <div className={cn('h-3 w-full bg-gradient-to-r shadow-sm', theme.grad)} />
+                  <div className={cn('h-1.5 w-full bg-gradient-to-r', theme.grad)} />
                   <div className={cn('absolute top-0 left-0 right-0 h-28 opacity-25 pointer-events-none bg-gradient-to-b', theme.grad, 'to-transparent blur-xl')} />
-                  <div className="p-5 md:p-6 relative z-10">
-                    <div className="flex items-start justify-between mb-4">
+                  <div className="p-4 md:p-[18px] relative z-10">
+                    <div className="flex items-start justify-between mb-3">
                       <div className="flex items-center gap-3 min-w-0">
                         <div
-                          className="relative w-14 h-14 rounded-2xl shrink-0 flex items-center justify-center text-white text-[22px] font-extrabold shadow-lg"
+                          className="relative w-11 h-11 rounded-xl shrink-0 flex items-center justify-center text-white text-[16px] font-bold shadow-sm"
                           style={{
                             background: `linear-gradient(135deg, ${theme.color} 0%, ${theme.color}dd 50%, ${theme.color}99 100%)`,
                             boxShadow: `0 8px 20px ${theme.color}35, 0 0 0 2px rgba(255,255,255,0.7) inset`,
@@ -768,7 +721,7 @@ export default function TeacherGroups() {
                         </div>
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <h3 className="font-extrabold text-[17px] text-ink-800 truncate">{g.name}</h3>
+                            <h3 className="font-bold text-[15px] leading-5 text-ink-800 truncate">{g.name}</h3>
                             <span className="chip-mission !py-0.5 !px-2 !text-[10px] shrink-0">
                               <Shield size={10} />
                               #{idx + 1}
@@ -786,7 +739,7 @@ export default function TeacherGroups() {
                       </div>
                     </div>
 
-                    <div className="mb-4">
+                    <div className="mb-3">
                       {members.length ? (
                         <AvatarStack users={members} size={32} max={6} />
                       ) : (
@@ -794,22 +747,22 @@ export default function TeacherGroups() {
                       )}
                     </div>
 
-                    <div className="flex items-end justify-between mb-5">
+                    <div className="flex items-end justify-between mb-3">
                       <div>
                         <div className="text-[11px] text-ink-400 font-semibold tracking-wider uppercase mb-1 flex items-center gap-1">
                           <Zap size={12} className="text-energy-500" />
                           当前能量储备
                         </div>
                         <div className="flex items-baseline gap-2">
-                          <span className="text-[40px] font-black leading-none tabular-nums">
+                          <span className="text-[28px] font-bold leading-tight tabular-nums">
                             <span
                               className="bg-clip-text text-transparent"
                               style={{ backgroundImage: `linear-gradient(135deg, ${theme.color} 0%, #FF8A34 100%)` }}
                             >
-                              <NumTicker val={g.totalCoins} />
+                              {g.totalCoins.toLocaleString()}
                             </span>
                           </span>
-                          <span className="text-energy-600 text-lg font-bold">⚡</span>
+                          <span className="text-energy-600 text-sm font-semibold">⚡</span>
                         </div>
                         <div className="mt-1 text-[11px] text-ink-400">
                           平均 {Math.round(g.totalCoins / Math.max(1, members.length))}/人
@@ -817,14 +770,14 @@ export default function TeacherGroups() {
                       </div>
                     </div>
 
-                    <div className="w-full h-2 rounded-full bg-ink-100/80 overflow-hidden mb-5">
+                    <div className="w-full h-1.5 rounded-full bg-ink-100/80 overflow-hidden mb-4">
                       <div
                         className={cn('h-full rounded-full bg-gradient-to-r', theme.grad)}
                         style={{ width: `${Math.min(100, (g.totalCoins / maxCoins) * 100)}%` }}
                       />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-2 mb-3">
+                    <div className="grid grid-cols-2 gap-2 mb-2">
                       <button
                         onClick={() => {
                           setActiveGroupId(g.id);
@@ -882,7 +835,7 @@ export default function TeacherGroups() {
                       换班
                     </button>
                   </div>
-                </motion.article>
+                </article>
                   );
                 })}
                 </div>
@@ -1579,26 +1532,20 @@ export default function TeacherGroups() {
 }
 
 function FleetStat({ label, val, unit, grad, icon: Icon }: { label: string; val: number; unit: string; grad: string; icon: LucideIcon }) {
-  const v = useTicker(val, 1000);
   return (
-    <div className="glass-card !shadow-none !border-mission-100/50 px-4 py-3 rounded-2xl min-w-0 sm:min-w-[130px]">
-      <div className="flex items-center gap-2.5">
-        <div className={cn('w-9 h-9 rounded-xl flex items-center justify-center text-white shadow-md bg-gradient-to-br', grad)}>
+    <div className="glass-card !shadow-none !border-mission-100/50 px-2.5 py-2.5 rounded-xl min-w-0 sm:min-w-[112px]">
+      <div className="flex items-center gap-2">
+        <div className={cn('hidden sm:flex w-8 h-8 shrink-0 rounded-lg items-center justify-center text-white shadow-sm bg-gradient-to-br', grad)}>
           <Icon size={16} />
         </div>
         <div>
-          <div className="text-[10px] text-ink-400 font-semibold uppercase tracking-wider leading-none">{label}</div>
+          <div className="text-[11px] text-ink-500 font-medium leading-none">{label}</div>
           <div className="flex items-baseline gap-1 mt-0.5">
-            <span className="text-[22px] font-black text-ink-800 tabular-nums leading-none">{v}</span>
+            <span className="text-[18px] font-bold text-ink-800 tabular-nums leading-none">{val.toLocaleString()}</span>
             <span className="text-[11px] text-ink-500 font-bold">{unit}</span>
           </div>
         </div>
       </div>
     </div>
   );
-}
-
-function NumTicker({ val }: { val: number }) {
-  const v = useTicker(val, 1200);
-  return <span className="tabular-nums">{v.toLocaleString()}</span>;
 }

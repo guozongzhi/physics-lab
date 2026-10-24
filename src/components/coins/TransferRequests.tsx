@@ -77,7 +77,7 @@ export default function TransferRequests({ teacher = false }: { teacher?: boolea
         </button>
       </div>
       {error && <p role="alert" className="text-sm text-danger-600">{error}</p>}
-      {!loading && !error && visible.length === 0 && <p className="text-sm text-ink-400">暂无转账申请</p>}
+      {visible.length === 0 && !error && <p className="text-sm text-ink-400">{loading ? '正在加载转账申请…' : '暂无转账申请'}</p>}
       {visible.map((t) => (
         <div key={t.id} className="rounded-xl border border-ink-100 p-4 space-y-2">
           <div className="flex flex-wrap justify-between gap-2 text-sm">

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Video, Gauge, Repeat, AlertCircle } from 'lucide-react';
-import { resolveShowcaseVideoUrl } from '@/lib/api/projects';
+import { resolveShowcaseVideoUrl, showcaseApi } from '@/lib/api/projects';
 
 const SPEEDS = [0.5, 1, 1.25, 1.5, 2] as const;
 
@@ -17,11 +17,22 @@ export default function VideoShowcasePlayer({
   const [speed, setSpeed] = useState<number>(1);
   const [loop, setLoop] = useState(false);
   const [loadErr, setLoadErr] = useState(false);
-  const resolvedSrc = resolveShowcaseVideoUrl(src);
+  const [resolvedSrc, setResolvedSrc] = useState("");
 
   useEffect(() => {
+    let active = true;
     setLoadErr(false);
-  }, [resolvedSrc]);
+    setResolvedSrc("");
+    const match = src.match(/^\/api\/showcase\/video\/([^/?]+)$/);
+    if (match) {
+      showcaseApi.videoTicket(match[1]).then(({ url }) => {
+        if (active) setResolvedSrc(resolveShowcaseVideoUrl(url));
+      }).catch(() => { if (active) setLoadErr(true); });
+    } else {
+      setResolvedSrc(resolveShowcaseVideoUrl(src));
+    }
+    return () => { active = false; };
+  }, [src]);
 
   const changeSpeed = (nextSpeed: number) => {
     setSpeed(nextSpeed);
@@ -32,8 +43,8 @@ export default function VideoShowcasePlayer({
 
   return (
     <div className="rounded-xl overflow-hidden border border-slate-200 bg-slate-950 text-slate-100">
-      <div className="flex items-center justify-between gap-2 pl-4 pr-14 py-2 bg-slate-900 border-b border-slate-800 text-xs">
-        <div className="flex items-center gap-2 min-w-0">
+      <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 bg-slate-900 border-b border-slate-800 text-xs">
+        <div className="flex items-center gap-2 min-w-0 flex-wrap">
           <Video size={14} className="text-sky-400 shrink-0" />
           <span className="font-semibold truncate">{title}</span>
           <span className="text-[10px] px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-300 shrink-0">
@@ -41,8 +52,8 @@ export default function VideoShowcasePlayer({
           </span>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
-          <div className="flex items-center gap-1 bg-slate-800 px-2 py-0.5 rounded-lg">
+        <div className="flex flex-wrap items-center gap-2 min-w-0">
+          <div className="flex flex-wrap items-center gap-1 bg-slate-800 px-2 py-0.5 rounded-lg">
             <Gauge size={12} className="text-slate-400" />
             {SPEEDS.map((s) => (
               <button
@@ -80,7 +91,7 @@ export default function VideoShowcasePlayer({
       ) : (
         <video
           ref={videoRef}
-          src={resolvedSrc}
+          src={resolvedSrc || undefined}
           poster={poster}
           controls
           playsInline

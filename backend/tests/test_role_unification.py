@@ -29,13 +29,56 @@ def test_teacher_can_create_class(client, auth):
     assert response.json()["name"] == "三班"
 
 
-def test_scoped_teacher_can_only_delete_own_class(client, auth, db):
+def test_scoped_teacher_cannot_create_unmanageable_class(client, auth, db):
+    scoped_teacher(db)
+    before = db.query(Class).count()
+    response = client.post("/api/classes", headers=auth("teacher", "teacher123"), json={"name": "三班"})
+    assert response.status_code == 403
+    assert db.query(Class).count() == before
+    assert db.get(User, "teacher").class_id == "class-1"
+
+
+def test_scoped_teacher_delete_cannot_grant_global_permissions(client, auth, db):
     scoped_teacher(db)
     headers = auth("teacher", "teacher123")
     assert client.delete("/api/classes/class-2", headers=headers).status_code == 403
+    response = client.delete("/api/classes/class-1", headers=headers)
+    assert response.status_code == 409, response.text
+    db.expire_all()
     assert db.get(Class, "class-1") is not None
-    assert client.delete("/api/classes/class-1", headers=headers).status_code == 200
-    assert db.get(Class, "class-1") is None
+    assert db.get(Group, "g-1") is not None
+    assert db.get(User, "u-1") is not None
+    assert db.get(User, "teacher").class_id == "class-1"
+    assert client.patch("/api/classes/class-2", headers=headers, json={"name": "越权"}).status_code == 403
+    assert client.patch("/api/classes/class-1", headers=headers, json={"name": "本班"}).status_code == 200
+
+
+@pytest.mark.parametrize("actor_role", ["teacher", "admin"])
+def test_global_actor_cannot_unbind_teachers_by_deleting_class(client, auth, db, actor_role):
+    db.get(User, "teacher").account_role = actor_role
+    db.add(User(id="scoped-t", username="scoped-t", name="本班教师", account_role="teacher", class_id="class-1", password_hash="unused"))
+    db.commit()
+    headers = auth("teacher", "teacher123")
+    response = client.delete("/api/classes/class-1", headers=headers)
+    assert response.status_code == 409, response.text
+    db.expire_all()
+    assert db.get(User, "scoped-t").class_id == "class-1"
+    assert db.get(Class, "class-1") is not None
+    assert db.get(User, "u-1") is not None
+
+
+@pytest.mark.parametrize("actor_role", ["teacher", "admin"])
+def test_global_actor_can_create_and_manage_class(client, auth, db, actor_role):
+    db.get(User, "teacher").account_role = actor_role
+    db.commit()
+    headers = auth("teacher", "teacher123")
+    created = client.post("/api/classes", headers=headers, json={"name": "三班"})
+    assert created.status_code == 201
+    cid = created.json()["id"]
+    assert client.patch(f"/api/classes/{cid}", headers=headers, json={"name": "新班名"}).status_code == 200
+    assert client.get(f"/api/classes/{cid}/students", headers=headers).status_code == 200
+    assert client.delete(f"/api/classes/{cid}", headers=headers).status_code == 200
+    assert db.get(Class, cid) is None
 
 
 def test_global_teacher_can_move_group_across_classes(client, auth, db):

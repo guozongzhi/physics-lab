@@ -1,6 +1,6 @@
 """管理员路由：班级 CRUD + 教师账号管理。
 
-仅 admin 角色可访问。admin 同时继承 teacher 全部权限（require_teacher 放行 admin）。
+班级业务由教师与管理员管理；教师账号管理仅限管理员。
 """
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -36,9 +36,11 @@ MAX_STUDENTS_PER_CLASS = 30
 def create_class(
     payload: ClassCreate,
     db: Session = Depends(get_db),
-    _: User = Depends(require_teacher),
+    current: User = Depends(require_teacher),
 ):
-    """创建班级（教师或管理员）。"""
+    """创建班级（全校教师或管理员，创建者须能继续管理新班级）。"""
+    if current.account_role == "teacher" and current.class_id:
+        raise HTTPException(status_code=403, detail="仅全校教师或管理员可创建班级")
     cls = Class(id=gen_id("class_"), name=payload.name.strip())
     db.add(cls)
     db.commit()
@@ -70,7 +72,7 @@ def delete_class(
     db: Session = Depends(get_db),
     current: User = Depends(require_teacher),
 ):
-    """删除班级（教师或管理员；绑定班级的教师只能删除本班）。
+    """删除班级（教师或管理员；有关联教师/管理员账号时拒绝删除）。
 
     级联清理：班级下所有小组及其学生、金币流水一并删除。
     """
@@ -79,16 +81,23 @@ def delete_class(
     if not cls:
         raise HTTPException(status_code=404, detail="班级不存在")
 
+    # class_id 为空代表全校权限，删除班级不能隐式提升任何教师的权限。
+    if db.query(User.id).filter(
+        User.class_id == class_id,
+        User.account_role.in_(("teacher", "admin")),
+    ).first():
+        raise HTTPException(status_code=409, detail="该班级仍关联教师账号，请先处理账号归属再删除班级")
+
     groups = db.query(Group).filter(Group.class_id == class_id).all()
     group_ids = [g.id for g in groups]
     if group_ids:
         from ..models import CoinTransaction
-        db.query(User).filter(User.group_id.in_(group_ids)).delete(synchronize_session=False)
+        db.query(User).filter(User.group_id.in_(group_ids), User.account_role == "student").delete(synchronize_session=False)
         db.query(CoinTransaction).filter(CoinTransaction.group_id.in_(group_ids)).delete(synchronize_session=False)
         db.query(Group).filter(Group.id.in_(group_ids)).delete(synchronize_session=False)
 
     # 清除未分组但归属此班的学生引用
-    db.query(User).filter(User.class_id == class_id, User.group_id.is_(None)).update(
+    db.query(User).filter(User.class_id == class_id, User.group_id.is_(None), User.account_role == "student").update(
         {"class_id": None}, synchronize_session=False
     )
     db.delete(cls)

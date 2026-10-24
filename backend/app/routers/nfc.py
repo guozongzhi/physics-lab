@@ -10,7 +10,7 @@ from uuid import uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from fastapi.responses import JSONResponse
-from pydantic import Field
+from pydantic import Field, model_validator
 from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -31,7 +31,14 @@ class DeviceCreate(CamelModel):
 
 
 class DeviceUpdate(CamelModel):
-    enabled: bool
+    enabled: bool | None = None
+    allowed_class_ids: list[str] | None = Field(default=None, min_length=1, max_length=100)
+
+    @model_validator(mode="after")
+    def require_update(self):
+        if not self.model_fields_set or any(getattr(self, field) is None for field in self.model_fields_set):
+            raise ValueError("请提供设备状态或至少一个授权班级，字段不能为 null")
+        return self
 
 
 class CardBind(CamelModel):
@@ -91,7 +98,8 @@ def create_device(payload: DeviceCreate, response: Response, db: Session = Depen
 
 
 @router.get("/devices")
-def list_devices(db: Session = Depends(get_db), actor: User = Depends(require_teacher)):
+def list_devices(response: Response, db: Session = Depends(get_db), actor: User = Depends(require_teacher)):
+    response.headers["Cache-Control"] = "no-store"
     return [device_out(d) for d in db.scalars(select(NfcDevice)).all() if device_in_scope(actor, d)]
 
 
@@ -103,8 +111,17 @@ def change_device(device_id: str, payload: DeviceUpdate, db: Session = Depends(g
         raise HTTPException(404, "设备不存在")
     if not device_in_scope(actor, device):
         raise HTTPException(403, "只能管理本班设备")
-    device.enabled = payload.enabled
-    audit(db, actor, "device.enable" if payload.enabled else "device.disable", device.id)
+    if payload.allowed_class_ids is not None:
+        if any(db.get(Class, cid) is None for cid in payload.allowed_class_ids):
+            raise HTTPException(400, "班级不存在，请刷新班级列表")
+        scope = visible_class_id(actor)
+        if scope and any(cid != scope for cid in payload.allowed_class_ids):
+            raise HTTPException(403, "只能为本班配置设备")
+        device.allowed_class_ids = list(dict.fromkeys(payload.allowed_class_ids))
+        audit(db, actor, "device.scope", device.id)
+    if payload.enabled is not None:
+        device.enabled = payload.enabled
+        audit(db, actor, "device.enable" if payload.enabled else "device.disable", device.id)
     db.commit()
     return device_out(device)
 

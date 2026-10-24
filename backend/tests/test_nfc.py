@@ -1,6 +1,6 @@
 import pytest
 from app.config import settings
-from app.models import CoinTransaction, NfcCard, NfcDevice, User
+from app.models import CoinTransaction, NfcAdminAudit, NfcCard, NfcDevice, User
 from app.routers import nfc
 
 
@@ -80,6 +80,66 @@ def test_credentials_rotation_disable(client, auth, db):
     assert query(client, headers).status_code == 401
     client.patch(path, headers=admin, json={'enabled':True})
     assert query(client, {'Authorization':'Bearer ' + rotated['deviceToken']}).status_code == 404
+
+
+def test_device_class_changes_apply_on_next_tap_without_rotating_token(client, auth, db):
+    admin, device, headers = setup_device(client, auth, db)
+    assert bind(client, admin, user='u-5').status_code == 200
+    assert query(client, headers).status_code == 404
+    path = '/api/nfc/devices/' + device['id']
+    stored_token = db.get(NfcDevice, device['id']).token_hash
+    response = client.patch(path, headers=admin, json={'allowedClassIds':['class-1','class-2','class-2']})
+    assert response.status_code == 200, response.text
+    assert response.json()['allowedClassIds'] == ['class-1','class-2']
+    assert response.json()['enabled'] is True
+    assert 'token' not in response.text.lower()
+    assert db.get(NfcDevice, device['id']).token_hash == stored_token
+    assert query(client, headers).status_code == 200
+    assert client.get('/api/nfc/devices', headers=admin).json()[0]['allowedClassIds'] == ['class-1','class-2']
+    assert db.query(NfcAdminAudit).filter_by(action='device.scope', target_id=device['id']).count() == 1
+    assert client.patch(path, headers=admin, json={'allowedClassIds':['class-1']}).status_code == 200
+    assert query(client, headers).status_code == 404
+
+
+@pytest.mark.parametrize('payload', [{}, {'allowedClassIds':[]}, {'allowedClassIds':None}, {'enabled':None}])
+def test_device_invalid_update_preserves_existing_access(client, auth, db, payload):
+    admin, device, _ = setup_device(client, auth, db)
+    before = db.query(NfcAdminAudit).count()
+    response = client.patch('/api/nfc/devices/' + device['id'], headers=admin, json=payload)
+    assert response.status_code == 422
+    stored = db.get(NfcDevice, device['id'])
+    assert stored.enabled is True and stored.allowed_class_ids == ['class-1']
+    assert db.query(NfcAdminAudit).count() == before
+
+
+def test_device_unknown_class_update_is_atomic(client, auth, db):
+    admin, device, _ = setup_device(client, auth, db)
+    before = db.query(NfcAdminAudit).count()
+    response = client.patch('/api/nfc/devices/' + device['id'], headers=admin,
+                            json={'enabled':False, 'allowedClassIds':['missing']})
+    assert response.status_code == 400
+    stored = db.get(NfcDevice, device['id'])
+    assert stored.enabled is True and stored.allowed_class_ids == ['class-1']
+    assert db.query(NfcAdminAudit).count() == before
+
+
+def test_device_class_update_enforces_teacher_scope_and_student_denial(client, auth, db):
+    admin, device, _ = setup_device(client, auth, db)
+    path = '/api/nfc/devices/' + device['id']
+    assert client.patch(path, headers=auth('u-1'), json={'allowedClassIds':['class-1']}).status_code == 403
+    teacher = db.get(User, 'teacher')
+    teacher.account_role, teacher.class_id = 'teacher', 'class-1'
+    db.commit()
+    assert client.patch(path, headers=admin, json={'allowedClassIds':['class-2']}).status_code == 403
+    assert client.patch(path, headers=admin, json={'allowedClassIds':['class-1']}).status_code == 200
+    teacher.class_id = None
+    db.commit()
+    assert client.patch(path, headers=admin, json={'allowedClassIds':['class-1','class-2']}).status_code == 200
+    teacher.class_id = 'class-1'
+    db.commit()
+    assert client.get('/api/nfc/devices', headers=admin).json() == []
+    assert client.patch(path, headers=admin, json={'allowedClassIds':['class-1']}).status_code == 403
+    assert db.get(NfcDevice, device['id']).allowed_class_ids == ['class-1','class-2']
 
 
 def test_scope_teacher_and_student_permissions(client, auth, db):

@@ -156,7 +156,9 @@ def test_video_file_upload_stream_and_validation(client, auth, tmp_path, monkeyp
     assert video_url.startswith('/api/showcase/video/vid_')
     assert ok.json()['size'] == len(mp4_bytes)
 
-    stream_res = client.get(video_url, headers={'Range': 'bytes=0-15'})
+    assert client.get(video_url).status_code == 401
+    ticket_url = client.post(video_url + '/ticket', headers=auth('u-1')).json()['url']
+    stream_res = client.get(ticket_url, headers={'Range': 'bytes=0-15'})
     assert stream_res.status_code == 206
     assert len(stream_res.content) == 16
 
@@ -171,3 +173,57 @@ def test_video_file_upload_stream_and_validation(client, auth, tmp_path, monkeyp
 
 
 
+
+
+def test_video_permissions_and_ticket_revocation(client, auth, tmp_path, monkeypatch):
+    from app.config import settings
+    from jose import jwt
+    monkeypatch.setattr(settings, 'video_upload_dir', str(tmp_path))
+    data = b'\x00\x00\x00\x18ftypmp42' + b'0' * 32
+    uploaded = client.post('/api/showcase/video', headers=auth('u-1'),
+                           files={'file': ('test.mp4', data, 'video/mp4')}).json()
+    url = uploaded['url']
+    owner = auth('u-1')
+    other = auth('u-3')
+    teacher = auth('teacher', 'teacher123')
+    assert client.post(url + '/ticket').status_code == 401
+    assert client.post(url + '/ticket', headers=other).status_code == 403
+    assert client.post('/api/showcase', headers=other, json={
+        'title': 'stolen', 'groupId': 'g-2', 'coverImage': '',
+        'htmlContent': '<!--VIDEO_SRC-->' + url}).status_code == 403
+    sid = client.post('/api/showcase', headers=owner, json={
+        'title': 'video', 'groupId': 'g-1', 'coverImage': '',
+        'htmlContent': '<!--VIDEO_SRC-->' + url}).json()['id']
+    assert client.post(url + '/ticket', headers=auth('u-2')).status_code == 200
+    assert client.post(url + '/ticket', headers=teacher).status_code == 200
+    assert client.post(url + '/ticket', headers=other).status_code == 403
+    client.post(f'/api/showcase/{sid}/review', headers=teacher, json={'action': 'approve'})
+    signed = client.post(url + '/ticket', headers=other).json()['url']
+    assert client.get(signed).content == data
+    token = signed.split('ticket=')[1]
+    # 文件凭证不能冒充登录凭证，也不能跨文件使用或过期后使用。
+    assert client.get('/api/showcase', headers={'Authorization': 'Bearer ' + token}).status_code == 401
+    assert client.get(signed.replace(uploaded['filename'], 'vid_abcdefgh.mp4')).status_code == 401
+    expired = jwt.encode({'video': uploaded['filename'], 'viewer': 'u-3', 'exp': 1},
+                         settings.jwt_secret, algorithm=settings.jwt_algorithm)
+    assert client.get(url, params={'ticket': expired}).status_code == 401
+    client.post(f'/api/showcase/{sid}/review', headers=teacher,
+                json={'action': 'reject', 'reason': '修改'})
+    assert client.get(signed).status_code == 403
+    client.post(f'/api/showcase/{sid}/review', headers=teacher, json={'action': 'approve'})
+    assert client.get(signed).status_code == 200
+    client.delete(f'/api/showcase/{sid}', headers=teacher)
+    assert client.get(signed).status_code == 403
+
+
+def test_video_upload_larger_than_one_megabyte(client, auth, tmp_path, monkeypatch):
+    from app.config import settings
+    monkeypatch.setattr(settings, 'video_upload_dir', str(tmp_path))
+    data = b'\x00\x00\x00\x18ftypmp42' + b'0' * (2 * 1024 * 1024)
+    result = client.post('/api/showcase/video', headers=auth('u-1'),
+                        files={'file': ('large.mp4', data, 'video/mp4')})
+    assert result.status_code == 200
+    signed = client.post(result.json()['url'] + '/ticket', headers=auth('u-1')).json()['url']
+    response = client.get(signed, headers={'Range': 'bytes=1048576-1048591'})
+    assert response.status_code == 206
+    assert response.content == data[1048576:1048592]

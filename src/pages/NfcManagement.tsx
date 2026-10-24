@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { apiEnabled, getToken } from '@/lib/apiClient';
+import NfcDeviceAccess from '@/components/NfcDeviceAccess';
 
 type Student = { id: string; username: string; name: string; classId: string; className: string; groupName: string };
 type Card = { cardUid: string; userId: string | null; username: string; studentName: string; classId: string | null; className: string; groupName: string; status: string };
@@ -109,6 +110,7 @@ export default function NfcManagement() {
     </div>
     {error && <p role="alert" className="rounded-xl bg-red-50 p-4 text-sm text-red-700">{error}</p>}
     {message && <p role="status" className="rounded-xl bg-emerald-50 p-4 text-sm text-emerald-800">{message}</p>}
+    <NfcDeviceAccess classes={data?.classes || []} />
     <div className="flex flex-wrap gap-4 rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-600">
       <span>全部登记 <strong>{allCards.length}</strong> 张</span><span>备用卡 <strong>{allCards.filter(c => c.status === '备用卡').length}</strong> 张</span>
       <span>所选班级待领卡 <strong>{waiting.length}</strong> 人</span>

@@ -184,6 +184,14 @@ export default function AchievementHall() {
   const [htmlError, setHtmlError] = useState('');
   const [saveError, setSaveError] = useState('');
   const [saving, setSaving] = useState(false);
+  const videoUploadRef = useRef<AbortController | null>(null);
+  useEffect(() => () => videoUploadRef.current?.abort(), []);
+  const cancelVideoUpload = () => {
+    videoUploadRef.current?.abort();
+    videoUploadRef.current = null;
+    setVideoUploading(false);
+    setVideoUploadProgress(0);
+  };
   const [videoUploading, setVideoUploading] = useState(false);
   const [videoUploadProgress, setVideoUploadProgress] = useState(0);
   const [showHtmlCodeEditor, setShowHtmlCodeEditor] = useState(false);
@@ -230,6 +238,7 @@ export default function AchievementHall() {
   );
 
   const resetForm = (defaultType: GalleryTab = 'photo') => {
+    cancelVideoUpload();
     setHtmlError('');
     setSaveError('');
     setEditingId(null);
@@ -247,6 +256,7 @@ export default function AchievementHall() {
 
   /** 打开修改弹窗并预填现有内容 */
   const openEdit = (card: { id: string; title: string; imageUrl: string; groupId: string }) => {
+    cancelVideoUpload();
     const item = showcaseItems.find((s) => s.id === card.id);
     setHtmlError('');
     setSaveError('');
@@ -338,32 +348,34 @@ export default function AchievementHall() {
       setHtmlError('视频文件超出 100 MB 上限，请适当压缩或裁剪后再上传');
       return;
     }
+    cancelVideoUpload();
+    const controller = new AbortController();
+    videoUploadRef.current = controller;
+    const token = getToken();
+    const active = () => videoUploadRef.current === controller && !controller.signal.aborted && getToken() === token;
+    setVideoUploading(true);
+    setVideoUploadProgress(0);
     setHtmlError('');
-    if (!uploadForm.imageUrl) {
-      const poster = await captureVideoFrame(file);
-      if (poster) {
-        setUploadForm((prev) => ({ ...prev, imageUrl: prev.imageUrl || poster }));
+    try {
+      if (!uploadForm.imageUrl) {
+        const poster = await captureVideoFrame(file);
+        if (!active()) return;
+        if (poster) setUploadForm((prev) => ({ ...prev, imageUrl: prev.imageUrl || poster }));
       }
-    }
-    if (apiEnabled) {
-      setVideoUploading(true);
-      setVideoUploadProgress(1);
-      try {
-        const uploaded = await showcaseApi.uploadVideo(file, (pct) => {
-          setVideoUploadProgress(pct);
-        });
-        setEncodedMedia(encodeShowcaseMedia({ kind: 'video', videoSrc: uploaded.url }));
-      } catch (err) {
-        setHtmlError(
-          err instanceof Error ? err.message : '视频上传失败，请检查网络连接后重试'
-        );
-      } finally {
+      const url = apiEnabled
+        ? (await showcaseApi.uploadVideo(file, (pct) => {
+            if (active()) setVideoUploadProgress(pct);
+          }, controller.signal)).url
+        : URL.createObjectURL(file);
+      if (active()) setEncodedMedia(encodeShowcaseMedia({ kind: 'video', videoSrc: url }));
+    } catch (err) {
+      if (active()) setHtmlError(err instanceof Error ? err.message : '视频上传失败，请重试');
+    } finally {
+      if (videoUploadRef.current === controller) {
+        videoUploadRef.current = null;
         setVideoUploading(false);
         setVideoUploadProgress(0);
       }
-    } else {
-      const blobUrl = URL.createObjectURL(file);
-      setEncodedMedia(encodeShowcaseMedia({ kind: 'video', videoSrc: blobUrl }));
     }
   };
 
@@ -407,7 +419,7 @@ export default function AchievementHall() {
   };
 
   const handleUpload = async () => {
-    if (saving) return;
+    if (saving || videoUploadRef.current) return;
     setSaveError('');
     if (!uploadForm.title.trim()) return setSaveError('请填写作品标题');
     if (!uploadForm.imageUrl && !uploadForm.htmlContent)
@@ -947,7 +959,7 @@ export default function AchievementHall() {
           >
             <div
               className="absolute inset-0 bg-ink-900/60 backdrop-blur-sm"
-              onClick={() => setUploadDialogOpen(false)}
+              onClick={() => { cancelVideoUpload(); setUploadDialogOpen(false); }}
             />
             <motion.div
               initial={{ scale: 0.95, y: 20 }}
@@ -961,14 +973,14 @@ export default function AchievementHall() {
             >
               <button
                 aria-label="关闭作品编辑"
-                onClick={() => setUploadDialogOpen(false)}
+                onClick={() => { cancelVideoUpload(); setUploadDialogOpen(false); }}
                 className="absolute top-4 right-4 w-8 h-8 rounded-full bg-ink-100/50 flex items-center justify-center text-ink-500 hover:bg-ink-200 transition-colors"
               >
                 <X size={16} />
               </button>
 
               <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-sky-500 flex items-center justify-center text-white shadow-lg shadow-emerald-500/20">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-sky-500 flex items-center justify-center text-white shadow-lg shadow-blue-500/20">
                   <Upload size={20} />
                 </div>
                 <div>
@@ -976,7 +988,7 @@ export default function AchievementHall() {
                     {editingId ? '编辑作品' : '上传作品'}
                   </h3>
                   <p className="text-[12px] text-ink-500">
-                    选择分类与关联课题 → 上传图片/视频/论文/3D模型/HTML → 预览提交
+                    上传你的作品，审核后展示
                   </p>
                 </div>
               </div>
@@ -994,7 +1006,7 @@ export default function AchievementHall() {
                         <button
                           key={t.key}
                           type="button"
-                          onClick={() => setUploadForm((prev) => ({ ...prev, type: t.key }))}
+                          onClick={() => { cancelVideoUpload(); setUploadForm((prev) => ({ ...prev, type: t.key })); }}
                           className={cn(
                             'px-3 py-1.5 rounded-lg text-[12px] font-medium transition-all flex items-center gap-1',
                             active
@@ -1019,7 +1031,7 @@ export default function AchievementHall() {
                 {myGroupProjects.length > 0 && (
                   <div>
                     <label className="block text-[12px] font-semibold text-ink-700 mb-2">
-                      关联本组科研课题（可选）
+                      关联课题（选填）
                     </label>
                     <select
                       aria-label="关联本组课题"
@@ -1029,7 +1041,7 @@ export default function AchievementHall() {
                       }
                       className="w-full px-4 py-2.5 rounded-xl bg-white/80 border border-ink-200 text-ink-800 text-sm focus:outline-none focus:border-mission-400"
                     >
-                      <option value="">-- 不关联特定课题 --</option>
+                      <option value="">不关联课题</option>
                       {myGroupProjects.map((proj) => (
                         <option key={proj.id} value={proj.id}>
                           {proj.title}（{proj.topic}）
@@ -1057,7 +1069,7 @@ export default function AchievementHall() {
 
                 <div>
                   <label className="block text-[12px] font-semibold text-ink-700 mb-2">
-                    作品描述
+                    作品简介（选填）
                   </label>
                   <textarea
                     aria-label="作品描述"
@@ -1065,16 +1077,16 @@ export default function AchievementHall() {
                     onChange={(e) =>
                       setUploadForm((prev) => ({ ...prev, description: e.target.value }))
                     }
-                    placeholder="描述你的作品背景、实验原理或核心结论..."
-                    rows={3}
+                    placeholder="用一两句话介绍作品"
+                    rows={2}
                     className="w-full px-4 py-2.5 rounded-xl bg-white/80 border border-ink-200 text-ink-800 text-sm focus:outline-none focus:border-mission-400 focus:ring-2 focus:ring-mission-500/10 transition-all resize-none"
                   />
                 </div>
 
-                <div>
-                  <label className="block text-[12px] font-semibold text-ink-700 mb-2">
-                    封面图片（视频/论文/模型/HTML 作品可选）
-                  </label>
+                <details key={`cover-${uploadForm.type}`} open={uploadForm.type === 'photo' || uploadForm.type === 'award' || !!uploadForm.imageUrl || undefined}>
+                  <summary className="cursor-pointer text-[12px] font-semibold text-ink-700 mb-2">
+                    {uploadForm.type === 'photo' || uploadForm.type === 'award' ? '作品图片 / 封面' : '自定义封面（选填）'}
+                  </summary>
                   <div className="relative">
                     {uploadForm.imageUrl ? (
                       <div className="h-28 rounded-xl overflow-hidden ring-2 ring-mission-400/50">
@@ -1108,7 +1120,7 @@ export default function AchievementHall() {
                       </label>
                     )}
                   </div>
-                </div>
+                </details>
 
                 {/* ============ 分类专属多模态上传面板 ============ */}
                 {uploadForm.type === 'video' && (
@@ -1116,34 +1128,23 @@ export default function AchievementHall() {
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-bold text-sky-900 flex items-center gap-1.5">
                         <Video size={15} />
-                        实验视频源文件或流地址
+                        实验视频
                       </span>
                       {parsedFormMedia.kind === 'video' && (
                         <button
                           type="button"
-                          onClick={() =>
-                            setUploadForm((prev) => ({ ...prev, htmlContent: '' }))
-                          }
+                          onClick={() => {
+                            cancelVideoUpload();
+                            setUploadForm((prev) => ({ ...prev, htmlContent: '' }));
+                          }}
                           className="text-xs text-red-600 underline"
                         >
                           移除视频
                         </button>
                       )}
                     </div>
-                    <input
-                      type="url"
-                      aria-label="视频地址"
-                      value={parsedFormMedia.kind === 'video' && !parsedFormMedia.videoSrc.startsWith('data:') ? parsedFormMedia.videoSrc : ''}
-                      onChange={(e) =>
-                        setEncodedMedia(
-                          encodeShowcaseMedia({ kind: 'video', videoSrc: e.target.value })
-                        )
-                      }
-                      placeholder="输入 MP4/WebM 视频流地址 (https://...) 或在下方上传最大 100 MB 本地实验视频..."
-                      className="w-full px-3.5 py-2 rounded-lg bg-white border border-sky-200 text-xs text-slate-800"
-                    />
                     <label className="block text-xs font-medium text-sky-800">
-                      上传本地实拍实验视频（支持 .mp4 / .webm / .mov，最大 100 MB，自动流式存储并抓取首帧封面）：
+                      选择视频 · MP4 / WebM / MOV，最大 100 MB
                       <input
                         aria-label="上传实验视频"
                         type="file"
@@ -1153,10 +1154,28 @@ export default function AchievementHall() {
                         onChange={handleVideoFileUpload}
                       />
                     </label>
+                    <details className="text-xs text-sky-800">
+                      <summary className="cursor-pointer font-medium">使用视频链接</summary>
+                      <div className="mt-2">
+                    <input
+                      type="url"
+                      aria-label="视频地址"
+                      disabled={videoUploading}
+                      value={parsedFormMedia.kind === 'video' && !parsedFormMedia.videoSrc.startsWith('data:') ? parsedFormMedia.videoSrc : ''}
+                      onChange={(e) =>
+                        setEncodedMedia(
+                          encodeShowcaseMedia({ kind: 'video', videoSrc: e.target.value })
+                        )
+                      }
+                      placeholder="或粘贴视频直链 https://…"
+                      className="w-full px-3.5 py-2 rounded-lg bg-white border border-sky-200 text-xs text-slate-800"
+                    />
+                      </div>
+                    </details>
                     {videoUploading && (
                       <div className="space-y-1">
                         <div className="flex items-center justify-between text-xs text-sky-800 font-semibold">
-                          <span>正在流式上传实验视频至服务器…</span>
+                          <span>正在上传…</span>
                           <span>{videoUploadProgress}%</span>
                         </div>
                         <div className="w-full h-2 rounded-full bg-sky-200 overflow-hidden">
@@ -1182,7 +1201,7 @@ export default function AchievementHall() {
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <span className="text-sm font-bold text-indigo-900 flex items-center gap-1.5">
                         <FileText size={15} />
-                        学术论文 / 实验研究报告正文 (Markdown)
+                        论文正文
                       </span>
                       <div className="flex items-center gap-2">
                         <button
@@ -1197,14 +1216,14 @@ export default function AchievementHall() {
                           }
                           className="px-2.5 py-1 rounded-lg bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-500 transition"
                         >
-                          载入标准论文模板
+                          使用模板
                         </button>
                         <button
                           type="button"
                           onClick={() => setPaperPreviewMode((m) => !m)}
                           className="px-2.5 py-1 rounded-lg bg-white border border-indigo-200 text-indigo-700 text-xs font-semibold"
                         >
-                          {paperPreviewMode ? '返回编辑正文' : '预览学术排版'}
+                          {paperPreviewMode ? '返回编辑正文' : '预览排版'}
                         </button>
                       </div>
                     </div>
@@ -1305,7 +1324,7 @@ export default function AchievementHall() {
                       ))}
                     </div>
                     <label className="block text-xs text-cyan-900">
-                      上传自定义 3D 网格文件（支持 .obj 或 ASCII .stl，不超过 1 MB）：
+                      选择模型 · OBJ / ASCII STL，最大 1 MB
                       <input
                         aria-label="上传 3D 模型"
                         type="file"
@@ -1325,7 +1344,8 @@ export default function AchievementHall() {
                 )}
 
                 {/* ============ 通用交互作品 HTML 上传与在线源码面板 ============ */}
-                <div className="rounded-xl border border-blue-200 bg-blue-50/60 p-4 space-y-3">
+                <details key={editingId || "new-work"} open={parsedFormMedia.kind === "html" || undefined} className="rounded-xl border border-blue-200 bg-blue-50/60 p-4 space-y-3">
+                  <summary className="cursor-pointer text-sm font-semibold text-blue-800">添加交互 HTML（选填）</summary>
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <label className="block text-sm font-bold text-blue-900">
                       交互作品 HTML
@@ -1378,7 +1398,7 @@ export default function AchievementHall() {
                     </div>
                   </div>
                   <p className="text-xs text-blue-800 leading-5">
-                    支持内嵌 CSS、JavaScript 和 data 图片的单文件演示，大小不超过 1 MB；不加载外部脚本、网络接口或同目录文件。光学和电机为平台内置 Demo。
+                    单文件 HTML，最大 1 MB；请将样式、脚本和图片嵌入文件。
                   </p>
                   <div className="flex flex-wrap gap-1.5">
                     {HTML_SIM_TEMPLATES.map((tpl) => (
@@ -1429,7 +1449,7 @@ export default function AchievementHall() {
                       </button>
                     </>
                   )}
-                </div>
+                </details>
 
                 {saveError && (
                   <p role="alert" className="text-sm text-red-700">
@@ -1437,11 +1457,11 @@ export default function AchievementHall() {
                   </p>
                 )}
                 <button
-                  disabled={saving}
+                  disabled={saving || videoUploading}
                   onClick={handleUpload}
                   className="w-full py-3 rounded-xl bg-gradient-to-br from-blue-600 to-sky-500 text-white font-semibold shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30 transition-all"
                 >
-                  {saving ? '正在保存…' : editingId ? '保存作品' : '提交作品审核'}
+                  {videoUploading ? '上传中…' : saving ? '正在保存…' : editingId ? '保存作品' : '提交审核'}
                 </button>
               </div>
             </motion.div>

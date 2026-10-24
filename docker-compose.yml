@@ -3,6 +3,7 @@ services:
     build:
       context: ./backend
     environment:
+      VIDEO_UPLOAD_DIR: /data/showcase-videos
       DATABASE_URL: sqlite:////data/physics_lab.db
       JWT_SECRET: ${JWT_SECRET:?请在 .env 中配置 JWT_SECRET}
       NFC_UID_SECRET: ${NFC_UID_SECRET:-}

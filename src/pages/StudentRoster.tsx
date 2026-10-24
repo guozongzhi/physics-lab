@@ -24,6 +24,7 @@ import { useEffect, useState, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Users, School, Pencil, Plus, Trash2, X, Upload, Loader2, AlertTriangle, CheckCircle2, Zap, RotateCcw, KeyRound } from 'lucide-react';
 import { useUIStore } from '@/store/uiStore';
+import { useAuthStore } from '@/store/authStore';
 import { useGroupStore } from '@/store/groupStore';
 import { useCoinStore } from '@/store/coinStore';
 import { classesApi, usersApi } from '@/lib/apiService';
@@ -36,6 +37,7 @@ const MAX_STUDENTS = 30;
 
 export default function StudentRoster() {
   const pushToast = useUIStore((s) => s.pushToast);
+  const canManageClasses = useAuthStore((s) => s.role === 'admin' || (s.role === 'teacher' && !s.classId));
   const getGroupById = useGroupStore((s) => s.getGroupById);
   const coinTxs = useCoinStore((s) => s.coinTxs);
   const addTx = useCoinStore((s) => s.addTx);
@@ -315,7 +317,7 @@ export default function StudentRoster() {
       )}
 
       {/* 新建班级 */}
-      <div className="glass-card p-5 rounded-[22px] flex flex-wrap items-center gap-3">
+      {canManageClasses && <div className="glass-card p-5 rounded-[22px] flex flex-wrap items-center gap-3">
         <div className="flex items-center gap-2 flex-1 min-w-[200px]">
           <Plus size={18} className="text-mission-500 shrink-0" />
           <input
@@ -334,7 +336,7 @@ export default function StudentRoster() {
         >
           <Plus size={16} /> 创建班级
         </button>
-      </div>
+      </div>}
 
       {/* 各班级名单分批呈现 */}
       {loading ? (
@@ -382,12 +384,12 @@ export default function StudentRoster() {
                   >
                     <Pencil size={13} /> 改班级名
                   </button>
-                  <button
+                  {canManageClasses && <button
                     onClick={() => setDeletingClass({ id: c.id, name: c.name })}
                     className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl glass-card glass-card-hover text-[12px] font-semibold text-ink-600 hover:text-danger-600"
                   >
                     <Trash2 size={13} /> 删除班级
-                  </button>
+                  </button>}
                   <button
                     onClick={() => {
                       setUploadClassId(c.id);

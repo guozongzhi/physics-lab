@@ -1,4 +1,6 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
+import json
+from jose import jwt
 from pathlib import Path
 import re
 import secrets
@@ -13,6 +15,7 @@ from ..config import settings
 from ..database import get_db
 from ..deps import get_current_user, require_teacher
 from ..models import Group, Project, ShowcaseItem, User
+from ..security import decode_access_token
 from ..schemas import ShowcaseCreate, ShowcaseOut, ShowcaseReview, ShowcaseUpdate
 
 router = APIRouter(prefix="/api", tags=["showcase"])
@@ -35,6 +38,45 @@ def _is_valid_video_header(header: bytes, ext: str) -> bool:
     # MP4 / MOV ISO Base Media File Format: bytes 4..8 为原子类型 (ftyp / moov / mdat / wide / free / skip / pnot)
     box_type = header[4:8]
     return box_type in {b"ftyp", b"moov", b"mdat", b"wide", b"free", b"skip", b"pnot"}
+
+
+def _video_path(filename: str) -> Path:
+    if not _SAFE_VIDEO_FILENAME_RE.fullmatch(filename):
+        raise HTTPException(status_code=404, detail="视频不存在")
+    target = Path(settings.video_upload_dir) / filename
+    if not target.is_file():
+        raise HTTPException(status_code=404, detail="视频不存在")
+    return target
+
+
+def _require_video_access(filename: str, db: Session, current: User) -> Path:
+    target = _video_path(filename)
+    content = f"<!--VIDEO_SRC-->/api/showcase/video/{filename}"
+    items = db.query(ShowcaseItem).filter(ShowcaseItem.html_content == content).all()
+    for item in items:
+        if item.status == "approved" or current.account_role == "admin":
+            return target
+        if item.group_id:
+            try:
+                require_group_write(db, current, item.group_id)
+                return target
+            except HTTPException:
+                pass
+    # 未绑定作品的草稿仅允许上传者预览；旧文件没有元数据时默认拒绝。
+    if not items:
+        try:
+            owner = json.loads(target.with_suffix(target.suffix + ".json").read_text())
+            if owner["user_id"] == current.id:
+                return target
+        except (OSError, ValueError, KeyError):
+            pass
+    raise HTTPException(status_code=403, detail="无权查看此视频")
+
+
+def _validate_video_binding(content: str | None, db: Session, current: User) -> None:
+    prefix = "<!--VIDEO_SRC-->/api/showcase/video/"
+    if content and content.startswith(prefix):
+        _require_video_access(content[len(prefix):], db, current)
 
 
 # ---------- Showcase ----------
@@ -68,6 +110,7 @@ def create_showcase(payload: ShowcaseCreate, db: Session = Depends(get_db), curr
             project = db.get(Project, payload.projectId)
             if not project or project.owner_group_id != group.id:
                 raise HTTPException(status_code=400, detail="项目与作品小组不匹配")
+    _validate_video_binding(payload.htmlContent, db, current)
     item = ShowcaseItem(
         id=services.gen_id("showcase_"),
         project_id=payload.projectId or "",
@@ -123,6 +166,7 @@ def update_showcase(
                 raise HTTPException(status_code=400, detail="项目与作品小组不匹配")
         item.project_id = payload.projectId
     if payload.htmlContent is not None:
+        _validate_video_binding(payload.htmlContent, db, current)
         item.html_content = payload.htmlContent
     if payload.title is not None:
         item.title = payload.title
@@ -241,7 +285,6 @@ def upload_showcase_video(
     current: User = Depends(get_current_user),
 ):
     """流式接收最大 100 MB 的实验视频文件并持久化至独立视频目录，返回轻量流式访问 URL。"""
-    _ = current
     ext = Path(file.filename or "").suffix.lower()
     if ext not in ALLOWED_VIDEO_EXTS:
         raise HTTPException(status_code=400, detail="仅支持上传 .mp4、.webm 或 .mov 格式的视频文件")
@@ -277,6 +320,7 @@ def upload_showcase_video(
                 out.write(chunk)
         if total == 0:
             raise HTTPException(status_code=400, detail="上传的视频文件为空")
+        dest.with_suffix(ext + ".json").write_text(json.dumps({"user_id": current.id}))
     except HTTPException:
         dest.unlink(missing_ok=True)
         raise
@@ -291,18 +335,29 @@ def upload_showcase_video(
     }
 
 
+@router.post("/showcase/video/{filename}/ticket")
+def video_ticket(filename: str, db: Session = Depends(get_db), current: User = Depends(get_current_user)):
+    _require_video_access(filename, db, current)
+    # 不含 sub，不能作为站点登录凭证使用。
+    token = jwt.encode(
+        {"video": filename, "viewer": current.id,
+         "exp": datetime.now(timezone.utc) + timedelta(hours=2)},
+        settings.jwt_secret, algorithm=settings.jwt_algorithm,
+    )
+    return {"url": f"/api/showcase/video/{filename}?ticket={token}"}
+
+
 @router.get("/showcase/video/{filename}")
-def get_showcase_video(filename: str):
-    """提供支持 HTTP Range (206 Partial Content) 的实验视频流式播放响应。"""
-    if not _SAFE_VIDEO_FILENAME_RE.match(filename):
-        raise HTTPException(status_code=404, detail="视频不存在")
-    target = Path(settings.video_upload_dir) / filename
-    if not target.is_file():
-        raise HTTPException(status_code=404, detail="视频不存在")
-    ext = target.suffix.lower()
+def get_showcase_video(filename: str, ticket: str = "", db: Session = Depends(get_db)):
+    payload = decode_access_token(ticket) if ticket else None
+    if not payload or payload.get("video") != filename:
+        raise HTTPException(status_code=401, detail="视频播放凭证无效或已过期")
+    current = db.get(User, payload.get("viewer", ""))
+    if not current:
+        raise HTTPException(status_code=401, detail="用户不存在")
+    target = _require_video_access(filename, db, current)
     return FileResponse(
         path=target,
-        media_type=ALLOWED_VIDEO_EXTS.get(ext, "application/octet-stream"),
-        filename=filename,
+        media_type=ALLOWED_VIDEO_EXTS[target.suffix.lower()],
+        headers={"Cache-Control": "private, no-store", "Referrer-Policy": "no-referrer"},
     )
-
