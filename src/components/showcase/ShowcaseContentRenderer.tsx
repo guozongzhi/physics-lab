@@ -1,5 +1,4 @@
 import HtmlDemo from './HtmlDemo';
-import PhysicsDemo from './PhysicsDemo';
 import VideoShowcasePlayer from './VideoShowcasePlayer';
 import PaperArticleReader from './PaperArticleReader';
 import Model3DViewer from './Model3DViewer';
@@ -11,7 +10,6 @@ export default function ShowcaseContentRenderer({
   title,
   imageUrl,
   htmlContent,
-  demoKind,
   description,
   category,
   author,
@@ -19,7 +17,6 @@ export default function ShowcaseContentRenderer({
   title: string;
   imageUrl?: string;
   htmlContent?: string;
-  demoKind?: '' | 'optics' | 'motor';
   description?: string;
   category?: string;
   author?: string;
@@ -46,10 +43,6 @@ export default function ShowcaseContentRenderer({
 
   if (media.kind === 'html') {
     return <HtmlDemo html={media.html} title={title} />;
-  }
-
-  if (demoKind) {
-    return <PhysicsDemo kind={demoKind} />;
   }
 
   // Fallback for category === 'paper' when user wrote markdown directly in description

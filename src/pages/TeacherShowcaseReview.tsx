@@ -240,11 +240,11 @@ export default function TeacherShowcaseReview() {
           {list.map((item, idx) => {
             const meta = STATUS_META[item.status];
             const media = parseShowcaseMedia(item.htmlContent);
-            const mediaBadge = getMediaBadgeLabel(item.htmlContent, item.demoKind);
+            const mediaBadge = getMediaBadgeLabel(item.htmlContent);
             const linkedProject = item.projectId
               ? projects.find((p) => p.id === item.projectId)
               : undefined;
-            const hasRichPreview = media.kind !== 'none' || Boolean(item.demoKind);
+            const hasRichPreview = media.kind !== 'none';
             const previewBtnText =
               htmlPreview === item.id
                 ? media.kind === 'html'
@@ -318,7 +318,6 @@ export default function TeacherShowcaseReview() {
                           title={item.title}
                           imageUrl={item.coverImage}
                           htmlContent={item.htmlContent}
-                          demoKind={item.demoKind}
                           description={item.description}
                           category={item.category}
                           author={item.authorUserId || groupNameOf(item.groupId)}

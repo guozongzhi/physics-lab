@@ -93,7 +93,6 @@ const CATEGORY_LABEL: Record<ShowcaseCategory, string> = Object.fromEntries(
 interface ShowcaseCard {
   htmlContent?: string;
   authorUserId?: string;
-  demoKind?: '' | 'optics' | 'motor';
   projectId: string;
   id: string;
   imageUrl: string;
@@ -215,7 +214,6 @@ export default function AchievementHall() {
       title: item.title,
       groupId: item.groupId,
       authorUserId: item.authorUserId,
-      demoKind: item.demoKind,
       htmlContent: item.htmlContent,
       loves: item.loves,
       lovedBy: item.lovedBy || [],
@@ -613,7 +611,7 @@ export default function AchievementHall() {
                       const gi = Math.max(0, (parseInt(card.groupId.split('-')[1]) || 1) - 1);
                       const loved = isCardLoved(card);
                       const isMine = !!groupId && card.groupId === groupId;
-                      const mediaBadge = getMediaBadgeLabel(card.htmlContent, card.demoKind);
+                      const mediaBadge = getMediaBadgeLabel(card.htmlContent);
                       const groupChipColor = card.authorUserId
                         ? 'chip-mission'
                         : [
@@ -1496,7 +1494,6 @@ export default function AchievementHall() {
                 title={lightbox.title}
                 imageUrl={lightbox.imageUrl}
                 htmlContent={lightbox.htmlContent}
-                demoKind={lightbox.demoKind}
                 description={lightbox.description}
                 category={lightbox.category}
                 author={

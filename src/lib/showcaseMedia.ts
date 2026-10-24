@@ -1,8 +1,3 @@
-import opticsDemoHtml from '@/assets/demos/optics.html?raw';
-import motorDemoHtml from '@/assets/demos/motor.html?raw';
-
-export { opticsDemoHtml, motorDemoHtml };
-
 export const MAX_SHOWCASE_PAYLOAD_BYTES = 1_000_000;
 /** 实验视频独立文件上传上限：100 MB */
 export const MAX_VIDEO_FILE_BYTES = 100 * 1024 * 1024;
@@ -113,10 +108,8 @@ export function encodeShowcaseMedia(payload: ShowcaseMediaPayload): string {
 }
 
 export function getMediaBadgeLabel(
-  rawHtml?: string | null,
-  demoKind?: '' | 'optics' | 'motor'
+  rawHtml?: string | null
 ): string | null {
-  if (demoKind) return '交互 Demo · 公共展示';
   const parsed = parseShowcaseMedia(rawHtml);
   switch (parsed.kind) {
     case 'video':
@@ -410,7 +403,7 @@ export const GAS_KINETIC_HTML_TEMPLATE = `<!doctype html>
 </html>`;
 
 export interface HtmlSimTemplateItem {
-  id: 'optics-demo' | 'motor-demo' | 'oscillator' | 'double-slit' | 'mass-spec' | 'gas-kinetic';
+  id: 'oscillator' | 'double-slit' | 'mass-spec' | 'gas-kinetic';
   name: string;
   tag: string;
   description: string;
@@ -418,20 +411,6 @@ export interface HtmlSimTemplateItem {
 }
 
 export const HTML_SIM_TEMPLATES: HtmlSimTemplateItem[] = [
-  {
-    id: 'optics-demo',
-    name: '追踪一束光的旅程',
-    tag: '光学 · 折射与色散',
-    description: '调节入射角和折射率，观察折射、色散及光速变化。',
-    html: opticsDemoHtml,
-  },
-  {
-    id: 'motor-demo',
-    name: '让线圈开始转动',
-    tag: '电磁学 · 直流电机',
-    description: '调节电流和磁场，控制线圈启停、转角与旋转方向。',
-    html: motorDemoHtml,
-  },
   {
     id: 'oscillator',
     name: '弹簧振子阻尼与机械能演化',
