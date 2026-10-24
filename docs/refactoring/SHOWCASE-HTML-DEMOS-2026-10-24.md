@@ -28,3 +28,11 @@
 | 浏览器控制台 | 未捕获 error/warn |
 
 截图保存在 /tmp/physics-browser-qa/optics-html-demo.png、motor-html-demo.png。此轮没有在正式库上传或提交新作品，移动视口和其他浏览器尚未复测。
+
+## 发布与检查
+
+代码提交 `0e76f54`。ESLint、TypeScript、生产构建、核心契约和 5 项上传异步场景通过。发布前端镜像 `physics_lab-web:20261024-0e76f54`，保留上一个 compose 配置用于回滚；后端继续使用 `a574b6c`，没有重启后端或修改正式作品。
+
+公网浏览器确认公共电机演示出现下载按钮；从上传窗口载入电机模板，启动后转角变化且状态为运行中，再切换光学模板，标题与简介同步更新。两份预览均在沙箱运行，控制台无 error/warn。新版前端与既有后端均健康，公网 API 健康检查 200；数据库 quick_check 为 ok，作品仍为 3 件。公网首页与本地构建首页 SHA-256 一致。线上截图：/tmp/physics-browser-qa/online-optics-html-demo.png。
+
+GitHub 写权限问题未变，本次未声称提交已推送到远端。
