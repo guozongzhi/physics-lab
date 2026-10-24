@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Pause, Play, RotateCcw, Lightbulb, Zap } from 'lucide-react';
+import { Pause, Play, RotateCcw, Lightbulb, Zap, Download } from 'lucide-react';
+import { opticsDemoHtml, motorDemoHtml } from '@/lib/showcaseMedia';
 import { motorTorque, refractionAngle } from './physics';
 
 type Kind = 'optics' | 'motor';
@@ -50,12 +51,24 @@ export default function PhysicsDemo({ kind }: { kind: Kind }) {
     setCurrent(2); setField(0.5); setReverse(false); setRunning(false); setAngle(90);
   };
 
+  const downloadDemo = () => {
+    const url = URL.createObjectURL(new Blob([optics ? opticsDemoHtml : motorDemoHtml], { type: 'text/html;charset=utf-8' }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = optics ? 'optics-demo.html' : 'motor-demo.html';
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
+
   return <section className="bg-slate-950 text-white p-5 sm:p-8 rounded-t-[24px]">
     <div className="flex items-center gap-2 text-cyan-300 text-xs tracking-widest mb-3">
       {optics ? <Lightbulb size={16} /> : <Zap size={16} />} INTERACTIVE PHYSICS LAB
     </div>
     <h3 className="text-xl sm:text-2xl font-bold pr-10">{optics ? '追踪一束光的旅程' : '让线圈开始转动'}</h3>
     <p className="text-slate-400 text-sm mt-2">admin · 平台公共演示 · {optics ? '折射 / 色散 / 斯涅尔定律' : '磁场 / 电流 / 换向器'}</p>
+    <button onClick={downloadDemo} className="mt-4 inline-flex items-center gap-2 rounded-xl border border-cyan-400/30 bg-cyan-400/10 px-3 py-2 text-xs font-semibold text-cyan-200 hover:bg-cyan-400/20">
+      <Download size={14} />下载 HTML Demo
+    </button>
     <div className="grid md:grid-cols-[1fr_260px] gap-5 mt-6">
       <div className="rounded-2xl border border-slate-700 bg-gradient-to-br from-slate-900 to-blue-950 overflow-hidden">
         {optics ? <svg viewBox="0 0 600 360" role="img" aria-label="光学折射与色散动态示意" className="w-full">

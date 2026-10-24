@@ -1410,8 +1410,8 @@ export default function AchievementHall() {
                           setUploadForm((prev) => ({
                             ...prev,
                             htmlContent: tpl.html,
-                            title: prev.title || tpl.name,
-                            description: prev.description || tpl.description,
+                            title: !prev.title || HTML_SIM_TEMPLATES.some((item) => item.name === prev.title) ? tpl.name : prev.title,
+                            description: !prev.description || HTML_SIM_TEMPLATES.some((item) => item.description === prev.description) ? tpl.description : prev.description,
                           }));
                         }}
                         className="px-2.5 py-1.5 rounded-lg bg-white border border-blue-200 text-blue-800 hover:bg-blue-100/70 text-[11.5px] font-semibold transition"
