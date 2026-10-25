@@ -43,5 +43,6 @@ backend/.env
 # Editor / local artifacts
 .trae/
 .claude/
+.claude-engineer/
 *.zip
 PRODUCT_SHOWCASE.html

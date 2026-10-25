@@ -2,17 +2,37 @@ import { useLocale } from '@/i18n/useLocale';
 import type { LucideIcon } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useNavigate, useParams } from 'react-router-dom';
-import { Rocket, Search, Filter, FolderKanban, Users, Zap, Clock, ShieldCheck, Wrench, Lightbulb, CheckCircle2, AlertTriangle, XCircle, Snowflake, ChevronRight, CalendarDays, Award, User, X, Check, ListTodo } from 'lucide-react';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { Rocket, Search, Filter, FolderKanban, Users, Zap, Clock, ShieldCheck, Wrench, Lightbulb, CheckCircle2, AlertTriangle, XCircle, Snowflake, ChevronRight, CalendarDays, Award, User, X, Check, ListTodo, Plus, Pencil, Trash2, Megaphone, Save } from 'lucide-react';
 import { useUIStore } from '@/store/uiStore';
 import { useProjectStore } from '@/store/projectStore';
 import { useGroupStore } from '@/store/groupStore';
 import { useAuthStore } from '@/store/authStore';
-import type { ProjectStatus, Project } from '@/types';
+import RecruitDialog from '@/components/ui/RecruitDialog';
+import type { ProjectStatus, Project, EquipmentItem, SafetyCategory } from '@/types';
 import type { Group, User as StudentUser } from '@/types';
 import { cn } from '@/lib/utils';
 
 type MissionTab = 'overview' | 'tech' | 'milestones';
+
+const SAFETY_CATEGORY_OPTIONS: { value: SafetyCategory; label: string }[] = [
+  { value: 'electric', label: '电气安全' },
+  { value: 'thermal', label: '热学安全' },
+  { value: 'optical', label: '光学安全' },
+  { value: 'mechanical', label: '机械安全' },
+  { value: 'radiation', label: '辐射安全' },
+  { value: 'chemical', label: '化学安全' },
+];
+
+const SAFETY_CATEGORY_LABELS: Record<SafetyCategory, string> = {
+  electric: '电气',
+  thermal: '热学',
+  optical: '光学',
+  mechanical: '机械',
+  radiation: '辐射',
+  chemical: '化学',
+  combined: '综合',
+};
 
 interface KanbanTask {
   id: string;
@@ -28,6 +48,8 @@ interface ProjectPlanet {
   id: string;
   title: string;
   topic: string;
+  ownerGroupId: string;
+  safetyCategory: SafetyCategory;
   status: ProjectStatus;
   progress: number;
   rewardCoins: number;
@@ -35,9 +57,12 @@ interface ProjectPlanet {
   owners: { name: string; color: string }[];
   milestones: number;
   description: string;
-  equipmentList: { name: string; qty: number; category: string }[];
+  equipmentList: EquipmentItem[];
   safetyPassed: boolean;
   groupName: string;
+  techPoints: string[];
+  rawTechPoints: string;
+  rawDifficulties: string;
   difficulties: string[];
   solutions: { text: string; author: string }[];
   milestonesData: { name: string; progress: number; status: 'done' | 'progress' | 'pending' }[];
@@ -85,6 +110,8 @@ function buildPlanets(projects: Project[], groups: Group[], users: StudentUser[]
       id: p.id,
       title: p.title,
       topic: p.topic,
+      ownerGroupId: p.ownerGroupId,
+      safetyCategory: p.safetyCategory || 'mechanical',
       status: p.status,
       progress: prog,
       rewardCoins: p.rewardCoins,
@@ -97,6 +124,12 @@ function buildPlanets(projects: Project[], groups: Group[], users: StudentUser[]
         ? Boolean(userId && p.safetyPassed?.[userId])
         : Object.values(p.safetyPassed || {}).some(Boolean),
       groupName: g?.name || '未分组',
+      techPoints: (p.techPoints || '')
+        .split('\n')
+        .map((t) => t.replace(/^#\s*|\*\*|^-\s*/g, '').trim())
+        .filter(Boolean),
+      rawTechPoints: p.techPoints || '',
+      rawDifficulties: p.difficulties || '',
       difficulties: (p.difficulties || '')
         .split('\n')
         .map((d) => d.replace(/^#\s*|\*\*|^-\s*/g, '').trim())
@@ -113,9 +146,11 @@ export default function ProjectCenter() {
   const { tx } = useLocale();
   const userId = useAuthStore((s) => s.userId);
   const role = useAuthStore((s) => s.role);
+  const groupId = useAuthStore((s) => s.groupId);
   const navigate = useNavigate();
   const { id: projectId } = useParams<{ id: string }>();
-  const [selectedId, setSelectedId] = useState(projectId || 'p1');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [selectedId, setSelectedId] = useState(projectId || '');
   useEffect(() => {
     if (projectId) setSelectedId(projectId);
   }, [projectId]);
@@ -124,7 +159,22 @@ export default function ProjectCenter() {
   const [statusFilters, setStatusFilters] = useState<ProjectStatus[]>([]);
   const [sortBy, setSortBy] = useState<'due' | 'reward'>('due');
   const [missionTab, setMissionTab] = useState<MissionTab>('overview');
-  const [kanbanOpen, setKanbanOpen] = useState(false);
+  const [kanbanOpen, setKanbanOpen] = useState(() => searchParams.get('kanban') === '1');
+  const closeKanban = () => {
+    setKanbanOpen(false);
+    if (searchParams.get('kanban')) {
+      const next = new URLSearchParams(searchParams);
+      next.delete('kanban');
+      setSearchParams(next, { replace: true });
+    }
+  };
+  const [equipModalOpen, setEquipModalOpen] = useState(false);
+  const [equipDraft, setEquipDraft] = useState<EquipmentItem[]>([]);
+  const [editingTech, setEditingTech] = useState(false);
+  const [techDraft, setTechDraft] = useState('');
+  const [diffDraft, setDiffDraft] = useState('');
+  const [progressDraft, setProgressDraft] = useState(0);
+  const [recruitOpen, setRecruitOpen] = useState(false);
   const taskStorageKey = `physics_project_tasks_v1_${userId || 'anon'}`;
   const [completedTasks, setCompletedTasks] = useState<Set<string>>(() => {
     try {
@@ -147,13 +197,13 @@ export default function ProjectCenter() {
   useEffect(() => {
     if (!kanbanOpen) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setKanbanOpen(false);
+      if (e.key === 'Escape') closeKanban();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [kanbanOpen]);
   const pushToast = useUIStore((s) => s.pushToast);
-  const { projects, recruitments } = useProjectStore();
+  const { projects, recruitments, updateProject } = useProjectStore();
   const { groups, users } = useGroupStore();
   const planets = useMemo(() => buildPlanets(projects, groups, users, userId, role), [projects, groups, users, userId, role]);
   const selectedPlanet = planets.find((p) => p.id === selectedId) || planets[0];
@@ -161,6 +211,60 @@ export default function ProjectCenter() {
     () => (selectedPlanet ? recruitments.filter((r) => r.projectId === selectedPlanet.id) : []),
     [recruitments, selectedPlanet]
   );
+
+  // 本组成员、教师、管理员可编辑本项目器材清单、技术要点与进度
+  const canManageSelected = useMemo(() => {
+    if (!selectedPlanet) return false;
+    if (role === 'teacher' || role === 'admin') return true;
+    return Boolean(groupId && groupId === selectedPlanet.ownerGroupId);
+  }, [selectedPlanet, role, groupId]);
+
+  useEffect(() => {
+    setEditingTech(false);
+  }, [selectedPlanet?.id]);
+
+  const openEquipModal = () => {
+    if (!selectedPlanet) return;
+    setEquipDraft(
+      selectedPlanet.equipmentList.length > 0
+        ? selectedPlanet.equipmentList.map((e) => ({ ...e }))
+        : [{ name: '', qty: 1, category: 'electric' }]
+    );
+    setEquipModalOpen(true);
+  };
+
+  const saveEquipmentList = () => {
+    if (!selectedPlanet) return;
+    const cleaned = equipDraft
+      .map((item) => ({
+        name: item.name.trim(),
+        qty: Math.max(1, Number(item.qty) || 1),
+        category: item.category || 'mechanical',
+      }))
+      .filter((item) => item.name.length > 0);
+    updateProject(selectedPlanet.id, { equipmentList: cleaned });
+    pushToast?.(tx('器材清单已保存'), 'success');
+    setEquipModalOpen(false);
+  };
+
+  const startEditTech = () => {
+    if (!selectedPlanet) return;
+    setTechDraft(selectedPlanet.rawTechPoints);
+    setDiffDraft(selectedPlanet.rawDifficulties);
+    setProgressDraft(selectedPlanet.progress);
+    setEditingTech(true);
+  };
+
+  const saveTechAndProgress = () => {
+    if (!selectedPlanet) return;
+    updateProject(selectedPlanet.id, {
+      techPoints: techDraft,
+      difficulties: diffDraft,
+      progress: Math.max(0, Math.min(100, Number(progressDraft) || 0)),
+    });
+    setEditingTech(false);
+    pushToast?.(tx('技术要点与研究进度已更新'), 'success');
+  };
 
   const filteredPlanets = planets
     .filter((p) => {
@@ -174,9 +278,24 @@ export default function ProjectCenter() {
       return b.rewardCoins - a.rewardCoins;
     });
 
-  const selectProject = (id: string) => {
+  const selectProject = (id: string, openKanbanImmediately = false) => {
+    const target = planets.find((p) => p.id === id);
+    const isSelected = selectedId === id || selectedPlanet?.id === id;
     setSelectedId(id);
+    if (openKanbanImmediately || isSelected) {
+      setKanbanOpen(true);
+      if (projectId !== id) {
+        navigate(`/projects/${id}?kanban=1`);
+      }
+      if (target) pushToast?.(`${tx("已展开")}《${target.title}》${tx("完整任务看板")}`, 'info');
+      return;
+    }
     navigate(`/projects/${id}`);
+    if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+      setTimeout(() => {
+        document.getElementById('mission-focus-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 60);
+    }
   };
 
   const toggleStatus = (s: ProjectStatus) => {
@@ -414,7 +533,13 @@ export default function ProjectCenter() {
                     <p className="project-mission-description">{planet.description || tx("从提出问题到实验验证，开启你的物理研究。")}</p>
                     <div className="project-mission-progress"><span>{tx("研究进度")}</span><strong>{planet.progress}%</strong></div>
                     <div className="project-mission-track"><span style={{ width: `${planet.progress}%` }} /></div>
-                    <div className="project-mission-footer"><span><Users size={14} />{planet.groupName}</span><ChevronRight size={18} /></div>
+                    <div className="project-mission-footer">
+                      <span><Users size={14} />{planet.groupName}</span>
+                      <span className="inline-flex items-center gap-1 text-xs font-bold text-mission-600">
+                        {isSelected ? tx("进入看板") : tx("查看详情")}
+                        <ChevronRight size={16} />
+                      </span>
+                    </div>
                     <div className="project-mission-facts"><span><Wrench size={12} /> {tx("器材")}{planet.equipmentList.length} {tx("项")}</span><span><ShieldCheck size={12} />{planet.safetyPassed ? tx("安全已通过") : tx("待安全认证")}</span></div>
                   </div>
                 </button>
@@ -493,17 +618,41 @@ export default function ProjectCenter() {
                       <div className="flex items-center gap-2">
                         <Wrench size={14} className="text-mission-500" />
                         <span className="text-sm font-black text-ink-800">{tx("器材清单")}</span>
+                        <span className="text-xs font-bold text-ink-500">({selectedPlanet.equipmentList.length} {tx("项")})</span>
                       </div>
-                      <span className="text-xs font-bold text-ink-500">{selectedPlanet.equipmentList.length} {tx("项")}</span>
+                      {canManageSelected && (
+                        <button
+                          type="button"
+                          onClick={openEquipModal}
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white/90 hover:bg-mission-50 text-mission-600 border border-mission-200/70 text-[11px] font-bold transition"
+                        >
+                          {selectedPlanet.equipmentList.length > 0 ? <Pencil size={11} /> : <Plus size={12} />}
+                          {selectedPlanet.equipmentList.length > 0 ? tx("管理器材") : tx("录入器材")}
+                        </button>
+                      )}
                     </div>
                     <div className="space-y-1.5">
                       {selectedPlanet.equipmentList.length > 0 ? (
                         selectedPlanet.equipmentList.map((eq, i) => (
-                          <div key={i} className="flex items-center justify-between py-1.5 px-2.5 rounded-lg bg-white/70">
-                            <span className="text-xs font-medium text-ink-700">{eq.name}</span>
-                            <span className="text-xs font-bold text-mission-600 tabular-nums">×{eq.qty}</span>
+                          <div key={i} className="flex items-center justify-between py-1.5 px-2.5 rounded-lg bg-white/75 border border-white">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <span className="text-xs font-medium text-ink-700 truncate">{eq.name}</span>
+                              <span className="chip-mission !py-0 !px-1.5 !text-[10px] shrink-0">
+                                {tx(SAFETY_CATEGORY_LABELS[eq.category] || '机械')}
+                              </span>
+                            </div>
+                            <span className="text-xs font-bold text-mission-600 tabular-nums shrink-0">×{eq.qty}</span>
                           </div>
                         ))
+                      ) : canManageSelected ? (
+                        <button
+                          type="button"
+                          onClick={openEquipModal}
+                          className="w-full py-3 px-3 rounded-xl border border-dashed border-mission-300/80 bg-white/60 hover:bg-white/90 text-xs font-bold text-mission-600 flex items-center justify-center gap-1.5 transition"
+                        >
+                          <Plus size={14} />
+                          {tx("暂未录入器材 · 点击录入实验器材")}
+                        </button>
                       ) : (
                         <div className="text-xs text-ink-400 text-center py-2">{tx("暂未录入器材")}</div>
                       )}
@@ -511,10 +660,17 @@ export default function ProjectCenter() {
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">
-                    <div className="p-4 rounded-2xl glass-card">
-                      <div className="flex items-center gap-2 mb-2">
-                        <ShieldCheck size={16} className={selectedPlanet.safetyPassed ? 'text-growth-500' : 'text-danger-500'} />
-                        <span className="text-xs font-bold text-ink-500 uppercase">{tx("安全状态")}</span>
+                    <button
+                      type="button"
+                      onClick={() => navigate(`/projects/${selectedPlanet.id}/safety`)}
+                      className="p-4 rounded-2xl glass-card text-left hover:border-mission-300 hover:shadow-md transition-all group"
+                    >
+                      <div className="flex items-center justify-between gap-1 mb-2">
+                        <div className="flex items-center gap-1.5">
+                          <ShieldCheck size={16} className={selectedPlanet.safetyPassed ? 'text-growth-500' : 'text-danger-500'} />
+                          <span className="text-xs font-bold text-ink-500 uppercase">{tx("安全状态")}</span>
+                        </div>
+                        <ChevronRight size={14} className="text-ink-400 group-hover:text-mission-600 group-hover:translate-x-0.5 transition-all" />
                       </div>
                       <div className={cn(
                         'text-lg font-black',
@@ -522,7 +678,10 @@ export default function ProjectCenter() {
                       )}>
                         {selectedPlanet.safetyPassed ? tx("已认证") : tx("待通过")}
                       </div>
-                    </div>
+                      <div className="mt-1 text-[11px] font-bold text-mission-600">
+                        {selectedPlanet.safetyPassed ? tx("查看考核 →") : tx("进入安全考核 →")}
+                      </div>
+                    </button>
                     <div className="p-4 rounded-2xl glass-card">
                       <div className="flex items-center gap-2 mb-2">
                         <Award size={16} className="text-energy-500" />
@@ -531,13 +690,39 @@ export default function ProjectCenter() {
                       <div className="text-lg font-black text-energy-600 tabular-nums">
                         +{selectedPlanet.rewardCoins}⚡
                       </div>
+                      <div className="mt-1 text-[11px] font-semibold text-ink-400">
+                        {tx("结题验收后结算")}
+                      </div>
                     </div>
                   </div>
 
-                  <div className="p-4 rounded-2xl bg-gradient-to-br from-nova-50/60 to-mission-50/40 border border-nova-100/50">
-                    <div className="flex items-center gap-2 mb-3">
-                      <Users size={14} className="text-nova-500" />
-                      <span className="text-sm font-black text-ink-800">{tx("参与小组")}</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (groupId && groupId === selectedPlanet.ownerGroupId) {
+                        navigate('/my-team');
+                      } else {
+                        const nextGroup = groupFilter === selectedPlanet.groupName ? '全部小组' : selectedPlanet.groupName;
+                        setGroupFilter(nextGroup);
+                        pushToast?.(
+                          nextGroup === '全部小组'
+                            ? tx('已恢复显示全部小组课题')
+                            : `${tx('已筛选小组：')}${selectedPlanet.groupName}`,
+                          'info'
+                        );
+                      }
+                    }}
+                    className="w-full text-left p-4 rounded-2xl bg-gradient-to-br from-nova-50/60 to-mission-50/40 border border-nova-100/50 hover:border-nova-300 transition-all group"
+                  >
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <Users size={14} className="text-nova-500" />
+                        <span className="text-sm font-black text-ink-800">{tx("参与小组")}</span>
+                      </div>
+                      <span className="inline-flex items-center gap-0.5 text-[11px] font-bold text-nova-600 group-hover:translate-x-0.5 transition-transform">
+                        {groupId && groupId === selectedPlanet.ownerGroupId ? tx("进入我的小组") : tx("按该组筛选")}
+                        <ChevronRight size={13} />
+                      </span>
                     </div>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
@@ -557,86 +742,206 @@ export default function ProjectCenter() {
                       </div>
                       <span className="text-xs text-nova-600 font-bold">{selectedPlanet.groupName}</span>
                     </div>
-                  </div>
+                  </button>
 
                   <div className="p-4 rounded-2xl bg-gradient-to-br from-energy-50/60 to-alert-50/40 border border-energy-100/50">
                     <div className="flex items-center gap-2 mb-3">
                       <ListTodo size={14} className="text-energy-500" />
                       <span className="text-sm font-black text-ink-800">{tx("招募任务")}</span>
-                      <span className="chip-energy !py-0.5 !text-[10px] ml-auto">{projectRecruits.length} {tx("条")}</span>
+                      <span className="chip-energy !py-0.5 !text-[10px]">{projectRecruits.length} {tx("条")}</span>
+                      <div className="ml-auto flex items-center gap-1.5">
+                        {canManageSelected && (
+                          <button
+                            type="button"
+                            onClick={() => setRecruitOpen(true)}
+                            className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-white/90 hover:bg-energy-50 text-energy-700 border border-energy-200/80 text-[11px] font-bold transition"
+                          >
+                            <Megaphone size={11} />
+                            {tx("发布招募")}
+                          </button>
+                        )}
+                      </div>
                     </div>
                     <div className="space-y-2">
                       {projectRecruits.length === 0 ? (
-                        <div className="text-xs text-ink-400 text-center py-2">{tx("暂无招募，组长发布后学生可投标")}</div>
+                        canManageSelected ? (
+                          <button
+                            type="button"
+                            onClick={() => setRecruitOpen(true)}
+                            className="w-full py-2.5 px-3 rounded-xl border border-dashed border-energy-300/80 bg-white/60 hover:bg-white/90 text-xs font-bold text-energy-700 flex items-center justify-center gap-1.5 transition"
+                          >
+                            <Plus size={14} />
+                            {tx("暂无招募 · 点击发布跨组悬赏任务")}
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => navigate('/recruit/market')}
+                            className="w-full text-xs text-ink-500 hover:text-mission-600 text-center py-2 transition"
+                          >
+                            {tx("暂无招募，点击前往悬赏市场查看其它任务 →")}
+                          </button>
+                        )
                       ) : projectRecruits.map((r) => (
-                        <div key={r.id} className="flex items-center justify-between py-1.5 px-2.5 rounded-lg bg-white/70">
+                        <button
+                          key={r.id}
+                          type="button"
+                          onClick={() => navigate(`/projects/${selectedPlanet.id}/recruit/${r.id}`)}
+                          className="w-full text-left flex items-center justify-between py-2 px-2.5 rounded-lg bg-white/75 hover:bg-white transition border border-transparent hover:border-energy-200"
+                        >
                           <div className="min-w-0">
                             <div className="text-xs font-semibold text-ink-700 truncate">{r.title}</div>
                             <div className="text-[10px] text-ink-400">
-                              {r.status === 'open' ? tx("招募中") : r.status === 'assigned' ? tx("已分配") : tx("已结束")} · {r.bids?.length || 0} {tx("人投")}</div>
+                              {r.status === 'open' ? tx("招募中") : r.status === 'assigned' ? tx("已分配") : tx("已结束")} · {r.bids?.length || 0} {tx("人投")}
+                            </div>
                           </div>
-                          <span className="chip-energy !py-0.5 !px-2 text-[10px] shrink-0">+{r.reward}⚡</span>
-                        </div>
+                          <span className="chip-energy !py-0.5 !px-2 text-[10px] shrink-0 flex items-center gap-0.5">
+                            +{r.reward}⚡ <ChevronRight size={11} />
+                          </span>
+                        </button>
                       ))}
                     </div>
                   </div>
+
+                  <button
+                    type="button"
+                    className="btn-mission w-full"
+                    onClick={() => {
+                      setKanbanOpen(true);
+                      pushToast?.(`${tx("已展开")}《${selectedPlanet.title}》${tx("完整任务看板")}`, 'info');
+                    }}
+                  >
+                    <ListTodo size={16} /> {tx("进入课题任务看板")}
+                  </button>
                 </div>
               )}
 
               {missionTab === 'tech' && (
                 <div className="space-y-4">
-                  <div className="p-4 rounded-2xl bg-gradient-to-br from-danger-50/50 to-alert-50/40 border border-danger-100/50">
-                    <div className="flex items-center gap-2 mb-3">
-                      <AlertTriangle size={14} className="text-danger-500" />
-                      <span className="text-sm font-black text-ink-800">{tx("技术难点")}</span>
-                      <span className="chip-danger !py-0.5 !text-[10px] ml-auto">
-                        {selectedPlanet.difficulties.length} {tx("项")}</span>
-                    </div>
-                    <div className="space-y-1.5">
-                      {selectedPlanet.difficulties.map((d, i) => (
-                        <div key={i} className="flex items-start gap-2 p-2.5 rounded-lg bg-white/80">
-                          <span className="w-5 h-5 rounded-lg bg-danger-100 text-danger-600 flex items-center justify-center text-[10px] font-black shrink-0 mt-0.5">
-                            {i + 1}
-                          </span>
-                          <span className="text-xs font-medium text-ink-700 leading-relaxed">{d}</span>
+                  {canManageSelected && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-ink-500">{tx("本组课题技术档案")}</span>
+                      {editingTech ? (
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setEditingTech(false)}
+                            className="px-2.5 py-1 rounded-lg bg-ink-100 text-ink-600 text-xs font-bold flex items-center gap-1"
+                          >
+                            <X size={12} /> {tx("取消")}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={saveTechAndProgress}
+                            className="px-2.5 py-1 rounded-lg bg-mission-600 text-white text-xs font-bold flex items-center gap-1"
+                          >
+                            <Save size={12} /> {tx("保存")}
+                          </button>
                         </div>
-                      ))}
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={startEditTech}
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white/90 hover:bg-mission-50 text-mission-600 border border-mission-200/70 text-xs font-bold transition"
+                        >
+                          <Pencil size={12} /> {tx("编辑要点与进度")}
+                        </button>
+                      )}
                     </div>
-                  </div>
+                  )}
 
-                  <div className="p-4 rounded-2xl bg-gradient-to-br from-growth-50/50 to-mission-50/40 border border-growth-100/50">
-                    <div className="flex items-center gap-2 mb-3">
-                      <Lightbulb size={14} className="text-growth-500" />
-                      <span className="text-sm font-black text-ink-800">{tx("解决方案")}</span>
-                      <span className="chip-growth !py-0.5 !text-[10px] ml-auto">
-                        {selectedPlanet.solutions.length} {tx("项")}</span>
+                  {editingTech ? (
+                    <div className="space-y-3 p-4 rounded-2xl bg-white/80 border border-mission-100">
+                      <div>
+                        <label className="text-xs font-bold text-ink-700 block mb-1">
+                          {tx("研究进度")} ({progressDraft}%)
+                        </label>
+                        <input
+                          type="range"
+                          min={0}
+                          max={100}
+                          step={5}
+                          value={progressDraft}
+                          onChange={(e) => setProgressDraft(Number(e.target.value))}
+                          className="w-full accent-mission-600"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-bold text-ink-700 block mb-1">{tx("技术要点（每行一条）")}</label>
+                        <textarea
+                          value={techDraft}
+                          onChange={(e) => setTechDraft(e.target.value)}
+                          rows={4}
+                          placeholder={tx("输入核心物理原理、实验设计方案或关键公式...")}
+                          className="input-field !text-xs !p-2.5 w-full resize-y"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-bold text-ink-700 block mb-1">{tx("技术难点（每行一条）")}</label>
+                        <textarea
+                          value={diffDraft}
+                          onChange={(e) => setDiffDraft(e.target.value)}
+                          rows={4}
+                          placeholder={tx("输入实验误差来源、器材限制或待攻克问题...")}
+                          className="input-field !text-xs !p-2.5 w-full resize-y"
+                        />
+                      </div>
                     </div>
-                    {selectedPlanet.solutions.length > 0 ? (
-                      <div className="space-y-2">
-                        {selectedPlanet.solutions.map((s, i) => (
-                          <div key={i} className="p-3 rounded-xl bg-white/85 border border-growth-100">
-                            <p className="text-xs font-semibold text-ink-700 leading-relaxed mb-2">
-                              <span className="chip-growth !py-0.5 !text-[9px] mr-1.5">{tx("方案")}{i + 1}</span>
-                              {tx(s.text)}
-                            </p>
-                            <div className="flex items-center justify-end">
-                              <div className="flex items-center gap-1.5">
-                                <div className="w-5 h-5 rounded-lg bg-gradient-to-br from-nova-400 to-nova-500 flex items-center justify-center text-[9px] font-black text-white">
-                                  <User size={9} />
-                                </div>
-                                <span className="text-[10px] font-bold text-nova-700">{s.author}</span>
+                  ) : (
+                    <>
+                      <div className="p-4 rounded-2xl bg-gradient-to-br from-growth-50/50 to-mission-50/40 border border-growth-100/50">
+                        <div className="flex items-center gap-2 mb-3">
+                          <Lightbulb size={14} className="text-growth-500" />
+                          <span className="text-sm font-black text-ink-800">{tx("技术要点")}</span>
+                          <span className="chip-growth !py-0.5 !text-[10px] ml-auto">
+                            {selectedPlanet.techPoints.length} {tx("项")}
+                          </span>
+                        </div>
+                        {selectedPlanet.techPoints.length > 0 ? (
+                          <div className="space-y-1.5">
+                            {selectedPlanet.techPoints.map((tp, i) => (
+                              <div key={i} className="flex items-start gap-2 p-2.5 rounded-lg bg-white/85 border border-growth-100">
+                                <span className="w-5 h-5 rounded-lg bg-growth-100 text-growth-700 flex items-center justify-center text-[10px] font-black shrink-0 mt-0.5">
+                                  {i + 1}
+                                </span>
+                                <span className="text-xs font-medium text-ink-700 leading-relaxed">{tp}</span>
                               </div>
-                            </div>
+                            ))}
                           </div>
-                        ))}
+                        ) : (
+                          <div className="text-center py-4 text-ink-400 text-xs">
+                            {canManageSelected ? tx("暂无技术要点，点击右上角「编辑要点与进度」补充") : tx("暂无技术要点")}
+                          </div>
+                        )}
                       </div>
-                    ) : (
-                      <div className="text-center py-6 text-ink-400">
-                        <Lightbulb size={24} className="mx-auto mb-1.5 opacity-50" />
-                        <p className="text-xs">{tx("暂无解决方案，等待贡献")}</p>
+
+                      <div className="p-4 rounded-2xl bg-gradient-to-br from-danger-50/50 to-alert-50/40 border border-danger-100/50">
+                        <div className="flex items-center gap-2 mb-3">
+                          <AlertTriangle size={14} className="text-danger-500" />
+                          <span className="text-sm font-black text-ink-800">{tx("技术难点")}</span>
+                          <span className="chip-danger !py-0.5 !text-[10px] ml-auto">
+                            {selectedPlanet.difficulties.length} {tx("项")}
+                          </span>
+                        </div>
+                        {selectedPlanet.difficulties.length > 0 ? (
+                          <div className="space-y-1.5">
+                            {selectedPlanet.difficulties.map((d, i) => (
+                              <div key={i} className="flex items-start gap-2 p-2.5 rounded-lg bg-white/80">
+                                <span className="w-5 h-5 rounded-lg bg-danger-100 text-danger-600 flex items-center justify-center text-[10px] font-black shrink-0 mt-0.5">
+                                  {i + 1}
+                                </span>
+                                <span className="text-xs font-medium text-ink-700 leading-relaxed">{d}</span>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="text-center py-4 text-ink-400 text-xs">
+                            {canManageSelected ? tx("暂无技术难点，点击右上角「编辑要点与进度」补充") : tx("暂无技术难点")}
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
+                    </>
+                  )}
                 </div>
               )}
 
@@ -727,7 +1032,7 @@ export default function ProjectCenter() {
           >
             <motion.div
               className="absolute inset-0 bg-gradient-to-br from-ink-900/60 via-mission-900/40 to-nova-900/50 backdrop-blur-md"
-              onClick={() => setKanbanOpen(false)}
+              onClick={closeKanban}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
@@ -782,7 +1087,7 @@ export default function ProjectCenter() {
                     </div>
                   </div>
                   <button
-                    onClick={() => setKanbanOpen(false)}
+                    onClick={closeKanban}
                     className="w-11 h-11 rounded-2xl glass-card glass-card-hover flex items-center justify-center text-ink-500 hover:text-danger-600"
                   >
                     <X size={20} strokeWidth={2.2} />
@@ -947,14 +1252,14 @@ export default function ProjectCenter() {
                     {tx("小贴士：点击任务卡片可标记本地执行进度；课题能量币将在教师结题验收后统一结算。")}</p>
                   <div className="flex items-center gap-2 justify-end">
                     <button
-                      onClick={() => setKanbanOpen(false)}
+                      onClick={closeKanban}
                       className="btn-ghost-mission !px-4 !rounded-xl text-[13px]"
                     >
                       {tx("返回基地")}</button>
                     <button
                       className="btn-mission !rounded-xl text-[13px]"
                       onClick={() => {
-                        setKanbanOpen(false);
+                        closeKanban();
                         pushToast?.(`《${selectedPlanet.title}》任务看板已同步更新 · 继续保持 🚀`, 'success');
                       }}
                     >
@@ -966,6 +1271,144 @@ export default function ProjectCenter() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* 器材清单管理弹窗 */}
+      {equipModalOpen && selectedPlanet && (
+        <div
+          className="fixed inset-0 z-[210] flex items-center justify-center bg-ink-900/45 backdrop-blur-sm p-4"
+          onClick={() => setEquipModalOpen(false)}
+        >
+          <div
+            className="bg-white rounded-2xl p-6 w-full max-w-lg shadow-xl max-h-[85vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="font-bold text-lg text-ink-800 flex items-center gap-2">
+                  <Wrench size={18} className="text-mission-500" />
+                  {tx("实验器材清单")} · {selectedPlanet.title}
+                </h3>
+                <p className="text-xs text-ink-400 mt-0.5">
+                  {tx("系统将根据所录器材的安全分类自动匹配本项目安全准入考核题库")}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEquipModalOpen(false)}
+                className="p-1.5 rounded-lg hover:bg-ink-100 transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="space-y-2.5 max-h-[48vh] overflow-y-auto pr-1">
+              {equipDraft.map((item, idx) => (
+                <div key={idx} className="grid grid-cols-12 gap-2 items-center bg-ink-50/70 p-2.5 rounded-xl border border-ink-100">
+                  <div className="col-span-5">
+                    <input
+                      type="text"
+                      value={item.name}
+                      onChange={(e) =>
+                        setEquipDraft((prev) =>
+                          prev.map((row, i) => (i === idx ? { ...row, name: e.target.value } : row))
+                        )
+                      }
+                      placeholder={tx("器材名称（如：起电机）")}
+                      className="input !py-1.5 !px-2.5 !text-xs w-full"
+                    />
+                  </div>
+                  <div className="col-span-4">
+                    <select
+                      value={item.category}
+                      onChange={(e) =>
+                        setEquipDraft((prev) =>
+                          prev.map((row, i) =>
+                            i === idx ? { ...row, category: e.target.value as SafetyCategory } : row
+                          )
+                        )
+                      }
+                      className="input !py-1.5 !px-2 !text-xs w-full"
+                    >
+                      {SAFETY_CATEGORY_OPTIONS.map((opt) => (
+                        <option key={opt.value} value={opt.value}>
+                          {tx(opt.label)}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="col-span-2">
+                    <input
+                      type="number"
+                      min={1}
+                      value={item.qty}
+                      onChange={(e) =>
+                        setEquipDraft((prev) =>
+                          prev.map((row, i) =>
+                            i === idx ? { ...row, qty: Math.max(1, Number(e.target.value) || 1) } : row
+                          )
+                        )
+                      }
+                      className="input !py-1.5 !px-2 !text-xs w-full text-center"
+                    />
+                  </div>
+                  <div className="col-span-1 flex justify-end">
+                    <button
+                      type="button"
+                      onClick={() => setEquipDraft((prev) => prev.filter((_, i) => i !== idx))}
+                      className="p-1.5 rounded-lg text-ink-400 hover:text-danger-600 hover:bg-danger-50 transition"
+                      title={tx("删除器材")}
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+              {equipDraft.length === 0 && (
+                <div className="text-center py-6 text-xs text-ink-400">
+                  {tx("当前清单为空，点击下方按钮添加实验器材")}
+                </div>
+              )}
+            </div>
+
+            <button
+              type="button"
+              onClick={() =>
+                setEquipDraft((prev) => [...prev, { name: '', qty: 1, category: 'electric' }])
+              }
+              className="mt-3 w-full py-2 rounded-xl border border-dashed border-mission-300 text-mission-600 hover:bg-mission-50/60 text-xs font-bold flex items-center justify-center gap-1.5 transition"
+            >
+              <Plus size={14} /> {tx("添加一项器材")}
+            </button>
+
+            <div className="flex gap-2 mt-6">
+              <button
+                type="button"
+                className="btn-ghost flex-1"
+                onClick={() => setEquipModalOpen(false)}
+              >
+                {tx("取消")}
+              </button>
+              <button
+                type="button"
+                className="btn-mission flex-1"
+                onClick={saveEquipmentList}
+              >
+                {tx("保存器材清单")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 发布跨组招募弹窗 */}
+      {selectedPlanet && (
+        <RecruitDialog
+          open={recruitOpen}
+          onClose={() => setRecruitOpen(false)}
+          projectId={selectedPlanet.id}
+          projectTitle={selectedPlanet.title}
+        />
+      )}
     </div>
   );
 }

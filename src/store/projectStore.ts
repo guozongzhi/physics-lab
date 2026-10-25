@@ -189,7 +189,11 @@ export const useProjectStore = create<ProjectState>((set, get) => {
 
     updateProject: (id, patch) => {
       const { projects, recruitments, showcaseItems } = get();
-      const next = projects.map((p) => (p.id === id ? { ...p, ...patch } : p));
+      const localPatch: Partial<Project> =
+        patch.equipmentList !== undefined && patch.safetyCategory === undefined
+          ? { ...patch, safetyCategory: inferSafetyCategory(patch.equipmentList) }
+          : patch;
+      const next = projects.map((p) => (p.id === id ? { ...p, ...localPatch } : p));
       persist(next, recruitments, showcaseItems);
       set({ projects: next });
       // 日期字段需序列化为 ISO 字符串后再发送给后端。

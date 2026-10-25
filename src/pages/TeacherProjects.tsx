@@ -4,8 +4,17 @@ import { Plus, Target, Pencil, Trash2, Megaphone, X, Zap } from 'lucide-react';
 import { useUIStore } from '@/store/uiStore';
 import { useGroupStore } from '@/store/groupStore';
 import { useProjectStore } from '@/store/projectStore';
-import type { Project, ProjectStatus } from '@/types';
+import type { Project, ProjectStatus, EquipmentItem, SafetyCategory } from '@/types';
 import { cn } from '@/lib/utils';
+
+const SAFETY_CATEGORY_OPTIONS: { value: SafetyCategory; label: string }[] = [
+  { value: 'electric', label: '电气安全' },
+  { value: 'thermal', label: '热学安全' },
+  { value: 'optical', label: '光学安全' },
+  { value: 'mechanical', label: '机械安全' },
+  { value: 'radiation', label: '辐射安全' },
+  { value: 'chemical', label: '化学安全' },
+];
 
 const STATUS_LABEL: Record<ProjectStatus, string> = {
   planning: '规划中',
@@ -40,6 +49,7 @@ export default function TeacherProjects() {
   const [pForm, setPForm] = useState({
     title: '', topic: '', status: 'planning' as ProjectStatus, progress: 0,
     dueDate: '', rewardCoins: 200, techPoints: '', difficulties: '', ownerGroupId: '',
+    equipmentList: [] as EquipmentItem[],
   });
   const [deleteTarget, setDeleteTarget] = useState<Project | null>(null);
 
@@ -60,6 +70,7 @@ export default function TeacherProjects() {
       title: '', topic: '', status: 'planning', progress: 0,
       dueDate: new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10),
       rewardCoins: 200, techPoints: '', difficulties: '', ownerGroupId: '',
+      equipmentList: [],
     });
     setFormOpen(true);
   };
@@ -72,6 +83,7 @@ export default function TeacherProjects() {
       dueDate: isNaN(d.getTime()) ? '' : d.toISOString().slice(0, 10),
       rewardCoins: p.rewardCoins, techPoints: p.techPoints || '', difficulties: p.difficulties || '',
       ownerGroupId: p.ownerGroupId,
+      equipmentList: (p.equipmentList || []).map((e) => ({ ...e })),
     });
     setFormOpen(true);
   };
@@ -82,6 +94,13 @@ export default function TeacherProjects() {
     if (!editing && !pForm.ownerGroupId) { pushToast('请选择所属小组', 'warning'); return; }
     setSaving(true);
     try {
+      const cleanedEquipment = pForm.equipmentList
+        .map((item) => ({
+          name: item.name.trim(),
+          qty: Math.max(1, Number(item.qty) || 1),
+          category: item.category || 'mechanical',
+        }))
+        .filter((item) => item.name.length > 0);
       const patch = {
         title: pForm.title.trim(),
         topic: pForm.topic.trim(),
@@ -91,6 +110,7 @@ export default function TeacherProjects() {
         rewardCoins: Number(pForm.rewardCoins) || 0,
         techPoints: pForm.techPoints,
         difficulties: pForm.difficulties,
+        equipmentList: cleanedEquipment,
       };
       if (editing) {
         updateProject(editing.id, patch);
@@ -261,6 +281,89 @@ export default function TeacherProjects() {
               </div>
               <div><label className="label">技术要点（可选）</label><textarea className="input min-h-[60px] resize-y" value={pForm.techPoints} onChange={(e) => setPForm({ ...pForm, techPoints: e.target.value })} placeholder="# 支持 Markdown" /></div>
               <div><label className="label">技术难点（可选）</label><textarea className="input min-h-[60px] resize-y" value={pForm.difficulties} onChange={(e) => setPForm({ ...pForm, difficulties: e.target.value })} placeholder="# 支持 Markdown" /></div>
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="label !mb-0">实验器材清单（可选）</label>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setPForm((prev) => ({
+                        ...prev,
+                        equipmentList: [...prev.equipmentList, { name: '', qty: 1, category: 'electric' }],
+                      }))
+                    }
+                    className="text-xs font-bold text-mission-600 hover:text-mission-700 flex items-center gap-1"
+                  >
+                    <Plus size={13} /> 添加器材
+                  </button>
+                </div>
+                <div className="space-y-2">
+                  {pForm.equipmentList.map((eq, idx) => (
+                    <div key={idx} className="grid grid-cols-12 gap-2 items-center">
+                      <input
+                        className="input !py-1.5 !px-2.5 !text-xs col-span-5"
+                        value={eq.name}
+                        onChange={(e) =>
+                          setPForm((prev) => ({
+                            ...prev,
+                            equipmentList: prev.equipmentList.map((row, i) =>
+                              i === idx ? { ...row, name: e.target.value } : row
+                            ),
+                          }))
+                        }
+                        placeholder="器材名称"
+                      />
+                      <select
+                        className="input !py-1.5 !px-2 !text-xs col-span-4"
+                        value={eq.category}
+                        onChange={(e) =>
+                          setPForm((prev) => ({
+                            ...prev,
+                            equipmentList: prev.equipmentList.map((row, i) =>
+                              i === idx ? { ...row, category: e.target.value as SafetyCategory } : row
+                            ),
+                          }))
+                        }
+                      >
+                        {SAFETY_CATEGORY_OPTIONS.map((opt) => (
+                          <option key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </option>
+                        ))}
+                      </select>
+                      <input
+                        type="number"
+                        min={1}
+                        className="input !py-1.5 !px-2 !text-xs col-span-2 text-center"
+                        value={eq.qty}
+                        onChange={(e) =>
+                          setPForm((prev) => ({
+                            ...prev,
+                            equipmentList: prev.equipmentList.map((row, i) =>
+                              i === idx ? { ...row, qty: Math.max(1, Number(e.target.value) || 1) } : row
+                            ),
+                          }))
+                        }
+                      />
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setPForm((prev) => ({
+                            ...prev,
+                            equipmentList: prev.equipmentList.filter((_, i) => i !== idx),
+                          }))
+                        }
+                        className="col-span-1 p-1.5 rounded-lg text-ink-400 hover:text-danger-600 flex justify-center"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  ))}
+                  {pForm.equipmentList.length === 0 && (
+                    <div className="text-xs text-ink-400 py-1.5">未添加器材（学生后续也可在课题中心补充录入）</div>
+                  )}
+                </div>
+              </div>
             </div>
             <div className="flex gap-2 mt-6">
               <button className="btn-ghost flex-1" onClick={() => setFormOpen(false)}>取消</button>

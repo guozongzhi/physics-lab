@@ -715,20 +715,11 @@ export default function AchievementHall() {
                           onClick={() => void openWork(card.id)}
                           className="glass-card glass-card-hover rounded-[22px] overflow-hidden relative group cursor-pointer"
                         >
-                          <div className="relative w-full overflow-hidden h-44">
-                            <img
-                              src={card.imageUrl || showcaseFallback}
-                              alt={card.title}
-                              loading="lazy"
-                              onError={useShowcaseFallback}
-                              className="relative w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                            />
-                            <div className="absolute inset-0 bg-gradient-to-t from-ink-900/80 via-ink-900/20 to-transparent" />
-                            <div className="absolute top-3 left-3 flex flex-wrap items-center gap-1.5 pr-2">
+                          <div className="flex flex-wrap items-center gap-1.5 p-3 border-b border-blue-200/30">
                               <span
                                 className={cn(
                                   groupChipColor,
-                                  '!py-0.5 !px-2 !text-[10px] backdrop-blur-md bg-opacity-80'
+                                  '!py-0.5 !px-2 !text-[10px] max-w-full break-words'
                                 )}
                               >
                                 {card.authorUserId || (group?.name || '未知小组').slice(0, 6)}
@@ -753,23 +744,31 @@ export default function AchievementHall() {
                                   {card.status === 'pending' ? tx("待审批") : tx("已驳回")}
                                 </span>
                               )}
-                            </div>
-                            <div className="absolute inset-x-0 bottom-0 p-4 pt-10">
-                              <h3 className="font-bold text-[14px] md:text-[15px] text-white leading-snug drop-shadow-md mb-1">
+                          </div>
+                          <div className="w-full aspect-video bg-slate-950">
+                            <img
+                              src={card.imageUrl || showcaseFallback}
+                              alt={card.title}
+                              loading="lazy"
+                              onError={useShowcaseFallback}
+                              className="block w-full h-full object-contain"
+                            />
+                          </div>
+                            <div className="px-4 pt-4">
+                              <h3 className="font-bold text-[14px] md:text-[15px] text-ink-900 leading-relaxed break-words mb-1">
                                 {card.title}
                               </h3>
                               {linkedProject && (
-                                <p className="text-[11px] text-sky-200 truncate">
+                                <p className="text-[11px] text-ink-500 break-words">
                                   {tx("关联课题：")}{linkedProject.title}
                                 </p>
                               )}
                               {isMine && card.status === 'rejected' && card.rejectReason && (
-                                <p className="text-[11.5px] text-danger-100 leading-snug mt-1">
+                                <p className="text-[11.5px] text-danger-600 leading-relaxed break-words mt-1">
                                   {tx("驳回理由：")}{card.rejectReason}
                                 </p>
                               )}
                             </div>
-                          </div>
                           <div className="p-4 flex items-center justify-between">
                             <div className="flex items-center gap-2">
                               <button
