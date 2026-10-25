@@ -11,6 +11,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { theoryApi } from '@/lib/apiService';
 import { apiEnabled } from '@/lib/apiClient';
 import { bootstrapFromApi } from '@/lib/bootstrap';
+import { challengeQuestions } from '@/lib/challengeQuestions';
 import { cn } from '@/lib/utils';
 
 export interface QuizPageProps {
@@ -77,6 +78,10 @@ export default function QuizPage(props: QuizPageProps) {
   const [challengeTitle, setChallengeTitle] = useState('');
   const [reward, setReward] = useState(0);
   const [loadError, setLoadError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const submittingRef = useRef(false);
+  const challenges = useTheoryStore((state) => state.challenges);
+  const bankQuestions = useTheoryStore((state) => state.questions);
   /** 已初始化的会话 id。deps 里带上了 quizSessions（刷新后 bootstrap 才把会话拉回来，
    *  需要重跑一次），用这个 ref 保证每个会话只灌一次题目/答案，不被后续更新反复覆盖。 */
   const loadedSessionRef = useRef<string | null>(null);
@@ -123,34 +128,26 @@ export default function QuizPage(props: QuizPageProps) {
       return;
     }
     if (mode === 'challenge') {
-      if (challengeId) {
-        const challenge = getChallengeById(challengeId);
-        if (challenge) {
-          setChallengeTitle(challenge.title);
-          setReward(challenge.reward);
-          const topic = getTopicById(challenge.topicId);
-          setTopicTitle(topic?.title || '');
-          const qs = challenge.questionIds
-            .map((qid) => useTheoryStore.getState().questions.find((q) => q.id === qid))
-            .filter(Boolean) as Question[];
-          if (qs.length > 0) {
-            setQuestions(qs.slice(0, Math.min(10, qs.length)));
-          } else {
-            const pool = useTheoryStore.getState().questions.filter((q) => q.topicId === challenge.topicId);
-            setQuestions(pool.slice(0, 10));
-          }
-        } else {
-          const pool = useTheoryStore.getState().questions.slice(0, 10);
-          setQuestions(pool);
-          setChallengeTitle('示例挑战');
+      // Keep an acknowledged result visible if a background refresh closes the challenge.
+      if (submitted && loadedSessionRef.current === challengeId) return;
+      const challenge = challengeId ? getChallengeById(challengeId) : undefined;
+      try {
+        const selected = challengeQuestions(challenge, bankQuestions);
+        setQuestions(selected);
+        setChallengeTitle(challenge!.title);
+        setReward(challenge!.reward);
+        setTopicTitle(getTopicById(challenge!.topicId)?.title || '');
+        setLoadError('');
+        if (loadedSessionRef.current !== challengeId) {
+          setAnswers({}); setSubmitted(null); setCurrentQ(0);
+          loadedSessionRef.current = challengeId!;
         }
-      } else {
-        const pool = useTheoryStore.getState().questions.slice(0, 10);
-        setQuestions(pool);
-        setChallengeTitle('示例挑战');
+      } catch (error) {
+        setQuestions([]);
+        setLoadError(error instanceof Error ? error.message : '无法加载挑战');
       }
     }
-  }, [mode, sessionId, challengeId, quizSessions]);
+  }, [mode, sessionId, challengeId, quizSessions, challenges, bankQuestions, submitted]);
 
   const answeredCount = Object.keys(answers).length;
 
@@ -169,7 +166,7 @@ export default function QuizPage(props: QuizPageProps) {
     handleAnswer(qid, cur);
   };
 
-  const submit = async () => {
+  const submitAnswers = async () => {
     const unanswered = questions.filter((q) => answers[q.id] === undefined);
     if (unanswered.length > 0) {
       pushToast(`还有 ${unanswered.length} 道题未作答`, 'warning');
@@ -277,6 +274,14 @@ export default function QuizPage(props: QuizPageProps) {
     });
   };
 
+  const submit = async () => {
+    if (submittingRef.current || submitted || loadError || !questions.length) return;
+    submittingRef.current = true;
+    setSubmitting(true);
+    try { await submitAnswers(); }
+    finally { submittingRef.current = false; setSubmitting(false); }
+  };
+
   const restart = async () => {
     if (mode === 'quiz' && sessionId) {
       const previous = useTheoryStore.getState().quizSessions.find((s) => s.id === sessionId);
@@ -300,14 +305,14 @@ export default function QuizPage(props: QuizPageProps) {
     setCurrentQ(0);
   };
 
-  if (questions.length === 0) {
+  if (loadError || questions.length === 0) {
     if (loadError) {
       return (
         <div className="container mx-auto py-16 text-center">
           <AlertTriangle size={48} className="mx-auto text-danger-400 mb-4" />
           <p className="text-ink-700 font-semibold mb-2">{loadError}</p>
-          <button className="btn-outline mt-2" onClick={() => navigate('/theory/topics')}>
-            返回学习中心
+          <button className="btn-outline mt-2" onClick={() => navigate(mode === 'challenge' ? '/theory/challenges' : '/theory/topics')}>
+            {mode === 'challenge' ? '返回挑战列表' : '返回学习中心'}
           </button>
         </div>
       );
@@ -415,14 +420,14 @@ export default function QuizPage(props: QuizPageProps) {
               </div>
 
               <button
-                onClick={submit}
+                onClick={submit} disabled={submitting} aria-busy={submitting}
                 className={cn(
                   'w-full mt-4 py-2.5 rounded-xl2 font-semibold text-sm flex items-center justify-center gap-2 transition',
                   cn('text-white shadow-md bg-gradient-to-r hover:brightness-110', meta.gradient)
                 )}
               >
                 <Send size={15} />
-                交卷
+                {submitting ? '正在交卷…' : '交卷'}
               </button>
             </div>
 
@@ -561,7 +566,7 @@ export default function QuizPage(props: QuizPageProps) {
                         </button>
                       ) : (
                         <button
-                          onClick={submit}
+                          onClick={submit} disabled={submitting} aria-busy={submitting}
                           className={cn(
                             'font-semibold text-white shadow-md bg-gradient-to-r hover:brightness-110 px-5 py-2.5 rounded-xl2 inline-flex items-center gap-2',
                             meta.gradient

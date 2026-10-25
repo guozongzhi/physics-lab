@@ -61,6 +61,16 @@ export const recruitmentsApi = {
 export const showcaseApi = {
   videoTicket: (filename: string) => api.post<{ url: string }>(`/api/showcase/video/${encodeURIComponent(filename)}/ticket`),
   list: () => api.get<ShowcaseItem[]>('/api/showcase'),
+  get: (id: string) => api.get<ShowcaseItem>(`/api/showcase/${encodeURIComponent(id)}`),
+  /** Bounded metadata pages; full HTML is fetched only when a work is opened. */
+  summaries: async () => {
+    const items: ShowcaseItem[] = [];
+    for (let offset = 0; ; offset += 200) {
+      const page = await api.get<ShowcaseItem[]>(`/api/showcase?summary=true&offset=${offset}&limit=200`);
+      items.push(...page);
+      if (page.length < 200) return items;
+    }
+  },
   create: (payload: {
     projectId?: string;
     title: string;

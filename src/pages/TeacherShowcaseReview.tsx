@@ -1,5 +1,6 @@
+import Dialog from '@/components/ui/Dialog';
 import ShowcaseContentRenderer from '@/components/showcase/ShowcaseContentRenderer';
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   Trophy,
@@ -33,7 +34,8 @@ const STATUS_META: Record<ShowcaseItem['status'], { label: string; chip: string 
 };
 
 const CATEGORY_OPTIONS: Array<{ key: ShowcaseCategory; label: string }> = [
-  { key: 'photo', label: '照片展' },
+  { key: 'photo', label: '图片' },
+  { key: 'html', label: '交互 HTML' },
   { key: 'video', label: '视频' },
   { key: 'paper', label: '论文' },
   { key: 'model', label: '模型' },
@@ -56,10 +58,25 @@ export default function TeacherShowcaseReview() {
     reviewShowcaseItem,
     updateShowcaseItem,
     deleteShowcaseItem,
+    loadShowcaseDetail,
   } = useProjectStore();
   const getGroupById = useGroupStore((s) => s.getGroupById);
   const pushToast = useUIStore((s) => s.pushToast);
 
+  const [busy, setBusy] = useState(false);
+  const busyRef = useRef(false);
+  const [actionError, setActionError] = useState('');
+  const runAction = async (action: () => Promise<void>) => {
+    if (busyRef.current) return;
+    busyRef.current = true; setBusy(true); setActionError('');
+    try { await action(); }
+    catch (error) {
+      setActionError(error instanceof TypeError
+        ? '网络连接失败，输入已保留，请检查网络后重试'
+        : error instanceof Error ? error.message : '操作失败，请重试，输入已保留');
+    }
+    finally { busyRef.current = false; setBusy(false); }
+  };
   const [filter, setFilter] = useState<Filter>('pending');
   const [approveTarget, setApproveTarget] = useState<ShowcaseItem | null>(null);
   const [coins, setCoins] = useState(50);
@@ -99,9 +116,9 @@ export default function TeacherShowcaseReview() {
 
   const groupNameOf = (gid: string) => getGroupById(gid)?.name || '未知小组';
 
-  const doApprove = () => {
+  const doApprove = () => runAction(async () => {
     if (!approveTarget) return;
-    reviewShowcaseItem(
+    await reviewShowcaseItem(
       approveTarget.id,
       'approve',
       approveTarget.groupId ? Math.max(0, coins) : 0
@@ -113,21 +130,25 @@ export default function TeacherShowcaseReview() {
       'success'
     );
     setApproveTarget(null);
-  };
+  });
 
-  const doReject = () => {
+  const doReject = () => runAction(async () => {
     if (!rejectTarget) return;
     if (!reason.trim()) {
       pushToast('请填写驳回理由', 'warning');
       return;
     }
-    reviewShowcaseItem(rejectTarget.id, 'reject', undefined, reason.trim());
+    await reviewShowcaseItem(rejectTarget.id, 'reject', undefined, reason.trim());
     pushToast(`已驳回「${rejectTarget.title}」`, 'warning');
     setRejectTarget(null);
     setReason('');
-  };
+  });
 
-  const openEdit = (item: ShowcaseItem) => {
+  const openEdit = async (row: ShowcaseItem) => {
+    let item: ShowcaseItem;
+    try { item = await loadShowcaseDetail(row.id); }
+    catch (error) { pushToast(error instanceof Error ? error.message : '作品加载失败，请重试', 'error'); return; }
+    setActionError('');
     setEditTarget(item);
     setEditForm({
       title: item.title,
@@ -139,7 +160,7 @@ export default function TeacherShowcaseReview() {
     });
   };
 
-  const doEdit = () => {
+  const doEdit = () => runAction(async () => {
     if (!editTarget) return;
     const title = editForm.title.trim();
     if (!title) {
@@ -151,7 +172,7 @@ export default function TeacherShowcaseReview() {
       return;
     }
     // 教师是审批人，改内容不重新送审——保留原状态（已通过的仍已通过）
-    updateShowcaseItem(
+    await updateShowcaseItem(
       editTarget.id,
       {
         title,
@@ -165,14 +186,14 @@ export default function TeacherShowcaseReview() {
     );
     pushToast(`已更新「${title}」`, 'success');
     setEditTarget(null);
-  };
+  });
 
-  const doDelete = () => {
+  const doDelete = () => runAction(async () => {
     if (!deleteTarget) return;
-    deleteShowcaseItem(deleteTarget.id);
+    await deleteShowcaseItem(deleteTarget.id);
     pushToast(`已下架「${deleteTarget.title}」`, 'success');
     setDeleteTarget(null);
-  };
+  });
 
   const TABS: Array<{ key: Filter; label: string }> = [
     { key: 'pending', label: `待审批 (${counts.pending})` },
@@ -240,17 +261,18 @@ export default function TeacherShowcaseReview() {
           {list.map((item, idx) => {
             const meta = STATUS_META[item.status];
             const media = parseShowcaseMedia(item.htmlContent);
+            const mediaKind = item.contentLoaded === false ? item.mediaKind : media.kind;
             const mediaBadge = getMediaBadgeLabel(item.htmlContent);
             const linkedProject = item.projectId
               ? projects.find((p) => p.id === item.projectId)
               : undefined;
-            const hasRichPreview = media.kind !== 'none';
+            const hasRichPreview = mediaKind !== 'none';
             const previewBtnText =
               htmlPreview === item.id
-                ? media.kind === 'html'
+                ? mediaKind === 'html'
                   ? '关闭 HTML 预览'
                   : '关闭作品预览'
-                : media.kind === 'html'
+                : mediaKind === 'html'
                 ? '预览 HTML 交互作品'
                 : `预览${mediaBadge ? mediaBadge.split(' · ')[0] : '作品内容'}`;
 
@@ -286,7 +308,7 @@ export default function TeacherShowcaseReview() {
                       {meta.label}
                     </span>
                     <span className="chip-mission !py-0 !px-1.5 !text-[10px]">
-                      {CATEGORY_LABEL[item.category] || '照片展'}
+                      {CATEGORY_LABEL[mediaKind === 'html' ? 'html' : item.category] || '图片'}
                     </span>
                     {mediaBadge && (
                       <span className="chip-growth !py-0 !px-1.5 !text-[10px]">
@@ -307,9 +329,11 @@ export default function TeacherShowcaseReview() {
                     <div className="my-3 space-y-2">
                       <button
                         className="btn-outline"
-                        onClick={() =>
-                          setHtmlPreview(htmlPreview === item.id ? null : item.id)
-                        }
+                        onClick={async () => {
+                          if (htmlPreview === item.id) { setHtmlPreview(null); return; }
+                          try { await loadShowcaseDetail(item.id); setHtmlPreview(item.id); }
+                          catch (error) { pushToast(error instanceof Error ? error.message : '作品加载失败', 'error'); }
+                        }}
                       >
                         {previewBtnText}
                       </button>
@@ -346,6 +370,7 @@ export default function TeacherShowcaseReview() {
                       <>
                         <button
                           onClick={() => {
+                            setActionError('');
                             setApproveTarget(item);
                             setCoins(item.groupId ? 50 : 0);
                           }}
@@ -356,6 +381,7 @@ export default function TeacherShowcaseReview() {
                         </button>
                         <button
                           onClick={() => {
+                            setActionError('');
                             setRejectTarget(item);
                             setReason('');
                           }}
@@ -374,7 +400,7 @@ export default function TeacherShowcaseReview() {
                       编辑
                     </button>
                     <button
-                      onClick={() => setDeleteTarget(item)}
+                      onClick={() => { setActionError(''); setDeleteTarget(item); }}
                       className="px-3.5 py-1.5 rounded-xl text-[12.5px] font-bold text-danger-700 bg-danger-50 hover:bg-danger-100 inline-flex items-center gap-1 transition-colors"
                     >
                       <Trash2 size={13} />
@@ -389,21 +415,16 @@ export default function TeacherShowcaseReview() {
       )}
 
       {/* ============ 通过 + 奖励弹窗 ============ */}
-      {approveTarget && (
-        <div
-          className="fixed inset-0 z-[220] flex items-center justify-center bg-ink-900/40 backdrop-blur-sm p-4"
-          onClick={() => setApproveTarget(null)}
-        >
-          <div
-            className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl"
-            onClick={(e) => e.stopPropagation()}
-          >
+      <Dialog open={Boolean(approveTarget)} onClose={() => { if (!busy) { setApproveTarget(null); setActionError(''); } }} title="通过并奖励" size="sm">
+        {approveTarget && <>
+          {actionError && <p role="alert" className="mb-4 rounded-xl bg-red-50 p-3 text-sm text-red-700">{actionError}</p>}
+          {busy && <p role="status" className="mb-3 text-sm text-blue-700">正在保存，请稍候…</p>}
+          <fieldset disabled={busy} className="min-w-0">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-growth-400 to-growth-600 flex items-center justify-center text-white">
                 <Check size={20} />
               </div>
               <div className="min-w-0">
-                <h3 className="font-extrabold text-[17px] text-ink-900">通过并奖励</h3>
                 <p className="text-[12px] text-ink-500 truncate">{approveTarget.title}</p>
               </div>
               <button
@@ -435,33 +456,29 @@ export default function TeacherShowcaseReview() {
                 取消
               </button>
               <button
-                onClick={doApprove}
+                disabled={busy} aria-busy={busy} onClick={doApprove}
                 className="flex-1 py-2.5 rounded-xl font-semibold text-white bg-gradient-to-br from-growth-400 to-growth-600 inline-flex items-center justify-center gap-1.5"
               >
                 <Zap size={14} />
                 确认通过
               </button>
             </div>
-          </div>
-        </div>
-      )}
+
+          </fieldset>
+        </>}
+      </Dialog>
 
       {/* ============ 驳回弹窗（必填理由） ============ */}
-      {rejectTarget && (
-        <div
-          className="fixed inset-0 z-[220] flex items-center justify-center bg-ink-900/40 backdrop-blur-sm p-4"
-          onClick={() => setRejectTarget(null)}
-        >
-          <div
-            className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl"
-            onClick={(e) => e.stopPropagation()}
-          >
+      <Dialog open={Boolean(rejectTarget)} onClose={() => { if (!busy) { setRejectTarget(null); setActionError(''); } }} title="驳回作品" size="sm">
+        {rejectTarget && <>
+          {actionError && <p role="alert" className="mb-4 rounded-xl bg-red-50 p-3 text-sm text-red-700">{actionError}</p>}
+          {busy && <p role="status" className="mb-3 text-sm text-blue-700">正在保存，请稍候…</p>}
+          <fieldset disabled={busy} className="min-w-0">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-danger-400 to-alert-500 flex items-center justify-center text-white">
                 <AlertTriangle size={20} />
               </div>
               <div className="min-w-0">
-                <h3 className="font-extrabold text-[17px] text-ink-900">驳回作品</h3>
                 <p className="text-[12px] text-ink-500 truncate">{rejectTarget.title}</p>
               </div>
               <button
@@ -476,6 +493,7 @@ export default function TeacherShowcaseReview() {
               驳回理由（学生能看到）
             </label>
             <textarea
+              aria-label="驳回理由（学生能看到）"
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               rows={3}
@@ -487,32 +505,28 @@ export default function TeacherShowcaseReview() {
                 取消
               </button>
               <button
-                onClick={doReject}
+                disabled={busy} aria-busy={busy} onClick={doReject}
                 className="flex-1 py-2.5 rounded-xl font-semibold text-white bg-gradient-to-br from-danger-400 to-danger-600"
               >
                 确认驳回
               </button>
             </div>
-          </div>
-        </div>
-      )}
+
+          </fieldset>
+        </>}
+      </Dialog>
 
       {/* ============ 编辑作品（保留原审批状态） ============ */}
-      {editTarget && (
-        <div
-          className="fixed inset-0 z-[220] flex items-center justify-center bg-ink-900/40 backdrop-blur-sm p-4"
-          onClick={() => setEditTarget(null)}
-        >
-          <div
-            className="bg-white rounded-2xl p-6 w-full max-w-lg shadow-xl max-h-[88vh] overflow-y-auto"
-            onClick={(e) => e.stopPropagation()}
-          >
+      <Dialog open={Boolean(editTarget)} onClose={() => { if (!busy) { setEditTarget(null); setActionError(''); } }} title="编辑作品" size="xl">
+        {editTarget && <>
+          {actionError && <p role="alert" className="mb-4 rounded-xl bg-red-50 p-3 text-sm text-red-700">{actionError}</p>}
+          {busy && <p role="status" className="mb-3 text-sm text-blue-700">正在保存，请稍候…</p>}
+          <fieldset disabled={busy} className="min-w-0">
             <div className="flex items-center gap-3 mb-5">
               <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-mission-400 to-nova-500 flex items-center justify-center text-white">
                 <Pencil size={19} />
               </div>
               <div className="min-w-0">
-                <h3 className="font-extrabold text-[17px] text-ink-900">编辑作品</h3>
                 <p className="text-[12px] text-ink-500 truncate">
                   {editTarget.authorUserId || groupNameOf(editTarget.groupId)}
                 </p>
@@ -630,33 +644,29 @@ export default function TeacherShowcaseReview() {
                 取消
               </button>
               <button
-                onClick={doEdit}
+                disabled={busy} aria-busy={busy} onClick={doEdit}
                 className="flex-1 py-2.5 rounded-xl font-semibold text-white bg-gradient-to-br from-mission-500 to-nova-500 inline-flex items-center justify-center gap-1.5"
               >
                 <Check size={14} />
                 保存修改
               </button>
             </div>
-          </div>
-        </div>
-      )}
+
+          </fieldset>
+        </>}
+      </Dialog>
 
       {/* ============ 下架确认 ============ */}
-      {deleteTarget && (
-        <div
-          className="fixed inset-0 z-[220] flex items-center justify-center bg-ink-900/40 backdrop-blur-sm p-4"
-          onClick={() => setDeleteTarget(null)}
-        >
-          <div
-            className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl"
-            onClick={(e) => e.stopPropagation()}
-          >
+      <Dialog open={Boolean(deleteTarget)} onClose={() => { if (!busy) { setDeleteTarget(null); setActionError(''); } }} title="下架作品" size="sm">
+        {deleteTarget && <>
+          {actionError && <p role="alert" className="mb-4 rounded-xl bg-red-50 p-3 text-sm text-red-700">{actionError}</p>}
+          {busy && <p role="status" className="mb-3 text-sm text-blue-700">正在保存，请稍候…</p>}
+          <fieldset disabled={busy} className="min-w-0">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-danger-400 to-danger-600 flex items-center justify-center text-white">
                 <Trash2 size={19} />
               </div>
               <div className="min-w-0">
-                <h3 className="font-extrabold text-[17px] text-ink-900">下架作品</h3>
                 <p className="text-[12px] text-ink-500 truncate">{deleteTarget.title}</p>
               </div>
               <button
@@ -683,15 +693,16 @@ export default function TeacherShowcaseReview() {
                 取消
               </button>
               <button
-                onClick={doDelete}
+                disabled={busy} aria-busy={busy} onClick={doDelete}
                 className="flex-1 py-2.5 rounded-xl font-semibold text-white bg-gradient-to-br from-danger-400 to-danger-600"
               >
                 确认下架
               </button>
             </div>
-          </div>
-        </div>
-      )}
+
+          </fieldset>
+        </>}
+      </Dialog>
     </div>
   );
 }

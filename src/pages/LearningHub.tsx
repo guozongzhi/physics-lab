@@ -13,6 +13,7 @@ import { useUIStore } from '@/store/uiStore';
 import { mockTopics } from '@/data/mockTopics';
 import { getKnowledgeGuide } from '@/lib/knowledgeSystem';
 import { getLearningExamples } from '@/lib/learningExamples';
+import { topicCompletion } from '@/lib/learningMetrics';
 import { cn } from '@/lib/utils';
 
 type TopicTab = 'ai-study' | 'knowledge' | 'quiz';
@@ -56,7 +57,7 @@ export default function LearningHub() {
   const quizSessions = useMemo(() => allQuizSessions.filter((session) => (session.userId === userId || (apiEnabled && !session.userId)) && session.graded), [allQuizSessions, userId]);
 
   // 完成/解锁：从真实测验派生（某主题有通过记录即完成；主题按顺序解锁）
-  const completedTopicIds = useMemo(() => new Set(quizSessions.filter((s) => s.passed).map((s) => s.topicId)), [quizSessions]);
+  const completedTopicIds = useMemo(() => topicCompletion(quizSessions, userId, TOPIC_META.map((topic) => topic.id), apiEnabled).completed, [quizSessions, userId]);
   const topicMeta = useMemo(
     () =>
       TOPIC_META.map((t, i) => {

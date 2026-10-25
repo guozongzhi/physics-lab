@@ -229,3 +229,44 @@ def test_showcase_upgrade_preserves_existing_records_and_is_idempotent(monkeypat
         assert dict(row) == {"id": "old", "group_id": "g-1", "status": "approved", "reject_reason": "", "awarded_coins": 50, "category": "photo", "author_user_id": "", "demo_kind": "", "html_content": ""}
         assert conn.execute(text("PRAGMA integrity_check")).scalar() == "ok"
     legacy.dispose()
+
+# ---------- Lightweight list / on-demand detail ----------
+def test_summary_omits_body_and_detail_enforces_visibility(client, auth):
+    content = '<!doctype html><button>Interactive QA</button>'
+    item = client.post('/api/showcase', headers=auth('u-1'), json={
+        'title': 'HTML QA', 'groupId': 'g-1', 'coverImage': '', 'category': 'html', 'htmlContent': content,
+    }).json()
+    sid = item['id']
+    summary = next(row for row in client.get('/api/showcase?summary=true&limit=10', headers=auth('u-1')).json() if row['id'] == sid)
+    assert summary['htmlContent'] == '' and summary['contentLoaded'] is False
+    assert summary['mediaKind'] == 'html' and summary['category'] == 'html'
+    detail = client.get(f'/api/showcase/{sid}', headers=auth('u-1'))
+    assert detail.status_code == 200 and detail.json()['htmlContent'] == content
+    assert detail.json()['contentLoaded'] is True
+    assert client.get(f'/api/showcase/{sid}', headers=auth('u-3')).status_code == 404
+    assert all(row['id'] != sid for row in client.get('/api/showcase?summary=true', headers=auth('u-3')).json())
+    _approve(client, auth, sid)
+    assert client.get(f'/api/showcase/{sid}', headers=auth('u-3')).json()['htmlContent'] == content
+
+
+def test_showcase_summary_pagination_and_media_types(client, auth):
+    payloads = [('video', '<!--VIDEO_SRC-->https://example.com/video.mp4'),
+                ('paper', '<!--PAPER_MD--># Paper'), ('model3d', '<!--MODEL_3D:obj-->v 0 0 0'), ('none', '')]
+    created = {}
+    for kind, body in payloads:
+        item = client.post('/api/showcase', headers=auth('u-1'), json={
+            'title': kind, 'groupId': 'g-1', 'coverImage': '', 'htmlContent': body,
+        }).json()
+        created[item['id']] = kind
+    rows = client.get('/api/showcase?summary=true', headers=auth('u-1')).json()
+    for row in rows:
+        if row['id'] in created:
+            assert row['mediaKind'] == created[row['id']]
+            assert row['htmlContent'] == ''
+    page1 = client.get('/api/showcase?summary=true&limit=2', headers=auth('u-1')).json()
+    page2 = client.get('/api/showcase?summary=true&limit=2&offset=2', headers=auth('u-1')).json()
+    assert [row['id'] for row in page1 + page2] == [row['id'] for row in rows[:4]]
+    assert len({row['id'] for row in page1 + page2}) == 4
+    for query in ('offset=-1', 'limit=0', 'limit=201'):
+        assert client.get(f'/api/showcase?{query}', headers=auth('u-1')).status_code == 422
+    assert client.get('/api/showcase/missing', headers=auth('u-1')).status_code == 404

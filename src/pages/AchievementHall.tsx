@@ -2,6 +2,8 @@ import type { LucideIcon } from 'lucide-react';
 import { applyAvatarFallback } from '@/lib/imageFallback';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import Dialog from '@/components/ui/Dialog';
+import { hasShowcaseDraft, readShowcaseDraft, showcaseDraftKey, writeShowcaseDraft, type ShowcaseForm } from '@/lib/showcaseDraft';
 import HtmlDemo from '@/components/showcase/HtmlDemo';
 import VideoShowcasePlayer from '@/components/showcase/VideoShowcasePlayer';
 import PaperArticleReader from '@/components/showcase/PaperArticleReader';
@@ -67,7 +69,7 @@ import {
   type Model3DFormat,
 } from '@/lib/showcaseMedia';
 
-type GalleryTab = ShowcaseCategory;
+type GalleryTab = ShowcaseCategory | 'all';
 
 const showcaseFallback = '/images/showcase-fallback.jpg';
 
@@ -78,20 +80,25 @@ function useShowcaseFallback(event: React.SyntheticEvent<HTMLImageElement>) {
   }
 }
 
-const GALLERY_TABS: Array<{ key: GalleryTab; label: string; icon: LucideIcon }> = [
-  { key: 'photo', label: '照片展', icon: ImageIcon },
+const UPLOAD_TYPES: Array<{ key: ShowcaseCategory; label: string; icon: LucideIcon }> = [
+  { key: 'photo', label: '图片', icon: ImageIcon },
+  { key: 'html', label: '交互 HTML', icon: Code2 },
   { key: 'video', label: '视频', icon: Video },
   { key: 'paper', label: '论文', icon: FileText },
   { key: 'model', label: '模型', icon: Box },
   { key: 'award', label: '获奖作品', icon: Medal },
 ];
 
-const CATEGORY_LABEL: Record<ShowcaseCategory, string> = Object.fromEntries(
+const GALLERY_TABS = [{ key: 'all' as const, label: '全部', icon: Sparkles }, ...UPLOAD_TYPES];
+
+const CATEGORY_LABEL: Record<GalleryTab, string> = Object.fromEntries(
   GALLERY_TABS.map((t) => [t.key, t.label])
-) as Record<ShowcaseCategory, string>;
+) as Record<GalleryTab, string>;
 
 interface ShowcaseCard {
   htmlContent?: string;
+  mediaKind?: string;
+  createdAt: Date;
   authorUserId?: string;
   projectId: string;
   id: string;
@@ -116,6 +123,7 @@ export default function AchievementHall() {
     projects,
     addShowcaseItem,
     updateShowcaseItem,
+    loadShowcaseDetail,
     toggleShowcaseLove,
   } = useProjectStore();
   const { userId, groupId } = useAuthStore();
@@ -176,7 +184,16 @@ export default function AchievementHall() {
     ];
   }, [groups, users, projects]);
 
-  const [tab, setTab] = useState<GalleryTab>('photo');
+  const [tab, setTab] = useState<GalleryTab>('all');
+  const [query, setQuery] = useState('');
+  const [sort, setSort] = useState('newest');
+  const [page, setPage] = useState(1);
+  const [openingId, setOpeningId] = useState<string | null>(null);
+  const [draftWarning, setDraftWarning] = useState('');
+  const [discardOpen, setDiscardOpen] = useState(false);
+  const draftKey = userId ? showcaseDraftKey(userId, groupId || '', import.meta.env.VITE_API_BASE_URL || 'offline') : '';
+  const draftReady = useRef(false);
+  const previousDraftKey = useRef(draftKey);
   const previewRef = useRef<HTMLDivElement>(null);
   const [lightboxId, setLightboxId] = useState<string | null>(null);
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
@@ -196,8 +213,8 @@ export default function AchievementHall() {
   const [showHtmlCodeEditor, setShowHtmlCodeEditor] = useState(false);
   const [paperPreviewMode, setPaperPreviewMode] = useState(false);
 
-  const [uploadForm, setUploadForm] = useState({
-    type: 'photo' as GalleryTab,
+  const [uploadForm, setUploadForm] = useState<ShowcaseForm>({
+    type: 'photo',
     projectId: '',
     title: '',
     description: '',
@@ -215,6 +232,8 @@ export default function AchievementHall() {
       groupId: item.groupId,
       authorUserId: item.authorUserId,
       htmlContent: item.htmlContent,
+      mediaKind: item.contentLoaded === false ? item.mediaKind : parseShowcaseMedia(item.htmlContent).kind,
+      createdAt: item.createdAt,
       loves: item.loves,
       lovedBy: item.lovedBy || [],
       description: item.description,
@@ -235,7 +254,7 @@ export default function AchievementHall() {
     [uploadForm.htmlContent]
   );
 
-  const resetForm = (defaultType: GalleryTab = 'photo') => {
+  const resetForm = (defaultType: ShowcaseCategory = 'photo') => {
     cancelVideoUpload();
     setHtmlError('');
     setSaveError('');
@@ -252,24 +271,76 @@ export default function AchievementHall() {
     });
   };
 
-  /** 打开修改弹窗并预填现有内容 */
-  const openEdit = (card: { id: string; title: string; imageUrl: string; groupId: string }) => {
+  const saveDraft = () => {
+    if (!draftKey || !draftReady.current) return true;
+    const saved = writeShowcaseDraft(localStorage, draftKey, uploadForm, editingId);
+    setDraftWarning(saved ? '' : '浏览器空间不足，草稿暂未保存；请先提交或精简封面。');
+    return saved;
+  };
+  const closeUpload = () => {
+    if (saving) return;
     cancelVideoUpload();
-    const item = showcaseItems.find((s) => s.id === card.id);
-    setHtmlError('');
-    setSaveError('');
-    setShowHtmlCodeEditor(false);
-    setPaperPreviewMode(false);
-    setEditingId(card.id);
-    setUploadForm({
-      type: (item?.category || 'photo') as GalleryTab,
-      projectId: item?.projectId || '',
-      title: item?.title || card.title,
-      description: item?.description || '',
-      imageUrl: item?.coverImage || card.imageUrl || '',
-      htmlContent: item?.htmlContent || '',
-    });
+    if (!saveDraft()) return;
+    setUploadDialogOpen(false);
+    if (hasShowcaseDraft(uploadForm)) pushToast('草稿已保留，可再次打开继续编辑', 'info');
+  };
+  const openUpload = () => {
+    cancelVideoUpload();
+    const draft = draftKey ? readShowcaseDraft(localStorage, draftKey) : null;
+    if (draft && (!draft.editingId || showcaseItems.some((item) => item.id === draft.editingId && item.groupId === groupId))) {
+      setUploadForm(draft.form); setEditingId(draft.editingId);
+      setHtmlError(''); setSaveError('');
+    } else resetForm(tab === 'all' || tab === 'award' ? 'photo' : tab);
+    draftReady.current = true;
     setUploadDialogOpen(true);
+  };
+  // Debounced autosave plus synchronous close/unload saves prevent last-keystroke loss.
+  useEffect(() => {
+    if (!uploadDialogOpen || !draftKey || !draftReady.current) return;
+    const save = () => {
+      const saved = writeShowcaseDraft(localStorage, draftKey, uploadForm, editingId);
+      setDraftWarning(saved ? '' : '浏览器空间不足，草稿暂未保存；请先提交或精简封面。');
+    };
+    const timer = window.setTimeout(save, 250);
+    window.addEventListener('beforeunload', save);
+    return () => { clearTimeout(timer); window.removeEventListener('beforeunload', save); };
+  }, [uploadDialogOpen, draftKey, uploadForm, editingId]);
+  useEffect(() => {
+    if (previousDraftKey.current === draftKey) return;
+    previousDraftKey.current = draftKey;
+    draftReady.current = false;
+    setUploadDialogOpen(false); setEditingId(null); setLightboxId(null);
+  }, [draftKey]);
+
+  const openWork = async (id: string) => {
+    if (openingId) return;
+    setOpeningId(id);
+    try { await loadShowcaseDetail(id); setLightboxId(id); }
+    catch (error) { pushToast(error instanceof Error ? error.message : '作品加载失败，请重试', 'error'); }
+    finally { setOpeningId(null); }
+  };
+
+  const openEdit = async (card: { id: string }) => {
+    if (openingId) return;
+    setOpeningId(card.id);
+    try {
+      const item = await loadShowcaseDetail(card.id);
+      const draft = draftKey ? readShowcaseDraft(localStorage, draftKey) : null;
+      if (draft && draft.editingId !== card.id && hasShowcaseDraft(draft.form)) {
+        pushToast('请先通过“上传作品”继续或清空已有草稿，再编辑其他作品', 'warning');
+        return;
+      }
+      cancelVideoUpload(); setHtmlError(''); setSaveError(''); setShowHtmlCodeEditor(false); setPaperPreviewMode(false);
+      setEditingId(card.id);
+      setUploadForm(draft?.editingId === card.id ? draft.form : {
+        type: parseShowcaseMedia(item.htmlContent).kind === 'html' ? 'html' : item.category,
+        projectId: item.projectId || '', title: item.title, description: item.description || '',
+        imageUrl: item.coverImage || '', htmlContent: item.htmlContent || '',
+      });
+      draftReady.current = true;
+      setUploadDialogOpen(true);
+    } catch (error) { pushToast(error instanceof Error ? error.message : '作品加载失败，请重试', 'error'); }
+    finally { setOpeningId(null); }
   };
 
   useEffect(() => {
@@ -422,6 +493,7 @@ export default function AchievementHall() {
     if (!uploadForm.title.trim()) return setSaveError('请填写作品标题');
     if (!uploadForm.imageUrl && !uploadForm.htmlContent)
       return setSaveError('请上传封面图片或作品内容（HTML / 视频 / 论文 / 3D 模型）');
+    if (uploadForm.type === 'html' && parsedFormMedia.kind !== 'html') return setSaveError('请上传 HTML 文件或编写 HTML 内容');
     if (!groupId) return setSaveError('请先加入小组后提交作品');
     const payload = {
       projectId: uploadForm.projectId || '',
@@ -429,7 +501,7 @@ export default function AchievementHall() {
       coverImage: uploadForm.imageUrl || showcaseFallback,
       htmlContent: uploadForm.htmlContent,
       description: uploadForm.description.trim(),
-      category: uploadForm.type,
+      category: parsedFormMedia.kind === 'html' ? 'html' as const : uploadForm.type,
     };
     setSaving(true);
     const token = getToken();
@@ -446,11 +518,14 @@ export default function AchievementHall() {
             : [...state.showcaseItems, saved],
         }));
       } else if (editingId) {
-        updateShowcaseItem(editingId, payload);
+        await updateShowcaseItem(editingId, payload);
       } else {
         addShowcaseItem({ ...payload, groupId });
       }
-      setTab(uploadForm.type);
+      draftReady.current = false;
+      try { if (draftKey) localStorage.removeItem(draftKey); }
+      catch { pushToast('作品已保存，浏览器草稿未能清理；请勿重复提交', 'warning'); }
+      setTab(payload.category);
       pushToast(
         editingId ? '已保存，需等待教师重新审批' : '作品已提交，等待教师审批',
         'success'
@@ -482,6 +557,9 @@ export default function AchievementHall() {
   };
 
   const matchesTab = (card: ShowcaseCard, targetTab: GalleryTab) => {
+    if (targetTab === 'all') return true;
+    if (targetTab === 'html') return card.mediaKind === 'html' || card.category === 'html';
+    if (targetTab === 'photo' && card.mediaKind === 'html') return false;
     if (targetTab === 'award') {
       return (
         card.category === 'award' || (card.status === 'approved' && card.awardedCoins > 0)
@@ -491,11 +569,15 @@ export default function AchievementHall() {
   };
 
   const visibleCards = useMemo(
-    () => cards.filter((c) => matchesTab(c, tab)),
-    [cards, tab]
+    () => cards.filter((card) => matchesTab(card, tab) && `${card.title} ${card.description} ${card.authorUserId || groups.find((g) => g.id === card.groupId)?.name || ''}`.toLowerCase().includes(query.trim().toLowerCase()))
+      .sort((a, b) => sort === 'loves' ? b.loves - a.loves : new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
+    [cards, tab, query, sort, groups]
   );
-  const countOf = (k: GalleryTab) => cards.filter((c) => matchesTab(c, k)).length;
-  const columns3 = distributeByWaterfall(visibleCards, 3);
+  useEffect(() => { setPage(1); }, [tab, query, sort]);
+  const pageCount = Math.max(1, Math.ceil(visibleCards.length / 12));
+  const currentPage = Math.min(page, pageCount);
+  const countOf = (key: GalleryTab) => cards.filter((card) => matchesTab(card, key)).length;
+  const columns3 = distributeByWaterfall(visibleCards.slice((currentPage - 1) * 12, currentPage * 12), 3);
 
   return (
     <>
@@ -543,13 +625,13 @@ export default function AchievementHall() {
                       key={t.key}
                       onClick={() => setTab(t.key)}
                       className={cn(
-                        'px-3.5 py-2 rounded-xl text-[12.5px] font-semibold transition-all flex items-center gap-1.5 flex-1 justify-center',
+                        'px-3.5 py-2 rounded-xl text-[12.5px] font-semibold transition-all flex items-center gap-1.5 flex-1 justify-center whitespace-nowrap',
                         active
                           ? 'bg-gradient-to-br from-mission-500 to-nova-500 text-white shadow-glowMission'
                           : 'text-ink-600 hover:bg-mission-50/60 hover:text-mission-700'
                       )}
                     >
-                      <Icon size={14} />
+                      <Icon size={14} className="shrink-0" />
                       {t.label}
                       <span
                         className={cn(
@@ -563,10 +645,7 @@ export default function AchievementHall() {
                   );
                 })}
                 <button
-                  onClick={() => {
-                    resetForm(tab);
-                    setUploadDialogOpen(true);
-                  }}
+                  onClick={openUpload}
                   className={cn(
                     'px-3.5 py-2 rounded-xl text-[12.5px] font-semibold transition-all flex items-center gap-1.5',
                     'bg-gradient-to-br from-blue-600 to-sky-500 text-white shadow-glowEmerald hover:shadow-glowEmerald/80'
@@ -595,9 +674,16 @@ export default function AchievementHall() {
               </div>
             </div>
 
+            <div className="flex flex-wrap items-center gap-3 mb-4">
+              <input aria-label="搜索作品" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="搜索作品、简介或作者" className="min-w-0 flex-1 rounded-xl border border-blue-200 bg-white/90 px-3 py-2.5 text-sm" />
+              <select aria-label="作品排序" value={sort} onChange={(event) => setSort(event.target.value)} className="rounded-xl border border-blue-200 bg-white/90 px-3 py-2.5 text-sm">
+                <option value="newest">最新发布</option><option value="loves">点赞最多</option>
+              </select>
+            </div>
+            {openingId && <p role="status" className="mb-3 text-sm text-blue-700">正在加载作品内容…</p>}
             {visibleCards.length === 0 ? (
               <div className="glass-card p-10 rounded-[22px] text-center text-ink-400 text-[13px]">
-                「{CATEGORY_LABEL[tab]}」下还没有作品
+                {query ? '没有找到匹配的作品，请尝试其他关键词' : `「${CATEGORY_LABEL[tab]}」下还没有作品`}
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
@@ -611,7 +697,7 @@ export default function AchievementHall() {
                       const gi = Math.max(0, (parseInt(card.groupId.split('-')[1]) || 1) - 1);
                       const loved = isCardLoved(card);
                       const isMine = !!groupId && card.groupId === groupId;
-                      const mediaBadge = getMediaBadgeLabel(card.htmlContent);
+                      const mediaBadge = card.mediaKind === 'html' ? 'HTML · 交互作品' : getMediaBadgeLabel(card.htmlContent);
                       const groupChipColor = card.authorUserId
                         ? 'chip-mission'
                         : [
@@ -628,7 +714,7 @@ export default function AchievementHall() {
                           initial={{ opacity: 0, y: 20 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ duration: 0.4, delay: (ci * 6 + i) * 0.04 }}
-                          onClick={() => setLightboxId(card.id)}
+                          onClick={() => void openWork(card.id)}
                           className="glass-card glass-card-hover rounded-[22px] overflow-hidden relative group cursor-pointer"
                         >
                           <div className="relative w-full overflow-hidden h-44">
@@ -743,6 +829,11 @@ export default function AchievementHall() {
                 ))}
               </div>
             )}
+            {pageCount > 1 && <nav aria-label="作品分页" className="flex items-center justify-center gap-4 mt-5">
+              <button className="btn-outline" disabled={currentPage === 1} onClick={() => setPage(currentPage - 1)}>上一页</button>
+              <span className="text-sm text-blue-800">第 {currentPage} / {pageCount} 页</span>
+              <button className="btn-outline" disabled={currentPage === pageCount} onClick={() => setPage(currentPage + 1)}>下一页</button>
+            </nav>}
           </div>
 
           <div className="col-span-12 lg:col-span-3 space-y-5">
@@ -770,7 +861,7 @@ export default function AchievementHall() {
                       initial={{ opacity: 0, x: 10 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ duration: 0.35, delay: 0.15 + i * 0.06 }}
-                      onClick={() => setLightboxId(hof.id)}
+                      onClick={() => void openWork(hof.id)}
                       className="p-3 rounded-2xl bg-gradient-to-br from-alert-50/60 via-energy-50/40 to-mission-50/30 border border-alert-100/50 relative cursor-pointer hover:shadow-md transition"
                     >
                       <div className="student-showcase-rank">#{hof.rank}</div>
@@ -947,57 +1038,17 @@ export default function AchievementHall() {
       </div>
 
       {/* ============ 上传 / 编辑作品弹窗 ============ */}
-      {uploadDialogOpen &&
-        createPortal(
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[200] flex items-center justify-center p-4"
-          >
-            <div
-              className="absolute inset-0 bg-ink-900/60 backdrop-blur-sm"
-              onClick={() => { cancelVideoUpload(); setUploadDialogOpen(false); }}
-            />
-            <motion.div
-              initial={{ scale: 0.95, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.95, y: 20 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              role="dialog"
-              aria-modal="true"
-              aria-label={editingId ? '编辑作品' : '上传作品'}
-              className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-slate-50 border border-blue-200 rounded-[28px] p-6 shadow-2xl"
-            >
-              <button
-                aria-label="关闭作品编辑"
-                onClick={() => { cancelVideoUpload(); setUploadDialogOpen(false); }}
-                className="absolute top-4 right-4 w-8 h-8 rounded-full bg-ink-100/50 flex items-center justify-center text-ink-500 hover:bg-ink-200 transition-colors"
-              >
-                <X size={16} />
-              </button>
-
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-sky-500 flex items-center justify-center text-white shadow-lg shadow-blue-500/20">
-                  <Upload size={20} />
-                </div>
-                <div>
-                  <h3 className="font-bold text-ink-800 text-lg">
-                    {editingId ? '编辑作品' : '上传作品'}
-                  </h3>
-                  <p className="text-[12px] text-ink-500">
-                    上传你的作品，审核后展示
-                  </p>
-                </div>
-              </div>
-
+      <Dialog open={uploadDialogOpen} onClose={closeUpload} title={editingId ? '编辑作品' : '上传作品'} size="xl" className="!max-w-2xl">
+        <p role="status" className="mb-4 text-xs text-blue-700">草稿自动保存在本机，关闭后可继续编辑 · 提交后等待教师审核</p>
+        {draftWarning && <p role="alert" className="mb-3 text-sm text-red-700">{draftWarning}</p>}
+        <fieldset disabled={saving} className="min-w-0">
               <div className="space-y-4">
                 <div>
                   <label className="block text-[12px] font-semibold text-ink-700 mb-2">
-                    作品分类
+                    作品形式
                   </label>
                   <div className="flex flex-wrap gap-2">
-                    {GALLERY_TABS.map((t) => {
+                    {UPLOAD_TYPES.map((t) => {
                       const Icon = t.icon;
                       const active = uploadForm.type === t.key;
                       return (
@@ -1055,7 +1106,7 @@ export default function AchievementHall() {
                   </label>
                   <input
                     type="text"
-                    aria-label="作品标题"
+                    data-dialog-autofocus aria-label="作品标题"
                     value={uploadForm.title}
                     onChange={(e) =>
                       setUploadForm((prev) => ({ ...prev, title: e.target.value }))
@@ -1342,8 +1393,8 @@ export default function AchievementHall() {
                 )}
 
                 {/* ============ 通用交互作品 HTML 上传与在线源码面板 ============ */}
-                <details key={editingId || "new-work"} open={parsedFormMedia.kind === "html" || undefined} className="rounded-xl border border-blue-200 bg-blue-50/60 p-4 space-y-3">
-                  <summary className="cursor-pointer text-sm font-semibold text-blue-800">添加交互 HTML（选填）</summary>
+                <details key={editingId || "new-work"} open={uploadForm.type === "html" || parsedFormMedia.kind === "html" || undefined} className="rounded-xl border border-blue-200 bg-blue-50/60 p-4 space-y-3">
+                  <summary className="cursor-pointer text-sm font-semibold text-blue-800">交互 HTML 文件</summary>
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <label className="block text-sm font-bold text-blue-900">
                       交互作品 HTML
@@ -1367,7 +1418,7 @@ export default function AchievementHall() {
                               setHtmlError('请选择不超过 1 MB 的 HTML 文件');
                               return;
                             }
-                            setUploadForm((prev) => ({ ...prev, htmlContent: html }));
+                            setUploadForm((prev) => ({ ...prev, htmlContent: html, type: 'html' }));
                           } catch {
                             setHtmlError('读取 HTML 文件失败，请重新选择');
                           }
@@ -1379,7 +1430,7 @@ export default function AchievementHall() {
                         type="button"
                         onClick={() => {
                           setHtmlError('');
-                          setUploadForm((prev) => ({ ...prev, htmlContent: HTML_SIM_TEMPLATE }));
+                          setUploadForm((prev) => ({ ...prev, htmlContent: HTML_SIM_TEMPLATE, type: 'html' }));
                         }}
                         className="px-2.5 py-1 rounded-lg bg-blue-600 text-white text-xs font-semibold hover:bg-blue-500 transition"
                       >
@@ -1407,7 +1458,7 @@ export default function AchievementHall() {
                           setHtmlError('');
                           setUploadForm((prev) => ({
                             ...prev,
-                            htmlContent: tpl.html,
+                            htmlContent: tpl.html, type: 'html',
                             title: !prev.title || HTML_SIM_TEMPLATES.some((item) => item.name === prev.title) ? tpl.name : prev.title,
                             description: !prev.description || HTML_SIM_TEMPLATES.some((item) => item.description === prev.description) ? tpl.description : prev.description,
                           }));
@@ -1461,11 +1512,15 @@ export default function AchievementHall() {
                 >
                   {videoUploading ? '上传中…' : saving ? '正在保存…' : editingId ? '保存作品' : '提交审核'}
                 </button>
+                <button type="button" disabled={saving} onClick={() => setDiscardOpen(true)} className="w-full py-2 text-sm text-slate-500 hover:text-red-700">清空草稿</button>
               </div>
-            </motion.div>
-          </motion.div>,
-          document.body
-        )}
+        </fieldset>
+      </Dialog>
+      <Dialog open={discardOpen} onClose={() => setDiscardOpen(false)} title="清空作品草稿" size="sm" footer={<>
+        <button className="btn-ghost" onClick={() => setDiscardOpen(false)}>继续编辑</button>
+        <button className="btn-outline" onClick={() => { resetForm(); setDiscardOpen(false); if (draftKey) localStorage.removeItem(draftKey); }}>确认清空</button>
+      </>}><p className="text-sm text-slate-600">将清空本机的未提交内容，已发布的作品不受影响。</p></Dialog>
+
 
       {/* ============ 作品详情与多模态交互预览弹窗 ============ */}
       {lightbox &&

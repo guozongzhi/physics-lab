@@ -4,6 +4,8 @@ import { LS_KEYS, loadLS, saveLS } from '../lib/storage';
 import { useCoinStore } from './coinStore';
 import { useGroupStore } from './groupStore';
 import { projectsApi, recruitmentsApi, showcaseApi, groupsApi, usersApi, coinsApi } from '../lib/apiService';
+import { apiEnabled, getToken } from '../lib/apiClient';
+import { useUIStore } from './uiStore';
 import { syncToApi } from '../lib/syncQueue';
 import { reviveDates } from '../lib/reviveDates';
 import { windowState, windowClosedMessage } from '../lib/activityWindow';
@@ -55,20 +57,23 @@ interface ProjectState {
     id: string,
     patch: Partial<Pick<ShowcaseItem, 'title' | 'coverImage' | 'description' | 'category' | 'htmlContent' | 'projectId'>>,
     keepStatus?: boolean
-  ) => void;
+  ) => Promise<void>;
   /** 教师/管理员下架作品；已奖励的能量币不回滚 */
-  deleteShowcaseItem: (id: string) => void;
+  deleteShowcaseItem: (id: string) => Promise<void>;
   /** 教师审批：approve 可带 coins 奖励该小组，reject 必带 reason */
   reviewShowcaseItem: (
     id: string,
     action: 'approve' | 'reject',
     coins?: number,
     reason?: string
-  ) => void;
+  ) => Promise<void>;
+  loadShowcaseDetail: (id: string) => Promise<ShowcaseItem>;
   toggleShowcaseLove: (showcaseId: string, userId: string) => void;
   getProjectById: (projectId: string) => Project | undefined;
   getRecruitmentsByProject: (projectId: string) => Recruitment[];
 }
+
+const pendingLoves = new Set<string>();
 
 const uid = () => `${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
 
@@ -411,76 +416,80 @@ export const useProjectStore = create<ProjectState>((set, get) => {
       return item;
     },
 
-    updateShowcaseItem: (id, patch, keepStatus = false) => {
-      const { projects, recruitments, showcaseItems } = get();
-      // 本地乐观更新：学生改要重新送审（置回 pending、清驳回理由），教师改保留原状态
-      const next = showcaseItems.map((s) =>
-        s.id === id
-          ? keepStatus
-            ? { ...s, ...patch }
-            : { ...s, ...patch, status: 'pending' as const, rejectReason: '' }
-          : s
-      );
-      persist(projects, recruitments, next);
-      set({ showcaseItems: next });
-      syncToApi(async () => {
-        await showcaseApi.update(id, patch);
-        const fresh = await showcaseApi.list();
-        set({ showcaseItems: reviveShowcaseDates(fresh) });
-      }, 'showcase.update');
+    loadShowcaseDetail: async (id) => {
+      const existing = get().showcaseItems.find((item) => item.id === id);
+      if (!existing) throw new Error('作品不存在');
+      if (!apiEnabled || existing.contentLoaded !== false) return existing;
+      const [item] = reviveShowcaseDates([await showcaseApi.get(id)]);
+      set((state) => ({ showcaseItems: state.showcaseItems.map((row) => row.id === id ? item : row) }));
+      return item;
     },
 
-    deleteShowcaseItem: (id) => {
+    updateShowcaseItem: async (id, patch, keepStatus = false) => {
+      if (apiEnabled) {
+        const [saved] = reviveShowcaseDates([await showcaseApi.update(id, patch)]);
+        set((state) => ({ showcaseItems: state.showcaseItems.map((item) => item.id === id ? saved : item) }));
+        return;
+      }
       const { projects, recruitments, showcaseItems } = get();
-      const next = showcaseItems.filter((s) => s.id !== id);
+      const next = showcaseItems.map((item) => item.id === id
+        ? { ...item, ...patch, ...(keepStatus ? {} : { status: 'pending' as const, rejectReason: '' }) } : item);
       persist(projects, recruitments, next);
       set({ showcaseItems: next });
-      syncToApi(async () => {
-        await showcaseApi.remove(id);
-        const fresh = await showcaseApi.list();
-        set({ showcaseItems: reviveShowcaseDates(fresh) });
-      }, 'showcase.delete');
     },
 
-    reviewShowcaseItem: (id, action, coins, reason) => {
+    deleteShowcaseItem: async (id) => {
+      if (apiEnabled) await showcaseApi.remove(id);
       const { projects, recruitments, showcaseItems } = get();
-      const next = showcaseItems.map((s) =>
-        s.id === id
-          ? {
-              ...s,
-              status: (action === 'approve' ? 'approved' : 'rejected') as ShowcaseItem['status'],
-              rejectReason: action === 'reject' ? reason || '' : '',
-              awardedCoins: action === 'approve' ? coins || 0 : s.awardedCoins,
-            }
-          : s
-      );
+      const next = showcaseItems.filter((item) => item.id !== id);
+      if (!apiEnabled) persist(projects, recruitments, next);
+      set({ showcaseItems: next });
+    },
+
+    reviewShowcaseItem: async (id, action, coins, reason) => {
+      if (apiEnabled) {
+        const [saved] = reviveShowcaseDates([await showcaseApi.review(id, { action, coins, reason })]);
+        set((state) => ({ showcaseItems: state.showcaseItems.map((item) => item.id === id ? saved : item) }));
+        if (action === 'approve') {
+          // The review is already committed; a balance refresh failure must not invite resubmission.
+          await refetchAfterSettlement().catch(() => useUIStore.getState().pushToast('审批已保存，余额暂未刷新，请刷新页面查看', 'warning'));
+        }
+        return;
+      }
+      const { projects, recruitments, showcaseItems } = get();
+      const next = showcaseItems.map((item) => item.id === id ? {
+        ...item, status: (action === 'approve' ? 'approved' : 'rejected') as ShowcaseItem['status'],
+        rejectReason: action === 'reject' ? reason || '' : '',
+        awardedCoins: action === 'approve' ? coins || 0 : item.awardedCoins,
+      } : item);
       persist(projects, recruitments, next);
       set({ showcaseItems: next });
-      syncToApi(async () => {
-        await showcaseApi.review(id, { action, coins, reason });
-        // 通过时会奖励小组能量币，必须重拉 groups/coinTxs，否则能量与流水要手动刷新才变
-        if (action === 'approve') await refetchAfterSettlement();
-      }, 'showcase.review');
     },
 
     toggleShowcaseLove: (showcaseId, userId) => {
+      if (apiEnabled) {
+        const token = getToken();
+        const key = `${token}:${showcaseId}`;
+        if (pendingLoves.has(key)) return;
+        pendingLoves.add(key);
+        void showcaseApi.toggleLove(showcaseId).then((raw) => {
+          if (getToken() !== token) return;
+          const [saved] = reviveShowcaseDates([raw]);
+          set((state) => ({ showcaseItems: state.showcaseItems.map((item) => item.id === showcaseId ? saved : item) }));
+        }).catch((error) => useUIStore.getState().pushToast(error instanceof Error ? error.message : '点赞失败，请重试', 'error')).finally(() => pendingLoves.delete(key));
+        return;
+      }
       const { projects, recruitments, showcaseItems } = get();
-      const uidStr = String(userId);
-      const next = showcaseItems.map((s) => {
-        if (s.id !== showcaseId) return s;
-        const loved = s.lovedBy.includes(uidStr);
-        if (loved) {
-          return {
-            ...s,
-            loves: Math.max(0, s.loves - 1),
-            lovedBy: s.lovedBy.filter((x) => x !== uidStr),
-          };
-        }
-        return { ...s, loves: s.loves + 1, lovedBy: [...s.lovedBy, uidStr] };
+      const next = showcaseItems.map((item) => {
+        if (item.id !== showcaseId) return item;
+        const loved = item.lovedBy.includes(String(userId));
+        return { ...item, loves: Math.max(0, item.loves + (loved ? -1 : 1)),
+          lovedBy: loved ? item.lovedBy.filter((id) => id !== String(userId)) : [...item.lovedBy, String(userId)] };
       });
       persist(projects, recruitments, next);
       set({ showcaseItems: next });
-      syncToApi(() => showcaseApi.toggleLove(showcaseId), 'showcase.toggleLove');
     },
+
+
   };
 });

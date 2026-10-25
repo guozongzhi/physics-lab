@@ -65,7 +65,7 @@ export async function bootstrapFromApi(force = false): Promise<void> {
       theoryApi.challenges(),
       projectsApi.list(),
       recruitmentsApi.list(),
-      showcaseApi.list(),
+      showcaseApi.summaries(),
       coinsApi.transactions(),
       coinsApi.classMeta(),
       theoryApi.quizSessions(),

@@ -460,7 +460,7 @@ class RecruitmentOut(CamelModel):
 
 # ---------- Showcase ----------
 # 展览馆顶部的筛选分类。上传时必须选一个，tab 据此过滤。
-ShowcaseCategory = Literal["photo", "video", "paper", "model", "award"]
+ShowcaseCategory = Literal["photo", "html", "video", "paper", "model", "award"]
 
 
 def validate_showcase_html(value: str) -> str:
@@ -484,6 +484,8 @@ class ShowcaseCreate(BaseModel):
 
 
 class ShowcaseOut(CamelModel):
+    content_loaded: bool = True
+    media_kind: str = ""
     html_content: str = ""
     author_user_id: str = ""
     demo_kind: str = ""

@@ -14,7 +14,8 @@ function downloadTextFile(filename: string, content: string, mime = 'text/plain;
 }
 
 const CATEGORY_GUIDE: Record<ShowcaseCategory, string> = {
-  photo: '上传照片，或添加交互 HTML。HTML 须为单文件，最大 1 MB，不支持外部资源。',
+  photo: '上传作品图片，可在提交前更换封面。',
+  html: '上传单文件 HTML，最大 1 MB；请将脚本、样式和图片嵌入文件。',
   video: '支持 MP4、WebM、MOV，最大 100 MB。上传后自动生成封面，也可使用视频直链。',
   paper: '导入 Markdown 或 TXT 文稿，也可使用模板。提交前可预览排版。',
   model: '支持 OBJ、ASCII STL，最大 1 MB；也可选择内置模型。',
@@ -38,7 +39,7 @@ export default function UploadGuidePanel({ category, htmlContent }: {
       </button>
       {expanded && <div className="space-y-3 border-t border-blue-100 pt-2 text-xs leading-5 text-slate-600">
         <p>{CATEGORY_GUIDE[category]}</p>
-        {(category === 'photo' || category === 'model') && <button type="button"
+        {(category === 'html' || category === 'model') && <button type="button"
           onClick={() => category === 'model'
             ? downloadTextFile('sample.obj', SAMPLE_OBJ_CONTENT)
             : downloadTextFile('physics-sim-template.html', HTML_SIM_TEMPLATE, 'text/html;charset=utf-8')}

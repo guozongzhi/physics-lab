@@ -5,7 +5,8 @@ from pathlib import Path
 import re
 import secrets
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
+from sqlalchemy import case, func, literal
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
@@ -80,14 +81,49 @@ def _validate_video_binding(content: str | None, db: Session, current: User) -> 
 
 
 # ---------- Showcase ----------
-@router.get("/showcase", response_model=list[ShowcaseOut])
-def list_showcase(db: Session = Depends(get_db), current: User = Depends(get_current_user)):
-    q = db.query(ShowcaseItem)
+def _visible_showcase(q, current: User):
     if current.account_role == "student":
         from sqlalchemy import or_
+        visible = ShowcaseItem.status == "approved"
+        if current.group_id:
+            visible = or_(visible, ShowcaseItem.group_id == current.group_id)
+        q = q.filter(visible)
+    return q
 
-        q = q.filter(or_(ShowcaseItem.status == "approved", ShowcaseItem.group_id == current.group_id))
-    return q.all()
+
+@router.get("/showcase", response_model=list[ShowcaseOut])
+def list_showcase(
+    summary: bool = False,
+    offset: int = Query(default=0, ge=0),
+    limit: int | None = Query(default=None, ge=1, le=200),
+    db: Session = Depends(get_db), current: User = Depends(get_current_user),
+):
+    if summary:
+        content = ShowcaseItem.html_content
+        kind = case(
+            (func.length(func.trim(content)) == 0, "none"),
+            (func.substr(content, 1, 16) == "<!--VIDEO_SRC-->", "video"),
+            (func.substr(content, 1, 15) == "<!--PAPER_MD-->", "paper"),
+            (content.like("<!--MODEL_3D:%"), "model3d"),
+            else_="html",
+        ).label("media_kind")
+        columns = [column for column in ShowcaseItem.__table__.columns if column.name != "html_content"]
+        q = db.query(*columns, kind, literal(False).label("content_loaded"), literal("").label("html_content"))
+    else:
+        q = db.query(ShowcaseItem)
+    q = _visible_showcase(q, current).order_by(ShowcaseItem.created_at.desc(), ShowcaseItem.id)
+    if limit is not None:
+        q = q.limit(limit)
+    rows = q.offset(offset).all()
+    return [dict(row._mapping) for row in rows] if summary else rows
+
+
+@router.get("/showcase/{showcase_id}", response_model=ShowcaseOut)
+def get_showcase(showcase_id: str, db: Session = Depends(get_db), current: User = Depends(get_current_user)):
+    item = _visible_showcase(db.query(ShowcaseItem), current).filter(ShowcaseItem.id == showcase_id).first()
+    if item is None:
+        raise HTTPException(status_code=404, detail="作品不存在或无权查看")
+    return item
 
 
 @router.post("/showcase", response_model=ShowcaseOut)

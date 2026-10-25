@@ -15,22 +15,22 @@ export default function HtmlDemo({ html, title }: { html: string; title: string 
     <div
       className={cn(
         'flex flex-col rounded-xl border border-blue-200 bg-slate-900/95 overflow-hidden',
-        fullscreen && 'fixed inset-4 z-[260] shadow-2xl'
+        fullscreen && 'fixed inset-2 sm:inset-4 z-[260] shadow-2xl'
       )}
     >
-      <div className="flex items-center justify-between gap-2 pl-3.5 pr-14 py-2 bg-slate-800/90 border-b border-slate-700/80 text-xs text-slate-200">
-        <div className="flex items-center gap-2 min-w-0">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pl-3.5 pr-14 py-3 bg-slate-800/90 border-b border-slate-700/80 text-xs text-slate-200">
+        <div className="flex items-center gap-2 min-w-0 flex-1">
           <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0" />
-          <span className="font-semibold truncate">{title}</span>
+          <span className="font-semibold break-words min-w-0">{title}</span>
           <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-700 text-slate-300 shrink-0">
             隔离沙箱
           </span>
         </div>
-        <div className="flex items-center gap-1.5 shrink-0">
+        <div className="flex flex-wrap items-center gap-2 shrink-0">
           <button
             type="button"
             onClick={() => setReloadKey((k) => k + 1)}
-            className="px-2 py-1 rounded-lg bg-slate-700/80 hover:bg-slate-600 text-slate-100 inline-flex items-center gap-1 transition"
+            className="min-h-10 px-3 py-2 rounded-lg bg-slate-700/80 hover:bg-slate-600 text-slate-100 inline-flex items-center gap-1 transition"
             title="重置仿真运行状态"
           >
             <RotateCcw size={12} />
@@ -39,15 +39,15 @@ export default function HtmlDemo({ html, title }: { html: string; title: string 
           <button
             type="button"
             onClick={() => setShowSource((s) => !s)}
-            className="px-2 py-1 rounded-lg bg-slate-700/80 hover:bg-slate-600 text-slate-100 inline-flex items-center gap-1 transition"
+            className="min-h-10 px-3 py-2 rounded-lg bg-slate-700/80 hover:bg-slate-600 text-slate-100 inline-flex items-center gap-1 transition"
           >
-            <Code2 size={12} />
+            <Code2 size={14} />
             {showSource ? '返回演示' : '查看源码'}
           </button>
           <button
             type="button"
             onClick={() => setFullscreen((f) => !f)}
-            className="px-2 py-1 rounded-lg bg-blue-600 hover:bg-blue-500 text-white inline-flex items-center gap-1 transition"
+            className="min-h-10 px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white inline-flex items-center gap-1 transition"
           >
             {fullscreen ? <Minimize2 size={12} /> : <Maximize2 size={12} />}
             {fullscreen ? '退出全屏' : '全屏演示'}

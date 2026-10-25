@@ -165,6 +165,9 @@ export interface Recruitment {
 
 export interface ShowcaseItem {
   htmlContent?: string;
+  /** Lightweight list responses omit the body; fetch detail before preview/edit. */
+  contentLoaded?: boolean;
+  mediaKind?: 'none' | 'html' | 'video' | 'paper' | 'model3d';
   authorUserId?: string;
   demoKind?: "" | "optics" | "motor";
   id: string;
@@ -187,7 +190,7 @@ export interface ShowcaseItem {
 }
 
 /** 展览馆的作品分类（与后端 ShowcaseCategory 对齐） */
-export type ShowcaseCategory = 'photo' | 'video' | 'paper' | 'model' | 'award';
+export type ShowcaseCategory = 'photo' | 'html' | 'video' | 'paper' | 'model' | 'award';
 
 export interface ClassMeta {
   initialCoinsPerGroup: number;

@@ -1,3 +1,5 @@
+import { mockTopics } from '@/data/mockTopics';
+import { topicCompletion } from '@/lib/learningMetrics';
 import { useLearningProgressStore } from '@/store/learningProgressStore';
 import { useQuestionBankStore } from '@/store/questionBankStore';
 import { useEffect, useState, useMemo } from 'react';
@@ -88,6 +90,7 @@ export default function Dashboard() {
     [groups, classId]
   );
   const { quizSessions, challenges } = useTheoryStore();
+  const theoryProgress = topicCompletion(quizSessions, userId, mockTopics.map((topic) => topic.id), apiEnabled).percent;
   const { projects, showcaseItems, createProject, updateProject, deleteProject, createRecruitment } = useProjectStore();
   const { coinTxs } = useCoinStore();
 
@@ -398,8 +401,8 @@ export default function Dashboard() {
           </button>
           <MissionActionCards
             onNavigate={navigate}
-            theoryProgress={pathProgress}
-            projectCount={myProjects.length}
+            theoryProgress={theoryProgress}
+            projectCount={myProjects.filter((project) => ['planning', 'progress', 'review'].includes(project.status)).length}
             safetyPassed={safetyRecords.some((r) => r.passed)}
             challengeCount={challenges.length}
           />
@@ -472,8 +475,8 @@ export default function Dashboard() {
             </div>
             <MissionActionCards
               onNavigate={navigate}
-              theoryProgress={pathProgress}
-              projectCount={myProjects.length}
+              theoryProgress={theoryProgress}
+              projectCount={myProjects.filter((project) => ['planning', 'progress', 'review'].includes(project.status)).length}
               safetyPassed={safetyRecords.some((r) => r.passed)}
               challengeCount={challenges.length}
             />
