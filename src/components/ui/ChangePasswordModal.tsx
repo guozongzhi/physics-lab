@@ -1,3 +1,4 @@
+import { useLocale } from '@/i18n/useLocale';
 /**
  * 修改密码弹窗（学生/教师通用）。
  *
@@ -15,6 +16,7 @@ import { useAuthStore } from '@/store/authStore';
 import Dialog from '@/components/ui/Dialog';
 
 export default function ChangePasswordModal({ onClose }: { onClose: () => void }) {
+  const { tx } = useLocale();
   const pushToast = useUIStore((s) => s.pushToast);
   const markPasswordChanged = useAuthStore((s) => s.markPasswordChanged);
 
@@ -71,34 +73,33 @@ export default function ChangePasswordModal({ onClose }: { onClose: () => void }
       footer={
         <>
           <button className="btn-ghost flex-1" onClick={onClose}>
-            取消
-          </button>
+            {tx("取消")}</button>
           <button className="btn-mission flex-1" onClick={submit} disabled={busy}>
-            {busy ? '提交中…' : '确认修改'}
+            {busy ? tx("提交中…") : tx("确认修改")}
           </button>
         </>
       }
     >
-      <p className="text-[12px] text-ink-500 mb-4">修改后请用新密码登录</p>
+      <p className="text-[12px] text-ink-500 mb-4">{tx("修改后请用新密码登录")}</p>
       <div className="space-y-3">
         <input
           data-dialog-autofocus
           type="password"
-          placeholder="原密码"
+          placeholder={tx("原密码")}
           className="input"
           value={oldPwd}
           onChange={(e) => setOldPwd(e.target.value)}
         />
         <input
           type="password"
-          placeholder="新密码（至少 6 位）"
+          placeholder={tx("新密码（至少 6 位）")}
           className="input"
           value={newPwd}
           onChange={(e) => setNewPwd(e.target.value)}
         />
         <input
           type="password"
-          placeholder="确认新密码"
+          placeholder={tx("确认新密码")}
           className="input"
           value={confirmPwd}
           onChange={(e) => setConfirmPwd(e.target.value)}

@@ -1,3 +1,4 @@
+import { useLocale } from '@/i18n/useLocale';
 import AdaptiveNavigation from '@/components/ui/AdaptiveNavigation';
 import { useLearningProgressStore } from '@/store/learningProgressStore';
 import { apiEnabled } from '@/lib/apiClient';
@@ -42,6 +43,7 @@ const TOPIC_META: TopicMeta[] = [
 
 
 export default function LearningHub() {
+  const { tx } = useLocale();
   const { id: routeTopicId } = useParams();
   const [activeTopicId, setActiveTopicId] = useState(routeTopicId || 'topic-1');
   const [activeTab, setActiveTab] = useState<TopicTab>('ai-study');
@@ -145,41 +147,36 @@ export default function LearningHub() {
               LEARNING HUB · AI POWERED
             </div>
             <h1 className="text-4xl font-black tracking-tight mb-3">
-              <span className="student-learning-title text-ink-800">AI 学习中枢</span>
+              <span className="student-learning-title text-ink-800">{tx("AI 学习中枢")}</span>
               <span className="student-learning-subtitle text-gradient-mission">Learning Hub</span>
             </h1>
             <p className="text-lg text-ink-600 font-medium leading-relaxed max-w-2xl">
-              从探索到精通，8大物理主题 AI 陪你一路升级。每一个知识点都是一颗星，每一次挑战都是成长的阶梯。
-            </p>
+              {tx("从探索到精通，8大物理主题 AI 陪你一路升级。每一个知识点都是一颗星，每一次挑战都是成长的阶梯。")}</p>
             <div className="flex flex-wrap gap-3 mt-6">
               <span className="chip-mission">
-                <Target size={12} /> 8 大主题体系
-              </span>
+                <Target size={12} /> {tx("8 大主题体系")}</span>
               <span className="chip-growth">
-                <Trophy size={12} /> {completedCount} 个已通关
-              </span>
+                <Trophy size={12} /> {completedCount} {tx("个已通关")}</span>
               <span className="chip-nova">
-                <Sparkles size={12} /> AI 智能导师
-              </span>
+                <Sparkles size={12} /> {tx("AI 智能导师")}</span>
             </div>
           </div>
 
           <div className="student-learning-summary">
-            <div className="student-learning-progress-heading"><span>总体学习进度</span><strong>{totalProgress}<small>%</small></strong></div>
-            <progress aria-label="总体学习进度" value={totalProgress} max={100} />
-            <div className="student-learning-summary-row"><Zap size={16} aria-hidden="true" /><span>当前学习</span><strong>{activeMeta.title}</strong></div>
-            <div className="student-learning-summary-row"><CheckCircle2 size={16} aria-hidden="true" /><span>已解锁主题</span><strong>{unlockedCount} / 8</strong></div>
+            <div className="student-learning-progress-heading"><span>{tx("总体学习进度")}</span><strong>{totalProgress}<small>%</small></strong></div>
+            <progress aria-label={tx("总体学习进度")} value={totalProgress} max={100} />
+            <div className="student-learning-summary-row"><Zap size={16} aria-hidden="true" /><span>{tx("当前学习")}</span><strong>{tx(activeMeta.title)}</strong></div>
+            <div className="student-learning-summary-row"><CheckCircle2 size={16} aria-hidden="true" /><span>{tx("已解锁主题")}</span><strong>{unlockedCount} / 8</strong></div>
           </div>
         </div>
       </section>
 
-      <AdaptiveNavigation title="主题导航" summary={activeMeta.title} width={230} navigation={<aside className="space-y-3">
+      <AdaptiveNavigation title={tx("主题导航")} summary={tx(activeMeta.title)} width={230} navigation={<aside className="space-y-3">
           <div className="mission-label">
             <Atom size={12} />
-            物理主题导航
-          </div>
-          <p className="student-topic-hint text-xs text-white/80">左右滑动查看主题</p>
-          <div className="student-topic-list space-y-3" aria-label="物理主题列表" tabIndex={0}>
+            {tx("物理主题导航")}</div>
+          <p className="student-topic-hint text-xs text-white/80">{tx("左右滑动查看主题")}</p>
+          <div className="student-topic-list space-y-3" aria-label={tx("物理主题列表")} tabIndex={0}>
           {topicMeta.map((meta, idx) => {
             const Icon = meta.icon;
             const isActive = activeTopicId === meta.id;
@@ -214,21 +211,19 @@ export default function LearningHub() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <h3 className={cn('font-bold text-base', isActive ? 'text-mission-700' : 'text-ink-800')}>
-                        {meta.title}
+                        {tx(meta.title)}
                       </h3>
                       {meta.completed && (
                         <CheckCircle2 size={16} className="text-growth-500 shrink-0" />
                       )}
                       {!meta.unlocked && (
                         <div className="chip-ink !py-0.5 !text-[10px]">
-                          <LockIcon /> 未解锁
-                        </div>
+                          <LockIcon /> {tx("未解锁")}</div>
                       )}
                     </div>
                     <div className="flex items-center gap-2 mt-2">
                       <span className="chip-mission !py-0.5 !text-[10px]">
-                        {mockTopics.find((topic) => topic.id === meta.id)?.outline.length ?? 0} 章
-                      </span>
+                        {mockTopics.find((topic) => topic.id === meta.id)?.outline.length ?? 0} {tx("章")}</span>
                       <div className="flex items-center gap-0.5">
                         {Array.from({ length: 3 }).map((_, i) => (
                           <Star
@@ -269,7 +264,7 @@ export default function LearningHub() {
                   )}
                 >
                   <Icon size={16} className={isActive ? `text-${tab.color}-500` : ''} />
-                  {tab.label}
+                  {tx(tab.label)}
                 </button>
               );
             })}
@@ -293,13 +288,10 @@ export default function LearningHub() {
                   <div className="flex-1">
                     <div className="chip-nova mb-2 !py-1">AI PHYSICS TUTOR</div>
                     <h3 className="text-xl font-black text-ink-800 mb-1">
-                      嗨！我是你的 AI 物理导师
-                    </h3>
+                      {tx("嗨！我是你的 AI 物理导师")}</h3>
                     <p className="text-ink-600 font-medium">
-                      今天我们来攻克
-                      <span className="text-mission-600 font-bold mx-1">「{activeTopicData.title}」</span>
-                      — 掌握核心概念，做题不再难！
-                    </p>
+                      {tx("今天我们来攻克")}<span className="text-mission-600 font-bold mx-1">「{tx(activeTopicData.title)}」</span>
+                      {tx("— 掌握核心概念，做题不再难！")}</p>
                   </div>
                 </div>
               </div>
@@ -340,13 +332,12 @@ export default function LearningHub() {
               animate={{ opacity: 1, y: 0 }}
               className="min-w-0"
             >
-              <AdaptiveNavigation title="章节目录" summary={selectedPoint ?? activeTopicData.title} width={300} navigation={<div className="glass-card p-4 rounded-2xl">
+              <AdaptiveNavigation title={tx("章节目录")} summary={selectedPoint ?? tx(activeTopicData.title)} width={300} navigation={<div className="glass-card p-4 rounded-2xl">
                 <div className="flex items-center justify-between mb-5">
                   <div className="mission-label">
                     <Sparkles size={12} />
-                    知识点树
-                  </div>
-                  <span className="text-sm font-bold text-ink-500">{activeTopicData.title}</span>
+                    {tx("知识点树")}</div>
+                  <span className="text-sm font-bold text-ink-500">{tx(activeTopicData.title)}</span>
                 </div>
                 <div className="space-y-2">
                   {activeTopicData.outline.map((chapter, cIdx) => {
@@ -363,7 +354,7 @@ export default function LearningHub() {
                               {cIdx + 1}
                             </div>
                             <span className="font-bold text-ink-800">{chapter.chapter}</span>
-                            <span className="chip-ink !text-[10px]">{chapter.points.length} 个知识点</span>
+                            <span className="chip-ink !text-[10px]">{chapter.points.length} {tx("个知识点")}</span>
                           </div>
                           {isExpanded ? (
                             <ChevronDown size={18} className="text-mission-500" />
@@ -411,30 +402,29 @@ export default function LearningHub() {
               <div className="space-y-4">
                 <div className="glass-card p-5 rounded-2xl">
                   <div className="chip-nova mb-3">
-                    <Lightbulb size={12} /> 知识要点与例题
-                  </div>
+                    <Lightbulb size={12} /> {tx("知识要点与例题")}</div>
                   {selectedPoint ? (
                     <div className="space-y-3">
                       <h4 className="font-bold text-ink-800">{selectedPoint}</h4>
                       <p className="text-xs font-bold text-mission-600">{getKnowledgeGuide(activeTopicId, selectedPoint)?.level}</p>
-                      <p className="text-sm text-ink-700 leading-relaxed">{getKnowledgeGuide(activeTopicId, selectedPoint)?.summary}</p>
+                      <p className="text-sm text-ink-700 leading-relaxed">{tx(getKnowledgeGuide(activeTopicId, selectedPoint)?.summary)}</p>
                       {selectedExamples.length ? selectedExamples.map((example, index) => (
                         <div key={`${selectedPoint}-${index}`} className="p-4 rounded-xl bg-gradient-to-br from-mission-50/60 to-nova-50/40 border border-mission-100">
-                          <div className="text-xs font-bold text-mission-600 mb-2">例题 {index + 1}</div>
+                          <div className="text-xs font-bold text-mission-600 mb-2">{tx("例题")}{index + 1}</div>
                           <p className="text-sm text-ink-700 leading-relaxed whitespace-pre-line">{example.question}</p>
                           <button className="btn-mission mt-3 !py-2 !px-4 !text-sm w-full" onClick={() => {
                             setCurrentAnalysis({ point: selectedPoint, ...example });
                             setShowAnalysis(true);
                           }}>
-                            <PlayCircle size={14} /> {example.analysis ? '查看解析' : '查看答案'}
+                            <PlayCircle size={14} /> {example.analysis ? tx("查看解析") : tx("查看答案")}
                           </button>
                         </div>
-                      )) : <p className="text-sm text-ink-500">该知识点暂无配套例题，可先阅读学习材料。</p>}
+                      )) : <p className="text-sm text-ink-500">{tx("该知识点暂无配套例题，可先阅读学习材料。")}</p>}
                     </div>
                   ) : (
                     <div className="text-center py-8 text-ink-400">
                       <Sparkles size={36} className="mx-auto mb-2 opacity-50" />
-                      <p className="text-sm">点击左侧知识点查看例题</p>
+                      <p className="text-sm">{tx("点击左侧知识点查看例题")}</p>
                     </div>
                   )}
                 </div>
@@ -461,21 +451,19 @@ export default function LearningHub() {
                         disabled={startingQuiz}
                       >
                         <Zap size={24} className="fill-white/30" />
-                        {startingQuiz ? '正在准备测验…' : 'START TEST · 开始测验'}
+                        {startingQuiz ? tx("正在准备测验…") : tx("START TEST · 开始测验")}
                       </button>
                     </div>
                   <h3 className="text-2xl font-black text-ink-800 mb-2">
-                    「{activeTopicData.title}」知识挑战
-                  </h3>
+                    「{tx(activeTopicData.title)}{tx("」知识挑战")}</h3>
                   <p className="text-ink-600 font-medium mb-6">
-                    10 道精选题目 · 80 分通关
-                  </p>
+                    {tx("10 道精选题目 · 80 分通关")}</p>
                   <div className="flex items-center justify-center gap-4">
                     {/* 原先这里还有一个「限时 20 分钟」的芯片——测验页根本没有计时器，
                         是句空头承诺，已去掉。 */}
                     <div className="glass-card !py-3 !px-5 rounded-xl flex items-center gap-2">
                       <Target size={16} className="text-growth-500" />
-                      <span className="text-sm font-bold text-ink-700">平均分 {avgAccuracy}%</span>
+                      <span className="text-sm font-bold text-ink-700">{tx("平均分")}{avgAccuracy}%</span>
                     </div>
                   </div>
                 </div>
@@ -484,8 +472,7 @@ export default function LearningHub() {
               <div className="lg:col-span-5 space-y-3">
                 <div className="mission-label">
                   <Trophy size={12} />
-                  最近测验成绩
-                </div>
+                  {tx("最近测验成绩")}</div>
                 {quizHistory.map((record, idx) => (
                   <motion.div
                     key={record.id}
@@ -507,7 +494,7 @@ export default function LearningHub() {
                         <div>
                           <div className="text-xs font-bold text-ink-500">{record.date}</div>
                           <div className="text-sm font-bold text-ink-800">
-                            {record.passed ? '已通过' : '未通过'}
+                            {record.passed ? tx("已通过") : tx("未通过")}
                           </div>
                         </div>
                       </div>
@@ -534,7 +521,7 @@ export default function LearningHub() {
                       />
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-ink-500 font-medium">测试领域</span>
+                      <span className="text-xs text-ink-500 font-medium">{tx("测试领域")}</span>
                       <span className="chip-mission !py-0.5 !text-[11px]">
                         {record.topicTitle}
                       </span>
@@ -573,11 +560,11 @@ export default function LearningHub() {
                     <BookOpen size={14} />
                     <span className="text-[11px] font-bold tracking-wider">ANALYSIS</span>
                   </div>
-                  <h2 className="text-lg font-black text-ink-900">{currentAnalysis.point} - 例题解析</h2>
+                  <h2 className="text-lg font-black text-ink-900">{currentAnalysis.point} {tx("- 例题解析")}</h2>
                 </div>
                 <button
                   onClick={() => setShowAnalysis(false)}
-                  aria-label="关闭例题解析"
+                  aria-label={tx("关闭例题解析")}
                   className="w-8 h-8 rounded-full bg-ink-100 hover:bg-ink-200 flex items-center justify-center transition"
                 >
                   <X size={16} />
@@ -587,22 +574,19 @@ export default function LearningHub() {
               <div className="p-6 overflow-y-auto max-h-[calc(85vh-72px)] space-y-5">
                 <div className="p-4 rounded-xl bg-gradient-to-br from-mission-50/60 to-nova-50/40 border border-mission-100">
                   <div className="text-xs font-bold text-mission-600 mb-2 flex items-center gap-1">
-                    <HelpCircle size={14} /> 题目
-                  </div>
+                    <HelpCircle size={14} /> {tx("题目")}</div>
                   <p className="text-sm text-ink-800 leading-relaxed whitespace-pre-line">{currentAnalysis.question}</p>
                 </div>
 
                 <div className="p-4 rounded-xl bg-gradient-to-br from-growth-50/60 to-green-50/40 border border-growth-100">
                   <div className="text-xs font-bold text-growth-600 mb-2 flex items-center gap-1">
-                    <CheckCircle2 size={14} /> 参考答案
-                  </div>
+                    <CheckCircle2 size={14} /> {tx("参考答案")}</div>
                   <p className="text-sm text-ink-800 leading-relaxed">{currentAnalysis.answer}</p>
                 </div>
 
                 {currentAnalysis.analysis && <div className="p-5 rounded-xl bg-white border border-ink-100">
                   <div className="text-xs font-bold text-mission-600 mb-3 flex items-center gap-1">
-                    <Lightbulb size={14} /> 详细解析
-                  </div>
+                    <Lightbulb size={14} /> {tx("详细解析")}</div>
                   <div className="text-sm text-ink-700 leading-relaxed whitespace-pre-line">
                     {currentAnalysis.analysis}
                   </div>
@@ -614,8 +598,7 @@ export default function LearningHub() {
                   onClick={() => setShowAnalysis(false)}
                   className="btn-outline"
                 >
-                  关闭
-                </button>
+                  {tx("关闭")}</button>
               </div>
             </motion.div>
             </div>

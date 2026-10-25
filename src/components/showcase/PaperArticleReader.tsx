@@ -1,3 +1,4 @@
+import { useLocale } from '@/i18n/useLocale';
 import { useMemo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { FileText, Download, BookOpen, Hash } from 'lucide-react';
@@ -59,6 +60,7 @@ export default function PaperArticleReader({
   title: string;
   author?: string;
 }) {
+  const { tx } = useLocale();
   const headings = useMemo(() => {
     return markdown
       .split('\n')
@@ -93,20 +95,18 @@ export default function PaperArticleReader({
           <FileText size={14} className="text-indigo-400 shrink-0" />
           <span className="font-semibold truncate">{title}</span>
           <span className="text-[10px] px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 shrink-0">
-            学术论文阅览器
-          </span>
+            {tx("学术论文阅览器")}</span>
         </div>
         <div className="flex items-center gap-3 shrink-0">
-          {author && <span className="text-slate-300">作者：{author}</span>}
-          <span className="text-slate-400 tabular-nums">{charCount} 字</span>
+          {author && <span className="text-slate-300">{tx("作者：")}{author}</span>}
+          <span className="text-slate-400 tabular-nums">{charCount} {tx("字")}</span>
           <button
             type="button"
             onClick={handleDownloadMd}
             className="px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-semibold inline-flex items-center gap-1 transition"
           >
             <Download size={12} />
-            导出论文 (.md)
-          </button>
+            {tx("导出论文 (.md)")}</button>
         </div>
       </div>
 
@@ -115,8 +115,7 @@ export default function PaperArticleReader({
           <aside className="md:col-span-3 border-b md:border-b-0 md:border-r border-slate-200/80 bg-slate-100/70 p-4">
             <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2.5 flex items-center gap-1">
               <BookOpen size={12} />
-              论文章节大纲
-            </div>
+              {tx("论文章节大纲")}</div>
             <ul className="space-y-1.5 text-xs">
               {headings.map((h, idx) => (
                 <li
@@ -125,7 +124,7 @@ export default function PaperArticleReader({
                   className="text-slate-700 font-medium truncate flex items-center gap-1"
                 >
                   <Hash size={10} className="text-indigo-500 shrink-0" />
-                  <span className="truncate">{h.text}</span>
+                  <span className="truncate">{tx(h.text)}</span>
                 </li>
               ))}
             </ul>

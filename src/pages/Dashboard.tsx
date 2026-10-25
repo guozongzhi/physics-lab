@@ -1,3 +1,4 @@
+import { useLocale } from '@/i18n/useLocale';
 import { mockTopics } from '@/data/mockTopics';
 import { topicCompletion } from '@/lib/learningMetrics';
 import { useLearningProgressStore } from '@/store/learningProgressStore';
@@ -42,6 +43,7 @@ const LEARNING_PATH_CONFIG = [
 ];
 
 export default function Dashboard() {
+  const { tx } = useLocale();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const showOverview = searchParams.get('view') === 'overview';
@@ -296,22 +298,21 @@ export default function Dashboard() {
         <BentoCard variant="energy" padding="md" className="flex items-center justify-between">
           <div className="flex items-center gap-2.5 text-xs text-energy-900 dark:text-energy-200">
             <UserPlus size={16} className="text-energy-600 shrink-0" />
-            <span>您尚未加入任何研究小组，请先选择小组以解锁协同研发权限：</span>
+            <span>{tx("您尚未加入任何研究小组，请先选择小组以解锁协同研发权限：")}</span>
             <select
               value={pendingGroupId}
               onChange={(e) => setPendingGroupId(e.target.value)}
               className="text-xs py-1 px-2.5 rounded-lg border border-energy-300 dark:border-energy-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100"
             >
-              <option value="">选择要加入的研究小组…</option>
+              <option value="">{tx("选择要加入的研究小组…")}</option>
               {joinableGroups.map((g) => (
-                <option key={g.id} value={g.id}>{g.name}</option>
+                <option key={g.id} value={g.id}>{tx(g.name)}</option>
               ))}
             </select>
           </div>
-          {joinError && <span role="alert" className="text-xs text-danger-600">{joinError}</span>}
+          {joinError && <span role="alert" className="text-xs text-danger-600">{tx(joinError)}</span>}
           <Button size="sm" variant="energy" isLoading={joining} onClick={handleJoinGroup}>
-            确认加入
-          </Button>
+            {tx("确认加入")}</Button>
         </BentoCard>
       )}
 
@@ -337,7 +338,7 @@ export default function Dashboard() {
       {showOverview ? (
         <div className="space-y-6">
           <button type="button" className="portal-back-link" onClick={() => setSearchParams({})}>
-            返回聚焦首页 <ArrowRight size={15} className="rotate-180" />
+            {tx("返回聚焦首页")}<ArrowRight size={15} className="rotate-180" />
           </button>
           <MissionActionCards
             onNavigate={navigate}
@@ -377,30 +378,30 @@ export default function Dashboard() {
             <div className="portal-section-heading">
               <div>
                 <p className="portal-kicker">MISSION / 01</p>
-                <h2 id="dashboard-next-step">从这里继续</h2>
-                <p>先完成眼前的研究任务，其余内容随时从卡片进入。</p>
+                <h2 id="dashboard-next-step">{tx("从这里继续")}</h2>
+                <p>{tx("先完成眼前的研究任务，其余内容随时从卡片进入。")}</p>
               </div>
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <PortalCard
                 to="/projects"
                 eyebrow="正在进行 · 科研项目"
-                title={myProjects[0]?.title || (groupId ? '开启第一个科研项目' : '加入小组，开启科研项目')}
-                description={myProjects[0]?.topic ? `课题方向：${myProjects[0].topic}` : '进入项目中心，查看课题、组队与实验进度。'}
+                title={myProjects[0]?.title || (groupId ? tx("开启第一个科研项目") : tx("加入小组，开启科研项目"))}
+                description={myProjects[0]?.topic ? tx("课题方向：{0}", { 0: myProjects[0].topic }) : tx("进入项目中心，查看课题、组队与实验进度。")}
                 icon={FlaskConical}
                 tone="blue"
-                detail={myProjects[0] ? `项目进度 ${myProjects[0].progress}%` : '进入项目中心'}
+                detail={myProjects[0] ? tx("项目进度 {count}%", { count: myProjects[0].progress }) : tx('进入项目中心')}
                 featured
                 visualSrc={myProjects[0]?.title.includes('电动机') ? '/images/electric-motor-hero.webp' : undefined}
               />
               <PortalCard
                 to={LEARNING_PATH_CONFIG.find((cfg) => cfg.id === pathSteps.find((step) => !step.done)?.id)?.to || '/theory/topics'}
                 eyebrow="学习路径 · 下一步"
-                title={pathSteps.find((step) => !step.done)?.name || '继续探索学习中枢'}
-                description="完成当前阶段目标，逐步解锁完整物理研究闭环。"
+                title={tx(pathSteps.find((step) => !step.done)?.name || "继续探索学习中枢")}
+                description={tx("完成当前阶段目标，逐步解锁完整物理研究闭环。")}
                 icon={BookOpen}
                 tone="violet"
-                detail={`已完成 ${completedSteps}/${LEARNING_PATH_CONFIG.length} 阶段`}
+                detail={tx("已完成 {done}/{total} 阶段", { done: completedSteps, total: LEARNING_PATH_CONFIG.length })}
               />
             </div>
           </section>
@@ -409,8 +410,8 @@ export default function Dashboard() {
             <div className="portal-section-heading">
               <div>
                 <p className="portal-kicker">EXPLORE / 02</p>
-                <h2 id="dashboard-explore">探索任务</h2>
-                <p>按目标选择入口，每张卡片通向对应的完整工作区。</p>
+                <h2 id="dashboard-explore">{tx("探索任务")}</h2>
+                <p>{tx("按目标选择入口，每张卡片通向对应的完整工作区。")}</p>
               </div>
             </div>
             <MissionActionCards
@@ -424,7 +425,7 @@ export default function Dashboard() {
 
           <button type="button" className="portal-overview-link" onClick={() => setSearchParams({ view: 'overview' })}>
             <span className="portal-overview-icon"><Zap size={20} /></span>
-            <span><strong>查看完整总览</strong><small>学习路径、研究小组榜单、实验室动态与班级统计</small></span>
+            <span><strong>{tx("查看完整总览")}</strong><small>{tx("学习路径、研究小组榜单、实验室动态与班级统计")}</small></span>
             <ArrowRight size={19} className="ml-auto" />
           </button>
         </div>
@@ -434,17 +435,17 @@ export default function Dashboard() {
       <Dialog
         open={showClassmates}
         onClose={() => setShowClassmates(false)}
-        title={`同班同学研究员名册 (${classmates.length} 人)`}
+        title={tx("同班同学研究员名册 ({0} 人)", { 0: classmates.length })}
         size="md"
       >
         {classmates.length === 0 ? (
-          <div className="py-8 text-center text-xs text-slate-400">本班暂无其他研究员档案</div>
+          <div className="py-8 text-center text-xs text-slate-400">{tx("本班暂无其他研究员档案")}</div>
         ) : (
           <div className="grid grid-cols-2 gap-2.5">
             {classmates.map((c) => (
               <div key={c.id} className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 flex items-center justify-between text-xs">
-                <span className="font-semibold text-slate-800 dark:text-slate-200">{c.name}</span>
-                <span className="text-[10px] text-slate-400">{groups.find((g) => g.id === c.groupId)?.name || '未分组'}</span>
+                <span className="font-semibold text-slate-800 dark:text-slate-200">{tx(c.name)}</span>
+                <span className="text-[10px] text-slate-400">{groups.find((g) => g.id === c.groupId)?.name || tx("未分组")}</span>
               </div>
             ))}
           </div>
@@ -455,34 +456,33 @@ export default function Dashboard() {
       <Dialog
         open={formOpen}
         onClose={() => setFormOpen(false)}
-        title="发起新课题研发立项"
+        title={tx("发起新课题研发立项")}
         size="md"
       >
         <div className="space-y-3 text-xs">
           <div>
-            <label className="block font-medium mb-1 text-slate-700 dark:text-slate-300">项目名称</label>
-            <input data-dialog-autofocus className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100" value={pForm.title} onChange={(e) => setPForm({ ...pForm, title: e.target.value })} placeholder="例如：法拉第电磁感应演示系统" />
+            <label className="block font-medium mb-1 text-slate-700 dark:text-slate-300">{tx("项目名称")}</label>
+            <input data-dialog-autofocus className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100" value={pForm.title} onChange={(e) => setPForm({ ...pForm, title: e.target.value })} placeholder={tx("例如：法拉第电磁感应演示系统")} />
           </div>
           <div>
-            <label className="block font-medium mb-1 text-slate-700 dark:text-slate-300">课题方向</label>
-            <input className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100" value={pForm.topic} onChange={(e) => setPForm({ ...pForm, topic: e.target.value })} placeholder="例如：电磁学 / 经典力学" />
+            <label className="block font-medium mb-1 text-slate-700 dark:text-slate-300">{tx("课题方向")}</label>
+            <input className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100" value={pForm.topic} onChange={(e) => setPForm({ ...pForm, topic: e.target.value })} placeholder={tx("例如：电磁学 / 经典力学")} />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block font-medium mb-1 text-slate-700 dark:text-slate-300">初始进度 %</label>
+              <label className="block font-medium mb-1 text-slate-700 dark:text-slate-300">{tx("初始进度 %")}</label>
               <input type="number" min={0} max={100} className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100" value={pForm.progress} onChange={(e) => setPForm({ ...pForm, progress: Number(e.target.value) || 0 })} />
             </div>
             <div>
-              <label className="block font-medium mb-1 text-slate-700 dark:text-slate-300">激励能量币 ⚡</label>
+              <label className="block font-medium mb-1 text-slate-700 dark:text-slate-300">{tx("激励能量币 ⚡")}</label>
               <input type="number" min={0} className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100" value={pForm.rewardCoins} onChange={(e) => setPForm({ ...pForm, rewardCoins: Number(e.target.value) || 0 })} />
             </div>
           </div>
         </div>
         <div className="flex gap-2 mt-6">
-          <Button variant="ghost" className="flex-1" onClick={() => setFormOpen(false)}>取消</Button>
+          <Button variant="ghost" className="flex-1" onClick={() => setFormOpen(false)}>{tx("取消")}</Button>
           <Button variant="primary" className="flex-1" isLoading={saving} onClick={submitProject}>
-            确认立项
-          </Button>
+            {tx("确认立项")}</Button>
         </div>
       </Dialog>
 

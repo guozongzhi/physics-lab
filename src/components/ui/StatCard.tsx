@@ -1,3 +1,4 @@
+import { useLocale } from '@/i18n/useLocale';
 import type { LucideIcon } from 'lucide-react';
 import { TrendingUp, TrendingDown } from 'lucide-react';
 import type { ReactNode } from 'react';
@@ -24,6 +25,7 @@ export default function StatCard({
   footer,
   className,
 }: StatCardProps) {
+  const { tx } = useLocale();
   return (
     <div className={cn('card-base card-hover p-5 relative overflow-hidden', className)}>
       <div className="flex items-start justify-between">
@@ -44,7 +46,7 @@ export default function StatCard({
           />
         </div>
         <div className="text-right">
-          <p className="text-sm text-ink-500 font-medium">{title}</p>
+          <p className="text-sm text-ink-500 font-medium">{tx(title)}</p>
           <p className="mt-1 font-mono text-3xl font-bold text-ink-800 tracking-tight tabular-nums">
             {typeof value === 'number' ? value.toLocaleString() : value}
           </p>

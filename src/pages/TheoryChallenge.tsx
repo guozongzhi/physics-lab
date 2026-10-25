@@ -1,3 +1,4 @@
+import { useLocale } from '@/i18n/useLocale';
 import type { LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useState, useMemo, useEffect } from 'react';
@@ -61,18 +62,20 @@ function useCountdown(target: Date) {
 }
 
 const CountdownChip = ({ deadline }: { deadline: Date }) => {
+  const { tx } = useLocale();
   const { days, hours, minutes, seconds, expired } = useCountdown(deadline);
-  if (expired) return <Chip variant="risk"><Clock size={12} /> 已截止</Chip>;
-  if (days > 0) return <Chip variant="lab"><Clock size={12} /> 剩 {days} 天 {hours} 时</Chip>;
+  if (expired) return <Chip variant="risk"><Clock size={12} /> {tx("已截止")}</Chip>;
+  if (days > 0) return <Chip variant="lab"><Clock size={12} /> {tx("剩")}{days} {tx("天")}{hours} {tx("时")}</Chip>;
   return (
     <Chip variant="energy">
       <Clock size={12} />
-      剩 {String(hours).padStart(2, '0')}:{String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')}
+      {tx("剩")}{String(hours).padStart(2, '0')}:{String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')}
     </Chip>
   );
 };
 
 function QuestionCheckbox({ checked, onChange, label }: { checked: boolean; onChange: (v: boolean) => void; label: ReactNode }) {
+  const { tx } = useLocale();
   return (
     <label className="flex items-start gap-2 p-3 rounded-xl2 hover:bg-physics-50 cursor-pointer ring-1 ring-transparent hover:ring-physics-100 transition-all">
       <input
@@ -81,12 +84,13 @@ function QuestionCheckbox({ checked, onChange, label }: { checked: boolean; onCh
         onChange={(e) => onChange(e.target.checked)}
         className="mt-1 h-4 w-4 accent-physics-500 cursor-pointer"
       />
-      <span className="text-sm text-ink-700 leading-6">{label}</span>
+      <span className="text-sm text-ink-700 leading-6">{typeof label === 'string' ? tx(label) : label}</span>
     </label>
   );
 }
 
 export default function TheoryChallenge() {
+  const { tx } = useLocale();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const initialTab = (searchParams.get('tab') as TabKey) || 'open';
@@ -256,16 +260,14 @@ export default function TheoryChallenge() {
         <div className="glass-card p-5 md:p-7 flex items-center justify-between flex-wrap gap-4">
           <div>
             <div className="flex items-center gap-2 mb-2">
-              <Chip variant="energy"><Sparkles size={12} /> 组间 PK · 凭实力赢能量币</Chip>
-              <Chip variant="physics">{challenges.length} 场挑战进行中</Chip>
+              <Chip variant="energy"><Sparkles size={12} /> {tx("组间 PK · 凭实力赢能量币")}</Chip>
+              <Chip variant="physics">{challenges.length} {tx("场挑战进行中")}</Chip>
             </div>
             <h1 className="page-title flex items-center gap-2">
               <Swords size={28} className="text-energy-500" />
-              挑战大厅
-            </h1>
+              {tx("挑战大厅")}</h1>
             <p className="text-ink-500 text-sm mt-1.5 max-w-xl">
-              发起方预扣能量币悬赏，挑战方答题获得准确率比例奖励，
-              <strong className="text-physics-700">准确率 ≥95% 额外获得 20% 卓越加成</strong>。
+              {tx("发起方预扣能量币悬赏，挑战方答题获得准确率比例奖励，")}<strong className="text-physics-700">{tx("准确率 ≥95% 额外获得 20% 卓越加成")}</strong>。
             </p>
           </div>
           <button
@@ -273,8 +275,7 @@ export default function TheoryChallenge() {
             className="btn-energy !py-2.5 text-sm"
           >
             <Plus size={16} />
-            创建新挑战
-          </button>
+            {tx("创建新挑战")}</button>
         </div>
 
         <div className="student-inline-tabs flex gap-2 p-1.5 bg-ink-100/80 rounded-xl2 w-fit">
@@ -290,7 +291,7 @@ export default function TheoryChallenge() {
               }`}
             >
               <t.icon size={16} />
-              {t.label}
+              {tx(t.label)}
               {t.badge && tab === t.key && (
                 <span className="ml-1 text-[10px] bg-energy-500 text-white px-1.5 py-0.5 rounded-full">
                   {openChallenges.length}
@@ -305,7 +306,7 @@ export default function TheoryChallenge() {
             {openChallenges.length === 0 && (
               <div className="col-span-full card-base p-16 text-center">
                 <Target size={40} className="mx-auto text-ink-300 mb-3" />
-                <p className="text-ink-500">当前没有可接受的挑战，换个时间再来看看，或者自己发起一场吧 🎯</p>
+                <p className="text-ink-500">{tx("当前没有可接受的挑战，换个时间再来看看，或者自己发起一场吧 🎯")}</p>
               </div>
             )}
             {openChallenges.map((c) => {
@@ -316,26 +317,24 @@ export default function TheoryChallenge() {
                 <div key={c.id} className="card-base card-hover p-0 overflow-hidden flex flex-col">
                   <div className="bg-gradient-to-br from-physics-50 via-white to-energy-50/60 p-5 border-b border-physics-50">
                     <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
-                      <Chip variant="physics"><Users size={12} /> {creator?.name || '未知组'} 发起</Chip>
+                      <Chip variant="physics"><Users size={12} /> {creator?.name || tx("未知组")} {tx("发起")}</Chip>
                       <CoinBadge amount={c.reward} size="lg" showSymbol={false} />
                     </div>
                     <h3 className="font-serif font-bold text-xl text-physics-900 leading-tight mb-3">
-                      {c.title}
+                      {tx(c.title)}
                     </h3>
                     <div className="flex items-center gap-2 flex-wrap">
-                      <Chip variant="ink"><BookOpenText size={12} /> {topic?.title || '综合'}</Chip>
+                      <Chip variant="ink"><BookOpenText size={12} /> {topic?.title || tx("综合")}</Chip>
                       <Chip variant="lab">
                         <Target size={12} />
-                        {qCount} 道题目
-                      </Chip>
+                        {qCount} {tx("道题目")}</Chip>
                     </div>
                   </div>
                   <div className="px-5 py-4 flex items-center justify-between flex-wrap gap-3 flex-1">
                     <CountdownChip deadline={c.deadline} />
                     <div className="text-xs text-ink-500 flex items-center gap-1">
                       <UserCircle2 size={12} />
-                      {c.submissions.length} 支队伍已参战
-                    </div>
+                      {c.submissions.length} {tx("支队伍已参战")}</div>
                   </div>
                   <div className="px-5 pb-5">
                     <button
@@ -343,7 +342,7 @@ export default function TheoryChallenge() {
                       className="btn-primary inline-flex items-center justify-center gap-2 min-h-11 w-full !py-3 text-base"
                     >
                       <Swords size={18} className="shrink-0" aria-hidden="true" />
-                      <span>接受挑战</span>
+                      <span>{tx("接受挑战")}</span>
                       <ArrowRight size={18} className="shrink-0" aria-hidden="true" />
                     </button>
                   </div>
@@ -358,10 +357,9 @@ export default function TheoryChallenge() {
             {createdChallenges.length === 0 && (
               <div className="card-base p-16 text-center">
                 <Rocket size={40} className="mx-auto text-ink-300 mb-3" />
-                <p className="text-ink-500 mb-3">你还没有发起过挑战，做第一个吃螃蟹的人吧！</p>
+                <p className="text-ink-500 mb-3">{tx("你还没有发起过挑战，做第一个吃螃蟹的人吧！")}</p>
                 <button onClick={() => setDialogOpen(true)} className="btn-outline">
-                  <Plus size={16} /> 创建我的第一场挑战
-                </button>
+                  <Plus size={16} /> {tx("创建我的第一场挑战")}</button>
               </div>
             )}
             {createdChallenges.map((c) => {
@@ -374,24 +372,24 @@ export default function TheoryChallenge() {
                     <div className="flex-1 min-w-[260px]">
                       <div className="flex items-center gap-2 mb-2 flex-wrap">
                         <Chip variant={c.status === 'open' ? 'lab' : 'ink'}>
-                          {c.status === 'open' ? '挑战中' : '已结束'}
+                          {c.status === 'open' ? tx("挑战中") : tx("已结束")}
                         </Chip>
-                        <Chip variant="physics"><BookOpenText size={12} /> {topic?.title}</Chip>
-                        <Chip variant="ink">{c.questionIds.length || 10} 题</Chip>
+                        <Chip variant="physics"><BookOpenText size={12} /> {tx(topic?.title)}</Chip>
+                        <Chip variant="ink">{c.questionIds.length || 10} {tx("题")}</Chip>
                       </div>
-                      <h3 className="font-serif font-bold text-xl text-physics-900">{c.title}</h3>
+                      <h3 className="font-serif font-bold text-xl text-physics-900">{tx(c.title)}</h3>
                     </div>
                     <div className="flex items-center gap-4 flex-wrap">
                       <div className="text-center">
-                        <p className="text-[11px] text-ink-400 mb-1">悬赏</p>
+                        <p className="text-[11px] text-ink-400 mb-1">{tx("悬赏")}</p>
                         <CoinBadge amount={c.reward} size="lg" showSymbol={false} />
                       </div>
                       <div className="text-center">
-                        <p className="text-[11px] text-ink-400 mb-1">已发放</p>
+                        <p className="text-[11px] text-ink-400 mb-1">{tx("已发放")}</p>
                         <CoinBadge amount={-totalEarned} showSymbol={false} />
                       </div>
                       <div className="text-center">
-                        <p className="text-[11px] text-ink-400 mb-1">参战队伍</p>
+                        <p className="text-[11px] text-ink-400 mb-1">{tx("参战队伍")}</p>
                         <p className="font-serif font-bold text-xl text-physics-700">{submissions.length}</p>
                       </div>
                       <CountdownChip deadline={c.deadline} />
@@ -399,7 +397,7 @@ export default function TheoryChallenge() {
                   </div>
                   {submissions.length > 0 && (
                     <div className="mt-5 pt-5 border-t border-ink-100 space-y-2.5">
-                      <p className="text-xs font-semibold text-ink-600 uppercase tracking-wider">参战队伍成绩</p>
+                      <p className="text-xs font-semibold text-ink-600 uppercase tracking-wider">{tx("参战队伍成绩")}</p>
                       <div className="grid md:grid-cols-2 gap-2.5">
                         {submissions.map((s, i) => {
                           const g = getGroupById(s.groupId);
@@ -407,7 +405,7 @@ export default function TheoryChallenge() {
                           return (
                             <div key={i} className="rounded-xl2 bg-ink-50/60 p-3.5 ring-1 ring-ink-200">
                               <div className="flex items-center justify-between mb-2">
-                                <Chip variant="physics"><Users size={11} /> {g?.name || `队${i + 1}`}</Chip>
+                                <Chip variant="physics"><Users size={11} /> {g?.name || tx("队{0}", { 0: i + 1 })}</Chip>
                                 <CoinBadge amount={s.earned} showSymbol={false} size="sm" />
                               </div>
                               <div className="flex items-center gap-3">
@@ -442,7 +440,7 @@ export default function TheoryChallenge() {
             {joinedChallenges.length === 0 && (
               <div className="card-base p-16 text-center">
                 <Trophy size={40} className="mx-auto text-ink-300 mb-3" />
-                <p className="text-ink-500">还没有参与任何挑战，去可接受挑战里挑选一场试试吧 🏆</p>
+                <p className="text-ink-500">{tx("还没有参与任何挑战，去可接受挑战里挑选一场试试吧 🏆")}</p>
               </div>
             )}
             {joinedChallenges.map((c) => {
@@ -455,17 +453,17 @@ export default function TheoryChallenge() {
                   <div className="flex flex-wrap items-start gap-4 mb-4">
                     <div className="flex-1 min-w-[240px]">
                       <div className="flex items-center gap-2 mb-2 flex-wrap">
-                        <Chip variant="physics"><BookOpenText size={12} /> {topic?.title}</Chip>
-                        <Chip variant="ink">{c.questionIds.length || 10} 题</Chip>
+                        <Chip variant="physics"><BookOpenText size={12} /> {tx(topic?.title)}</Chip>
+                        <Chip variant="ink">{c.questionIds.length || 10} {tx("题")}</Chip>
                       </div>
-                      <h3 className="font-serif font-bold text-xl text-physics-900">{c.title}</h3>
+                      <h3 className="font-serif font-bold text-xl text-physics-900">{tx(c.title)}</h3>
                       <p className="text-xs text-ink-500 mt-1 flex items-center gap-1">
-                        <Users size={12} /> 发起：{getGroupById(c.creatorGroupId)?.name}
+                        <Users size={12} /> {tx("发起：")}{tx(getGroupById(c.creatorGroupId)?.name)}
                       </p>
                     </div>
                     <div className="flex items-center gap-5 flex-wrap">
                       <div className="text-center">
-                        <p className="text-[11px] text-ink-400 mb-1">准确率</p>
+                        <p className="text-[11px] text-ink-400 mb-1">{tx("准确率")}</p>
                         <p className={`font-serif font-bold text-2xl ${
                           pct >= 90 ? 'text-lab-700' : pct >= 60 ? 'text-energy-700' : 'text-risk-700'
                         }`}>
@@ -473,13 +471,12 @@ export default function TheoryChallenge() {
                         </p>
                       </div>
                       <div className="text-center">
-                        <p className="text-[11px] text-ink-400 mb-1">获得能量币</p>
+                        <p className="text-[11px] text-ink-400 mb-1">{tx("获得能量币")}</p>
                         <CoinBadge amount={my.earned} size="lg" showSymbol />
                       </div>
                       {pct >= 95 && (
                         <Chip variant="lab" className="!px-3 !py-1.5 animate-pulseGlow">
-                          <Sparkles size={12} /> 卓越加成
-                        </Chip>
+                          <Sparkles size={12} /> {tx("卓越加成")}</Chip>
                       )}
                     </div>
                   </div>
@@ -502,9 +499,9 @@ export default function TheoryChallenge() {
                   </div>
                   <div className="flex justify-between mt-1.5 text-[10px] text-ink-400 font-medium">
                     <span>0%</span>
-                    <span className="text-risk-500">60% 合格线</span>
-                    <span className="text-physics-500">80% 良好</span>
-                    <span className="text-lab-500">95% 卓越</span>
+                    <span className="text-risk-500">{tx("60% 合格线")}</span>
+                    <span className="text-physics-500">{tx("80% 良好")}</span>
+                    <span className="text-lab-500">{tx("95% 卓越")}</span>
                     <span>100%</span>
                   </div>
                 </div>
@@ -518,8 +515,7 @@ export default function TheoryChallenge() {
             {/* 提交新题表单 */}
             <div className="card-base p-6">
               <h3 className="font-serif font-bold text-lg text-physics-900 mb-4 flex items-center gap-2">
-                <Plus size={18} /> 提交一道新题
-              </h3>
+                <Plus size={18} /> {tx("提交一道新题")}</h3>
               <div className="space-y-3">
                 <div className="flex gap-2">
                   {(['single', 'multiple', 'judge'] as const).map((t) => (
@@ -540,11 +536,11 @@ export default function TheoryChallenge() {
                       }
                       className={cn('px-3 py-1.5 rounded-full text-xs font-semibold border transition', qForm.type === t ? 'bg-mission-500 text-white border-transparent' : 'bg-white text-ink-600 border-ink-200 hover:border-mission-300')}
                     >
-                      {t === 'single' ? '单选题' : t === 'multiple' ? '多选题' : '判断题'}
+                      {t === 'single' ? tx("单选题") : t === 'multiple' ? tx("多选题") : tx("判断题")}
                     </button>
                   ))}
                 </div>
-                <textarea value={qForm.stem} onChange={(e) => setQForm({ ...qForm, stem: e.target.value })} className="w-full border border-ink-200 rounded-xl px-3 py-2 text-sm focus:border-mission-400 focus:ring-2 focus:ring-mission-100 outline-none resize-y min-h-[60px]" placeholder="输入题干……" />
+                <textarea value={qForm.stem} onChange={(e) => setQForm({ ...qForm, stem: e.target.value })} className="w-full border border-ink-200 rounded-xl px-3 py-2 text-sm focus:border-mission-400 focus:ring-2 focus:ring-mission-100 outline-none resize-y min-h-[60px]" placeholder={tx("输入题干……")} />
                 {qForm.type !== 'judge' && qForm.options.map((opt, i) => (
                   <div key={i} className="flex items-center gap-2">
                     <button
@@ -561,31 +557,30 @@ export default function TheoryChallenge() {
                       ✓
                     </button>
                     <span className="text-xs text-ink-400 w-5">{String.fromCharCode(65 + i)}.</span>
-                    <input value={opt} onChange={(e) => { const o = [...qForm.options]; o[i] = e.target.value; setQForm({ ...qForm, options: o }); }} className="flex-1 border border-ink-200 rounded-lg px-2 py-1.5 text-sm focus:border-mission-400 outline-none" placeholder={`选项 ${String.fromCharCode(65 + i)}`} />
+                    <input value={opt} onChange={(e) => { const o = [...qForm.options]; o[i] = e.target.value; setQForm({ ...qForm, options: o }); }} className="flex-1 border border-ink-200 rounded-lg px-2 py-1.5 text-sm focus:border-mission-400 outline-none" placeholder={tx("选项 {0}", { 0: String.fromCharCode(65 + i) })} />
                   </div>
                 ))}
                 {qForm.type === 'judge' && (
                   <div className="flex gap-2">
                     {[true, false].map((v) => (
                       <button key={String(v)} onClick={() => setQForm({ ...qForm, answer: v })} className={cn('flex-1 py-2 rounded-lg border text-sm font-semibold', qForm.answer === v ? 'bg-growth-50 border-growth-300 text-growth-700' : 'bg-white border-ink-200 text-ink-500')}>
-                        {v ? '✓ 正确' : '✗ 错误'}
+                        {v ? tx("✓ 正确") : tx("✗ 错误")}
                       </button>
                     ))}
                   </div>
                 )}
-                <input value={qForm.kp} onChange={(e) => setQForm({ ...qForm, kp: e.target.value })} className="w-full border border-ink-200 rounded-xl px-3 py-2 text-sm focus:border-mission-400 outline-none" placeholder="知识点（可选）" />
+                <input value={qForm.kp} onChange={(e) => setQForm({ ...qForm, kp: e.target.value })} className="w-full border border-ink-200 rounded-xl px-3 py-2 text-sm focus:border-mission-400 outline-none" placeholder={tx("知识点（可选）")} />
                 {qFormErr && <p className="text-xs text-danger-600">{qFormErr}</p>}
                 <button onClick={handleSubmitQuestion} className="btn-mission w-full">
-                  <Plus size={15} /> 提交题目（等待教师审核）
-                </button>
+                  <Plus size={15} /> {tx("提交题目（等待教师审核）")}</button>
               </div>
             </div>
 
             {/* 我提交的题目 + 教师反馈 */}
             <div>
-              <h3 className="font-serif font-bold text-lg text-physics-900 mb-3">我提交的题目（{mySubmitted.length}）</h3>
+              <h3 className="font-serif font-bold text-lg text-physics-900 mb-3">{tx("我提交的题目（")}{mySubmitted.length}）</h3>
               {mySubmitted.length === 0 ? (
-                <div className="card-base p-12 text-center text-ink-400">还没有提交过题目</div>
+                <div className="card-base p-12 text-center text-ink-400">{tx("还没有提交过题目")}</div>
               ) : (
                 <div className="space-y-3">
                   {mySubmitted.map((q) => {
@@ -597,9 +592,9 @@ export default function TheoryChallenge() {
                     return (
                       <div key={q.id} className="card-base p-5">
                         <div className="flex items-center gap-2 mb-2">
-                          <span className={cn('px-2 py-0.5 rounded-full text-[11px] font-semibold', sm.cls)}>{sm.label}</span>
-                          <span className="text-[11px] text-ink-400">{q.type === 'single' ? '单选' : q.type === 'multiple' ? '多选' : '判断'}</span>
-                          {q.edited && <span className="text-[11px] text-mission-600">· 教师已修改</span>}
+                          <span className={cn('px-2 py-0.5 rounded-full text-[11px] font-semibold', sm.cls)}>{tx(sm.label)}</span>
+                          <span className="text-[11px] text-ink-400">{q.type === 'single' ? tx("单选") : q.type === 'multiple' ? tx("多选") : tx("判断")}</span>
+                          {q.edited && <span className="text-[11px] text-mission-600">{tx("· 教师已修改")}</span>}
                           <span className="text-[11px] text-ink-300 ml-auto">{new Date(q.submittedAt).toLocaleDateString('zh-CN')}</span>
                         </div>
                         <p className="text-sm font-semibold text-physics-900 mb-2">{q.stem}</p>
@@ -615,10 +610,10 @@ export default function TheoryChallenge() {
                         </div>
                         {q.teacherFeedback ? (
                           <div className="p-2.5 rounded-lg bg-mission-50 border border-mission-100 text-xs text-ink-600">
-                            <b className="text-mission-700">教师评价：</b>{q.teacherFeedback}
+                            <b className="text-mission-700">{tx("教师评价：")}</b>{q.teacherFeedback}
                           </div>
                         ) : (
-                          <p className="text-[11px] text-ink-300">暂无教师评价</p>
+                          <p className="text-[11px] text-ink-300">{tx("暂无教师评价")}</p>
                         )}
                       </div>
                     );
@@ -637,9 +632,8 @@ export default function TheoryChallenge() {
               <div>
                 <h2 className="font-serif text-xl font-bold text-physics-900 flex items-center gap-2">
                   <Rocket size={22} className="text-energy-500" />
-                  创建新挑战
-                </h2>
-                <p className="text-xs text-ink-500 mt-1">选择题目、设定奖励，预扣能量币后发起挑战</p>
+                  {tx("创建新挑战")}</h2>
+                <p className="text-xs text-ink-500 mt-1">{tx("选择题目、设定奖励，预扣能量币后发起挑战")}</p>
               </div>
               <button
                 onClick={() => { setDialogOpen(false); setFormErr(''); }}
@@ -652,27 +646,26 @@ export default function TheoryChallenge() {
             <div className="p-6 space-y-5 overflow-y-auto scroll-thin">
               <div className="grid md:grid-cols-2 gap-5">
                 <div>
-                  <label className="label">挑战标题</label>
+                  <label className="label">{tx("挑战标题")}</label>
                   <input
                     value={formTitle}
                     onChange={(e) => setFormTitle(e.target.value)}
                     className="input"
-                    placeholder="例如：力学基础大对决"
+                    placeholder={tx("例如：力学基础大对决")}
                   />
                 </div>
                 <div>
-                  <label className="label">关联主题</label>
+                  <label className="label">{tx("关联主题")}</label>
                   <div className="relative">
                     <select
                       value={formTopicId}
                       onChange={(e) => setFormTopicId(e.target.value)}
                       className="input appearance-none pr-10 cursor-pointer"
                     >
-                      <option value="">-- 选择主题 --</option>
+                      <option value="">{tx("-- 选择主题 --")}</option>
                       {topics.map((t) => (
                         <option key={t.id} value={t.id}>
-                          {t.title}（{getTopicQuestions(t.id).length} 题可选）
-                        </option>
+                          {tx(t.title)}（{getTopicQuestions(t.id).length} {tx("题可选）")}</option>
                       ))}
                     </select>
                     <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-400 pointer-events-none" />
@@ -680,26 +673,22 @@ export default function TheoryChallenge() {
                 </div>
                 <div>
                   <label className="label flex items-center gap-1.5">
-                    <Coins size={13} /> 奖励能量币（将从本组预扣）
-                  </label>
+                    <Coins size={13} /> {tx("奖励能量币（将从本组预扣）")}</label>
                   {/* 奖励按所选题目的难度自动算，学生不能自己填——原先可任意填（默认 100），
                       一局赚的比老师手发一笔还多。单价由老师在教师端「分组管理」页设置。 */}
                   <div className="flex items-center gap-3 rounded-xl bg-mission-50/70 border border-mission-100 px-3.5 py-2.5">
                     <span className="text-[22px] font-black text-gradient-energy tabular-nums">⚡ {computedReward}</span>
                     <span className="text-xs text-ink-500 leading-snug">
-                      按已选 10 题的难度自动计算
-                      <br />
-                      简单 {classMeta.coinEasy} / 中等 {classMeta.coinMedium} / 困难 {classMeta.coinHard} 币每条
-                    </span>
+                      {tx("按已选 10 题的难度自动计算")}<br />
+                      {tx("简单")}{classMeta.coinEasy} {tx("/ 中等")}{classMeta.coinMedium} {tx("/ 困难")}{classMeta.coinHard} {tx("币每条")}</span>
                     <div className="ml-auto text-xs text-ink-500 whitespace-nowrap">
-                      本组余额 <span className="font-semibold text-mission-700">{getGroupById(myGid || '')?.totalCoins || 0}</span>
+                      {tx("本组余额")}<span className="font-semibold text-mission-700">{getGroupById(myGid || '')?.totalCoins || 0}</span>
                     </div>
                   </div>
                 </div>
                 <div>
                   <label className="label flex items-center gap-1.5">
-                    <Calendar size={13} /> 截止日期
-                  </label>
+                    <Calendar size={13} /> {tx("截止日期")}</label>
                   <input
                     type="datetime-local"
                     value={formDeadline}
@@ -711,20 +700,19 @@ export default function TheoryChallenge() {
 
               <div>
                 <div className="flex items-center justify-between mb-2.5 flex-wrap gap-2">
-                  <label className="label !mb-0">选择 10 道题目 <span className="text-ink-400 font-normal text-xs ml-1">（精确 10 道）</span></label>
+                  <label className="label !mb-0">{tx("选择 10 道题目")}<span className="text-ink-400 font-normal text-xs ml-1">{tx("（精确 10 道）")}</span></label>
                   <Chip variant={formQuestionIds.length === 10 ? 'lab' : formQuestionIds.length > 10 ? 'risk' : 'energy'}>
-                    <Target size={12} /> 已选 {formQuestionIds.length} / 10
+                    <Target size={12} /> {tx("已选")}{formQuestionIds.length} / 10
                   </Chip>
                 </div>
                 {!formTopicId ? (
                   <div className="rounded-xl2 border-2 border-dashed border-ink-200 p-10 text-center text-ink-400">
                     <AlertCircle size={24} className="mx-auto mb-2 opacity-50" />
-                    请先选择主题
-                  </div>
+                    {tx("请先选择主题")}</div>
                 ) : (
                   <div className="rounded-xl2 border border-ink-200 max-h-[320px] overflow-y-auto scroll-thin divide-y divide-ink-100">
                     {candidateQuestions.length === 0 && (
-                      <p className="p-6 text-center text-ink-400 text-sm">该主题暂无题目</p>
+                      <p className="p-6 text-center text-ink-400 text-sm">{tx("该主题暂无题目")}</p>
                     )}
                     {candidateQuestions.map((q, i) => (
                       <QuestionCheckbox
@@ -768,15 +756,14 @@ export default function TheoryChallenge() {
                 onClick={() => { setDialogOpen(false); setFormErr(''); }}
                 className="btn-outline !py-2 text-sm"
               >
-                取消
-              </button>
+                {tx("取消")}</button>
               <button
                 onClick={submitCreate}
                 disabled={submitting}
                 className="btn-primary !py-2 text-sm disabled:opacity-50"
               >
                 <Zap size={15} />
-                {submitting ? '正在发布…' : `确认创建并预扣 ${computedReward} 能量币`}
+                {submitting ? tx("正在发布…") : tx("确认创建并预扣 {0} 能量币", { 0: computedReward })}
               </button>
             </div>
           </div>

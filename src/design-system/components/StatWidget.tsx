@@ -1,3 +1,4 @@
+import { useLocale } from '@/i18n/useLocale';
 import React from "react";
 import { BentoCard, type BentoCardProps } from "./BentoCard";
 import { cn } from "../../lib/utils";
@@ -24,6 +25,7 @@ export const StatWidget: React.FC<StatWidgetProps> = ({
   variant = "default",
   ...props
 }) => {
+  const { tx } = useLocale();
   return (
     <BentoCard
       variant={variant}
@@ -33,7 +35,7 @@ export const StatWidget: React.FC<StatWidgetProps> = ({
     >
       <div className="flex items-center justify-between mb-3">
         <span className="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">
-          {title}
+          {tx(title)}
         </span>
         {icon && (
           <div className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
@@ -63,7 +65,7 @@ export const StatWidget: React.FC<StatWidgetProps> = ({
             </span>
           )}
           {subtitle && (
-            <span className="text-slate-500 dark:text-slate-400">{subtitle}</span>
+            <span className="text-slate-500 dark:text-slate-400">{tx(subtitle)}</span>
           )}
         </div>
       )}

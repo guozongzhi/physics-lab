@@ -1,3 +1,4 @@
+import { useLocale } from '@/i18n/useLocale';
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useProjectStore } from '@/store/projectStore';
@@ -73,6 +74,7 @@ function useExamTimer(seconds: number, active: boolean, onExpire: () => void): n
 }
 
 export default function SafetyExam() {
+  const { tx } = useLocale();
   const { id = '', category } = useParams<{ id: string; category: SafetyCategory }>();
   const navigate = useNavigate();
   const project = useProjectStore((s) => s.getProjectById(id));
@@ -165,12 +167,12 @@ export default function SafetyExam() {
       <div className="container mx-auto py-16 text-center">
         <AlertTriangle size={48} className="mx-auto text-danger-400 mb-4" />
         <h2 className="text-xl font-serif text-mission-800 mb-2">
-          {assignmentError ? '考核指派出错' : '该考核已截止'}
+          {assignmentError ? tx("考核指派出错") : tx("该考核已截止")}
         </h2>
         <p className="text-[13px] text-ink-500 mb-6">
-          {assignmentError || '请联系老师重新布置，或去安全实验室自主练习。'}
+          {assignmentError || tx("请联系老师重新布置，或去安全实验室自主练习。")}
         </p>
-        <button className="btn-outline" onClick={() => navigate('/safety-lab')}>返回安全实验室</button>
+        <button className="btn-outline" onClick={() => navigate('/safety-lab')}>{tx("返回安全实验室")}</button>
       </div>
     );
   }
@@ -179,8 +181,8 @@ export default function SafetyExam() {
     return (
       <div className="container mx-auto py-16 text-center">
         <AlertTriangle size={48} className="mx-auto text-danger-400 mb-4" />
-        <h2 className="text-xl font-serif text-mission-800 mb-2">安全考核未找到</h2>
-        <button className="btn-outline mt-4" onClick={() => navigate('/safety-lab')}>返回安全实验室</button>
+        <h2 className="text-xl font-serif text-mission-800 mb-2">{tx("安全考核未找到")}</h2>
+        <button className="btn-outline mt-4" onClick={() => navigate('/safety-lab')}>{tx("返回安全实验室")}</button>
       </div>
     );
   }
@@ -275,7 +277,7 @@ export default function SafetyExam() {
     <div className="container mx-auto py-6 px-4 md:px-6 max-w-5xl">
       <button onClick={() => navigate(project ? `/projects/${project.id}` : '/safety-lab')} className="btn-ghost mb-4 -ml-2 text-sm">
         <ChevronRight size={16} className="rotate-180" />
-        {project ? '返回项目详情' : '返回安全实验室'}
+        {project ? tx("返回项目详情") : tx("返回安全实验室")}
       </button>
 
       <div className="card-base p-4 mb-5 flex flex-col sm:flex-row sm:items-center gap-4">
@@ -284,10 +286,10 @@ export default function SafetyExam() {
             <Shield size={24} />
           </div>
           <div className="flex-1 min-w-0">
-            <h2 className="font-serif text-lg font-semibold text-mission-900 truncate">{project ? project.title : `${CATEGORY_LABEL[examCategory]}安全考核`}</h2>
+            <h2 className="font-serif text-lg font-semibold text-mission-900 truncate">{project ? tx(project.title) : tx("{0}安全考核", { 0: tx(CATEGORY_LABEL[examCategory]) })}</h2>
             <div className="flex flex-wrap gap-2 mt-1">
-              <span className="chip chip-mission">{CATEGORY_LABEL[examCategory]}安全</span>
-              <span className="chip chip-ink">考核 {questions.length || effectiveExamCount} 题 · {passScore} 分通过</span>
+              <span className="chip chip-mission">{tx(CATEGORY_LABEL[examCategory])}{tx("安全")}</span>
+              <span className="chip chip-ink">{tx("考核")}{questions.length || effectiveExamCount} {tx("题 ·")}{passScore} {tx("分通过")}</span>
             </div>
           </div>
         </div>
@@ -307,7 +309,7 @@ export default function SafetyExam() {
                 <span className="flex items-center justify-center w-5 h-5 rounded-full border-current border text-[11px] font-bold">
                   {STEPS.findIndex((x) => x.key === step) > i ? <CheckCircle size={12} strokeWidth={3} /> : i + 1}
                 </span>
-                <span className="font-medium">{s.label}</span>
+                <span className="font-medium">{tx(s.label)}</span>
               </div>
               {i < STEPS.length - 1 && <ChevronRight size={16} className="text-ink-300 mx-1" />}
             </div>
@@ -328,9 +330,9 @@ export default function SafetyExam() {
             <div className="bg-gradient-to-r from-mission-500 to-mission-600 text-white px-6 py-4">
               <h3 className="font-serif text-xl font-bold flex items-center gap-2">
                 <Shield size={22} />
-                {notice.title}
+                {tx(notice.title)}
               </h3>
-              <p className="text-white/80 text-sm mt-1">请务必仔细阅读并理解以下所有内容</p>
+              <p className="text-white/80 text-sm mt-1">{tx("请务必仔细阅读并理解以下所有内容")}</p>
             </div>
             <div className="p-6 max-h-[60vh] overflow-y-auto scroll-thin">
               <div className="prose-safety max-w-none">
@@ -339,8 +341,7 @@ export default function SafetyExam() {
               <div className="mt-6 p-4 rounded-xl2 bg-growth-50 ring-1 ring-growth-200">
                 <h4 className="font-serif font-semibold text-growth-800 mb-2.5 flex items-center gap-2">
                   <Unlock size={16} />
-                  安全操作要点（记住这些关键规范）
-                </h4>
+                  {tx("安全操作要点（记住这些关键规范）")}</h4>
                 <div className="flex flex-wrap gap-2">
                   {notice.keyPoints.map((kp, i) => (
                     <span key={i} className="chip chip-lab text-[12px] px-3 py-1.5">
@@ -355,11 +356,10 @@ export default function SafetyExam() {
               <Checkbox
                 checked={agreed}
                 onCheckedChange={setAgreed}
-                label="我已阅读并理解上述所有安全须知内容，愿意严格遵守操作规程"
+                label={tx("我已阅读并理解上述所有安全须知内容，愿意严格遵守操作规程")}
               />
               <button onClick={goQuiz} className="btn-primary min-w-[180px]">
-                我已理解，开始考核
-                <ChevronRight size={16} />
+                {tx("我已理解，开始考核")}<ChevronRight size={16} />
               </button>
             </div>
           </motion.div>
@@ -376,7 +376,7 @@ export default function SafetyExam() {
           >
             <div className="card-base p-4 h-fit sticky top-4">
               <div className="text-xs text-ink-500 mb-2 flex items-center justify-between">
-                <span>答题卡</span>
+                <span>{tx("答题卡")}</span>
                 <span className="font-semibold text-mission-700">{answeredCount}/{questions.length}</span>
               </div>
               {/* 限时来自教师指派；自由练习不限时，不显示 */}
@@ -388,7 +388,7 @@ export default function SafetyExam() {
                   )}
                 >
                   <Clock size={14} />
-                  剩余 {timerText}
+                  {tx("剩余")}{timerText}
                 </div>
               )}
               <div className="grid grid-cols-5 gap-2">
@@ -424,8 +424,7 @@ export default function SafetyExam() {
                 className="btn-energy w-full mt-4"
               >
                 <Send size={16} />
-                提交试卷
-              </button>
+                {tx("提交试卷")}</button>
             </div>
 
             <div className="card-base p-6">
@@ -443,14 +442,13 @@ export default function SafetyExam() {
                           'chip',
                           q.type === 'single' ? 'chip-mission' : q.type === 'multiple' ? 'chip-energy' : 'chip-growth'
                         )}>
-                          {q.type === 'single' ? '单选题' : q.type === 'multiple' ? '多选题' : '判断题'}
+                          {q.type === 'single' ? tx("单选题") : q.type === 'multiple' ? tx("多选题") : tx("判断题")}
                         </span>
-                        <span className="chip chip-ink">知识点：{q.knowledgePoint}</span>
+                        <span className="chip chip-ink">{tx("知识点：")}{q.knowledgePoint}</span>
                       </div>
                       <span className="text-sm text-ink-500 flex items-center gap-1">
                         <Clock size={14} />
-                        共 {questions.length} 题
-                      </span>
+                        {tx("共")}{questions.length} {tx("题")}</span>
                     </div>
                     <div className="text-lg font-medium text-mission-900 mb-6 leading-relaxed">
                       {q.stem}
@@ -502,18 +500,15 @@ export default function SafetyExam() {
                         className="btn-outline"
                       >
                         <ChevronLeft size={16} />
-                        上一题
-                      </button>
+                        {tx("上一题")}</button>
                       {currentQ < questions.length - 1 ? (
                         <button onClick={() => setCurrentQ((v) => v + 1)} className="btn-primary">
-                          下一题
-                          <ChevronRight size={16} />
+                          {tx("下一题")}<ChevronRight size={16} />
                         </button>
                       ) : (
                         <button onClick={submitExam} className="btn-energy">
                           <Send size={16} />
-                          提交试卷
-                        </button>
+                          {tx("提交试卷")}</button>
                       )}
                     </div>
                   </div>
@@ -589,36 +584,29 @@ export default function SafetyExam() {
                 'font-serif text-3xl font-bold mb-2',
                 submitted.passed ? 'text-growth-700' : 'text-danger-700'
               )}>
-                {submitted.passed ? '安全考核通过！' : '考核未通过'}
+                {submitted.passed ? tx("安全考核通过！") : tx("考核未通过")}
               </h2>
               <p className="text-ink-600 mb-4">
-                本次得分 <span className="font-mono font-bold text-2xl mx-1 text-mission-800">{submitted.score}</span> 分
-                <span className="text-ink-400 mx-1">（</span>
-                {passScore} 分通过
-                <span className="text-ink-400 mx-1">）</span>
+                {tx("本次得分")}<span className="font-mono font-bold text-2xl mx-1 text-mission-800">{submitted.score}</span> {tx("分")}<span className="text-ink-400 mx-1">（</span>
+                {passScore} {tx("分通过")}<span className="text-ink-400 mx-1">）</span>
               </p>
 
               {submitted.passed ? (
                 <div className="max-w-md mx-auto mb-6 p-5 rounded-xl2 bg-growth-50 ring-1 ring-growth-200 text-left space-y-2">
                   <div className="flex items-center gap-2 font-semibold text-growth-800">
                     <Unlock size={18} />
-                    已解锁实验权限
-                  </div>
+                    {tx("已解锁实验权限")}</div>
                   <p className="text-sm text-ink-600 leading-relaxed">
-                    你已通过【{CATEGORY_LABEL[examCategory]}安全】考核，可以进入相关实验阶段。
-                    请在实验中继续严格遵守安全操作规程，确保人身与设备安全。
-                  </p>
+                    {tx("你已通过【")}{tx(CATEGORY_LABEL[examCategory])}{tx("安全】考核，可以进入相关实验阶段。 请在实验中继续严格遵守安全操作规程，确保人身与设备安全。")}</p>
                 </div>
               ) : (
                 <div className="max-w-md mx-auto mb-6 p-5 rounded-xl2 bg-danger-50 ring-1 ring-danger-200 text-left space-y-2">
                   <div className="flex items-center gap-2 font-semibold text-danger-800">
                     <Clock size={18} />
-                    {project ? '项目已进入冻结状态' : '未达到及格线'}
+                    {project ? tx("项目已进入冻结状态") : tx("未达到及格线")}
                   </div>
                   <p className="text-sm text-ink-600 leading-relaxed">
-                    {project
-                      ? '根据平台规则，安全考核未通过将自动冻结项目，防止未受训人员进入危险实验环节。请在 30 分钟后重新发起考核。'
-                      : '请复习该领域的安全要点后重新考核，达到及格线即可通过。'}
+                    {project ? tx("根据平台规则，安全考核未通过将自动冻结项目，防止未受训人员进入危险实验环节。请在 30 分钟后重新发起考核。") : tx("请复习该领域的安全要点后重新考核，达到及格线即可通过。")}
                   </p>
                 </div>
               )}
@@ -628,7 +616,7 @@ export default function SafetyExam() {
                   onClick={() => navigate(project ? `/projects/${project.id}` : '/safety-lab')}
                   className={submitted.passed ? 'btn-primary' : 'btn-outline'}
                 >
-                  {project ? '返回项目详情' : '返回安全实验室'}
+                  {project ? tx("返回项目详情") : tx("返回安全实验室")}
                 </button>
                 {!submitted.passed && (
                   <button
@@ -643,7 +631,7 @@ export default function SafetyExam() {
                     className={project ? 'btn-ghost cursor-not-allowed opacity-70' : 'btn-outline'}
                   >
                     <Clock size={15} />
-                    {project ? '30 分钟后可重新考核' : '立即重新考核'}
+                    {project ? tx("30 分钟后可重新考核") : tx("立即重新考核")}
                   </button>
                 )}
               </div>

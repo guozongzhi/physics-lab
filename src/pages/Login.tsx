@@ -1,3 +1,5 @@
+import LanguageSwitch from '@/components/ui/LanguageSwitch';
+import { useLocale } from '@/i18n/useLocale';
 import '@/design-system/styles/login.css';
 import { applyAvatarFallback } from '@/lib/imageFallback';
 import { useState, useMemo, useEffect } from 'react';
@@ -15,7 +17,6 @@ import {
   Mail,
   UserPlus,
   Info,
-  Globe2,
   Menu,
   X,
   Play,
@@ -33,6 +34,7 @@ import { classesApi } from '@/lib/apiService';
 import { bootstrapFromApi } from '@/lib/bootstrap';
 
 export default function Login() {
+  const { tx, locale } = useLocale();
   const navigate = useNavigate();
   const loginTeacher = useAuthStore((s) => s.loginTeacher);
   const loginStudent = useAuthStore((s) => s.loginStudent);
@@ -44,7 +46,6 @@ export default function Login() {
   const [remember, setRemember] = useState(getLoginPersistence);
   const [infoTopic, setInfoTopic] = useState<LoginInfoTopic | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [languageOpen, setLanguageOpen] = useState(false);
   const [tab, setTab] = useState<'teacher' | 'student'>('student');
   // 学生入口内的子模式：login（选组登录）/ register（邮箱+用户名注册）
   const [studentMode, setStudentMode] = useState<'login' | 'register'>('login');
@@ -204,46 +205,43 @@ export default function Login() {
         <header className="login-header">
           <div className="login-brand">
             <div className="login-brand-icon"><Rocket size={30} strokeWidth={1.5} aria-hidden="true" /></div>
-            <div><strong>物理任务指挥中心</strong><span>PBL 高中物理探究平台</span></div>
+            <div><strong>{tx("物理任务指挥中心")}</strong><span>{tx("PBL 高中物理探究平台")}</span></div>
           </div>
-          <nav className="login-desktop-nav" aria-label="平台导航">
-            {(['探索', '项目', '社区', '帮助'] as const).map((item) => <button key={item} type="button" onClick={() => openInfo(item)}>{item}</button>)}
-            <div className="login-language">
-              <button type="button" aria-expanded={languageOpen} aria-controls="login-language-menu" onClick={() => setLanguageOpen((value) => !value)}><Globe2 size={20} />简体中文<ChevronDown size={15} /></button>
-              {languageOpen && <div id="login-language-menu" className="login-language-menu"><button type="button" onClick={() => setLanguageOpen(false)} aria-label="当前语言：简体中文">✓ 简体中文</button></div>}
-            </div>
+          <nav className="login-desktop-nav" aria-label={tx("平台导航")}>
+            {(['探索', '项目', '社区', '帮助'] as const).map((item) => <button key={item} type="button" onClick={() => openInfo(item)}>{tx(item)}</button>)}
           </nav>
-          <button type="button" className="login-menu-toggle" aria-label={menuOpen ? '关闭导航' : '打开导航'} aria-expanded={menuOpen} aria-controls="login-mobile-nav" onClick={() => setMenuOpen((value) => !value)}>{menuOpen ? <X size={26} /> : <Menu size={26} />}</button>
-          {menuOpen && <nav className="login-mobile-nav" id="login-mobile-nav" aria-label="手机平台导航">
-            {(['探索', '项目', '社区', '帮助'] as const).map((item) => <button key={item} type="button" onClick={() => openInfo(item)}>{item}<ChevronRight size={17} /></button>)}
+          <div className="login-language"><LanguageSwitch /></div>
+          <button type="button" className="login-menu-toggle" aria-label={menuOpen ? tx("关闭导航") : tx("打开导航")} aria-expanded={menuOpen} aria-controls="login-mobile-nav" onClick={() => setMenuOpen((value) => !value)}>{menuOpen ? <X size={26} /> : <Menu size={26} />}</button>
+          {menuOpen && <nav className="login-mobile-nav" id="login-mobile-nav" aria-label={tx("手机平台导航")}>
+            {(['探索', '项目', '社区', '帮助'] as const).map((item) => <button key={item} type="button" onClick={() => openInfo(item)}>{tx(item)}<ChevronRight size={17} /></button>)}
           </nav>}
         </header>
         <div className="login-content">
           <section className="login-hero-panel" aria-labelledby="login-hero-title">
-            <p className="login-kicker">用 探 究 连 接 真 实 世 界<span /></p>
-            <h1 id="login-hero-title">探索物理世界<span className="login-hero-accent">点亮科学发现</span></h1>
-            <p className="login-hero-description">围绕 11 步完整学习闭环，结合 AI 自学、<br className="login-mobile-break" />能量币激励<br className="login-desktop-break" />与真实实验项目，构建沉浸式<br className="login-mobile-break" />高中物理创新指挥中心。</p>
+            <p className="login-kicker">{tx("用 探 究 连 接 真 实 世 界")}<span /></p>
+            <h1 id="login-hero-title">{tx("探索物理世界")}<span className="login-hero-accent">{tx("点亮科学发现")}</span></h1>
+            <p className="login-hero-description">{locale === 'en' ? tx("围绕 11 步完整学习闭环，结合 AI 自学、能量币激励与真实实验项目，构建沉浸式高中物理创新指挥中心。") : <>{tx("围绕 11 步完整学习闭环，结合 AI 自学、")}<br className="login-mobile-break" />{tx("能量币激励")}<br className="login-desktop-break" />{tx("与真实实验项目，构建沉浸式")}<br className="login-mobile-break" />{tx("高中物理创新指挥中心。")}</>}</p>
             <div className="login-journey">
-              <span><BookOpen size={26} />理论探索</span><i />
-              <span><Users size={26} />小组协作</span><i />
-              <span><FlaskConical size={26} />实验项目</span><i />
-              <span><BarChart3 size={26} />成果展示</span>
+              <span><BookOpen size={26} />{tx("理论探索")}</span><i />
+              <span><Users size={26} />{tx("小组协作")}</span><i />
+              <span><FlaskConical size={26} />{tx("实验项目")}</span><i />
+              <span><BarChart3 size={26} />{tx("成果展示")}</span>
             </div>
           </section>
           <div className="login-orbit-labels" aria-hidden="true">
             <svg className="login-orbit-path" viewBox="0 0 1054 694" preserveAspectRatio="none"><path d="M 458 6 C 420 42 478 44 473 59 C 468 94 430 122 442 158 S 479 216 547 249 C 594 274 658 286 730 288" /><path d="M 473 59 C 552 105 623 163 757 188" /></svg>
-            <span className="login-orbit-explore"><i />探索<small>EXPLORE</small></span>
-            <span className="login-orbit-experiment"><i />实验<small>EXPERIMENT</small></span>
-            <span className="login-orbit-discover"><i />发现<small>DISCOVER</small></span>
+            <span className="login-orbit-explore"><i />{tx("探索")}<small>EXPLORE</small></span>
+            <span className="login-orbit-experiment"><i />{tx("实验")}<small>EXPERIMENT</small></span>
+            <span className="login-orbit-discover"><i />{tx("发现")}<small>DISCOVER</small></span>
           </div>
-          <section className={`login-form-card ${studentMode === 'register' && tab === 'student' ? 'login-register-card' : ''}`} aria-label="登录入口">
-            <div className="login-role-tabs" role="group" aria-label="选择登录身份">
-              <button type="button" aria-pressed={tab === 'student'} className={tab === 'student' ? 'is-active' : ''} onClick={() => setTab('student')}><UserCircle2 size={22} />学生入口</button>
-              <button type="button" aria-pressed={tab === 'teacher'} className={tab === 'teacher' ? 'is-active' : ''} onClick={() => setTab('teacher')}><GraduationCap size={23} />教师入口</button>
+          <section className={`login-form-card ${studentMode === 'register' && tab === 'student' ? 'login-register-card' : ''}`} aria-label={tx("登录入口")}>
+            <div className="login-role-tabs" role="group" aria-label={tx("选择登录身份")}>
+              <button type="button" aria-pressed={tab === 'student'} className={tab === 'student' ? 'is-active' : ''} onClick={() => setTab('student')}><UserCircle2 size={22} />{tx("学生入口")}</button>
+              <button type="button" aria-pressed={tab === 'teacher'} className={tab === 'teacher' ? 'is-active' : ''} onClick={() => setTab('teacher')}><GraduationCap size={23} />{tx("教师入口")}</button>
             </div>
             <div className="login-card-heading">
-              <h2>{tab === 'teacher' ? '欢迎回到教师任务指挥台' : studentMode === 'register' ? '开启你的科学探索之旅' : '欢迎回到物理任务指挥中心'}</h2>
-              <p>{tab === 'teacher' ? '管理班级，陪伴每一次科学发现' : '选择身份，开启你的探索之旅'}</p>
+              <h2>{tab === 'teacher' ? tx("欢迎回到教师任务指挥台") : studentMode === 'register' ? tx("开启你的科学探索之旅") : tx("欢迎回到物理任务指挥中心")}</h2>
+              <p>{tab === 'teacher' ? tx("管理班级，陪伴每一次科学发现") : tx("选择身份，开启你的探索之旅")}</p>
             </div>
             {tab === 'teacher' || (apiEnabled && studentMode === 'login') ? <>
               <LoginCredentials teacher={tab === 'teacher'} identifier={tab === 'teacher' ? teacherUsername : credId}
@@ -254,16 +252,15 @@ export default function Login() {
                 onSubmit={tab === 'teacher' ? handleTeacherLogin : handleCredentialLogin}
                 submitting={submitting} error={tab === 'teacher' ? teacherErr : credErr} />
               <div className="login-register-entry">
-                <div className="login-divider"><span />或<span /></div>
-                {tab === 'student' ? <button type="button" className="login-secondary" onClick={() => { setStudentMode('register'); setStudentErr(''); }}><UserPlus size={22} />注册新账号</button> : <button type="button" className="login-secondary" onClick={() => openInfo('帮助')}><Info size={22} />账号登录帮助</button>}
+                <div className="login-divider"><span />{tx("或")}<span /></div>
+                {tab === 'student' ? <button type="button" className="login-secondary" onClick={() => { setStudentMode('register'); setStudentErr(''); }}><UserPlus size={22} />{tx("注册新账号")}</button> : <button type="button" className="login-secondary" onClick={() => openInfo('帮助')}><Info size={22} />{tx("账号登录帮助")}</button>}
               </div>
-              <div className="login-account-hint"><Info size={20} /><p>{tab === 'teacher' ? '教师和管理员请使用分配的账号登录。忘记密码请联系系统管理员进行重置。' : '请使用教师分配的用户名和初始密码登录；预置演示账号使用编号（例如 u-01），不是姓名。登录不上请联系老师。'}</p></div>
+              <div className="login-account-hint"><Info size={20} /><p>{tab === 'teacher' ? tx("教师和管理员请使用分配的账号登录。忘记密码请联系系统管理员进行重置。") : tx("请使用教师分配的用户名和初始密码登录；预置演示账号使用编号（例如 u-01），不是姓名。登录不上请联系老师。")}</p></div>
             </> : studentMode === 'register' && apiEnabled ? <div className="login-register-fields space-y-4">
-              <button type="button" className="login-back" onClick={() => { setStudentMode('login'); setRegErr(''); }}>← 返回账号登录</button>
+              <button type="button" className="login-back" onClick={() => { setStudentMode('login'); setRegErr(''); }}>{tx("← 返回账号登录")}</button>
                           <div>
                             <label className="field-label flex items-center gap-1.5">
-                              <Mail size={13} /> 邮箱
-                            </label>
+                              <Mail size={13} /> {tx("邮箱")}</label>
                             <input
                               type="email"
                               value={regEmail}
@@ -276,22 +273,20 @@ export default function Login() {
                           </div>
                           <div>
                             <label className="field-label flex items-center gap-1.5">
-                              <UserCircle2 size={13} /> 用户名（登录名）
-                            </label>
+                              <UserCircle2 size={13} /> {tx("用户名（登录名）")}</label>
                             <input
                               type="text"
                               value={regUsername}
                               autoComplete="username"
                               onChange={(e) => { setRegUsername(e.target.value); setRegErr(''); }}
                               className="input-field"
-                              placeholder="2-32 个字符，用于登录"
+                              placeholder={tx("2-32 个字符，用于登录")}
                               onKeyDown={(e) => e.key === 'Enter' && handleRegister()}
                             />
                           </div>
                           <div>
                             <label className="field-label flex items-center gap-1.5">
-                              <Users size={13} /> 班级
-                            </label>
+                              <Users size={13} /> {tx("班级")}</label>
                             <div className="relative">
                               <select
                                 value={regClassId}
@@ -300,10 +295,10 @@ export default function Login() {
                                 disabled={classes.length === 0}
                               >
                                 {classes.length === 0 ? (
-                                  <option value="">加载班级中…</option>
+                                  <option value="">{tx("加载班级中…")}</option>
                                 ) : (
                                   classes.map((c) => (
-                                    <option key={c.id} value={c.id}>{c.name}</option>
+                                    <option key={c.id} value={c.id}>{tx(c.name)}</option>
                                   ))
                                 )}
                               </select>
@@ -312,33 +307,31 @@ export default function Login() {
                           </div>
                           <div>
                             <label className="field-label flex items-center gap-1.5">
-                              <Sparkles size={13} /> 显示名（选填）
-                            </label>
+                              <Sparkles size={13} /> {tx("显示名（选填）")}</label>
                             <input
                               type="text"
                               value={regName}
                               onChange={(e) => { setRegName(e.target.value); setRegErr(''); }}
                               className="input-field"
-                              placeholder="留空则默认使用用户名"
+                              placeholder={tx("留空则默认使用用户名")}
                               onKeyDown={(e) => e.key === 'Enter' && handleRegister()}
                             />
                           </div>
                           <div>
                             <label className="field-label flex items-center gap-1.5">
-                              <Lock size={13} /> 密码
-                            </label>
+                              <Lock size={13} /> {tx("密码")}</label>
                             <input
                               type="password"
                               value={regPwd}
                               autoComplete="new-password"
                               onChange={(e) => { setRegPwd(e.target.value); setRegErr(''); }}
                               className="input-field"
-                              placeholder="至少 6 位"
+                              placeholder={tx("至少 6 位")}
                               onKeyDown={(e) => e.key === 'Enter' && handleRegister()}
                             />
                             {regErr && (
                               <p className="mt-2 text-[12px] font-semibold text-danger-600 flex items-center gap-1">
-                                <Lock size={11} />{regErr}
+                                <Lock size={11} />{tx(regErr)}
                               </p>
                             )}
                           </div>
@@ -350,20 +343,18 @@ export default function Login() {
                               className="btn-mission w-full !py-3.5 !text-[15px] shadow-glowMission disabled:opacity-60"
                             >
                               <UserPlus size={17} />
-                              {submitting ? '注册中…' : '创建账号并进入'}
+                              {submitting ? tx("注册中…") : tx("创建账号并进入")}
                               <ArrowRight size={16} />
                             </button>
                           </div>
 
                           <p className="text-[11px] text-ink-500 font-medium leading-relaxed pt-1">
-                            注册后暂未分配小组，登录后可由教师或组长加入研究小组。
-                          </p>
+                            {tx("注册后暂未分配小组，登录后可由教师或组长加入研究小组。")}</p>
 
             </div> : <div className="login-offline-fields space-y-4">
                       <div>
                         <label className="field-label flex items-center gap-1.5">
-                          <Users size={13} /> 选择所在研究小组
-                        </label>
+                          <Users size={13} /> {tx("选择所在研究小组")}</label>
                         <div className="relative">
                           <select
                             value={selectedGroupId}
@@ -374,11 +365,10 @@ export default function Login() {
                             }}
                             className="input-field appearance-none pr-11 cursor-pointer font-medium"
                           >
-                            <option value="">-- 请选择研究小组 --</option>
+                            <option value="">{tx("-- 请选择研究小组 --")}</option>
                             {groups.map((g) => (
                               <option key={g.id} value={g.id}>
-                                🚀 {g.name}  ({users.filter((u) => u.groupId === g.id).length}名成员)
-                              </option>
+                                🚀 {tx(g.name)}  ({users.filter((u) => u.groupId === g.id).length}{tx("名成员)")}</option>
                             ))}
                           </select>
                           <ChevronDown size={17} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-ink-400 pointer-events-none" />
@@ -387,8 +377,7 @@ export default function Login() {
 
                       <div>
                         <label className="field-label flex items-center gap-1.5">
-                          <UserCircle2 size={13} /> 选择成员身份
-                        </label>
+                          <UserCircle2 size={13} /> {tx("选择成员身份")}</label>
                         <div className="relative">
                           <select
                             value={selectedUserId}
@@ -400,12 +389,12 @@ export default function Login() {
                             className="input-field appearance-none pr-11 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed font-medium"
                           >
                             <option value="">
-                              {selectedGroupId ? '-- 请选择成员 --' : '-- 请先选择小组 --'}
+                              {selectedGroupId ? tx("-- 请选择成员 --") : tx("-- 请先选择小组 --")}
                             </option>
                             {groupUsers.map((u) => (
                               <option key={u.id} value={u.id}>
                                 {u.role === 'leader' ? '👑 ' : '👤 '}
-                                {u.name} {u.role === 'leader' ? '(组长)' : `(成员 · ${u.personalCoins || 0}⚡)`}
+                                {tx(u.name)} {u.role === 'leader' ? tx("(组长)") : tx("(成员 · {0}⚡)", { 0: u.personalCoins || 0 })}
                               </option>
                             ))}
                           </select>
@@ -413,7 +402,7 @@ export default function Login() {
                         </div>
                         {studentErr && (
                           <p className="mt-2 text-[12px] font-semibold text-danger-600 flex items-center gap-1">
-                            <Lock size={11} />{studentErr}
+                            <Lock size={11} />{tx(studentErr)}
                           </p>
                         )}
                       </div>
@@ -425,15 +414,15 @@ export default function Login() {
                             const u = groupUsers.find((x) => x.id === selectedUserId);
                             return u ? (
                               <>
-                                <img src={u.avatar} onError={applyAvatarFallback} alt={u.name} className="w-11 h-11 rounded-xl ring-2 ring-white shadow-sm bg-white object-cover" />
+                                <img src={u.avatar} onError={applyAvatarFallback} alt={tx(u.name)} className="w-11 h-11 rounded-xl ring-2 ring-white shadow-sm bg-white object-cover" />
                                 <div className="flex-1 min-w-0">
                                   <div className="flex items-center gap-1.5">
-                                    <span className="text-[14px] font-extrabold text-ink-900">{u.name}</span>
-                                    {u.role === 'leader' && <span className="chip-nova !py-0 !px-1.5 !text-[9px]">组长</span>}
+                                    <span className="text-[14px] font-extrabold text-ink-900">{tx(u.name)}</span>
+                                    {u.role === 'leader' && <span className="chip-nova !py-0 !px-1.5 !text-[9px]">{tx("组长")}</span>}
                                   </div>
                                   <div className="text-[11px] text-ink-500 mt-0.5 font-medium flex items-center gap-1">
                                     <Zap size={10} className="text-energy-500" />
-                                    个人能量：{u.personalCoins || 0}
+                                    {tx("个人能量：")}{u.personalCoins || 0}
                                   </div>
                                 </div>
                                 <div className="chip-energy !py-1 !px-2 !text-[10px]">
@@ -452,15 +441,14 @@ export default function Login() {
                           className="btn-mission w-full !py-3.5 !text-[15px] shadow-glowMission"
                         >
                           <Rocket size={17} />
-                          进入指挥中心
-                          <ArrowRight size={16} />
+                          {tx("进入指挥中心")}<ArrowRight size={16} />
                         </button>
                       </div>
 
                       <div className="flex items-center justify-between pt-2">
                         <div className="flex items-center gap-1.5 text-[11px] text-ink-500 font-medium">
                           <Zap size={12} className="text-energy-500" />
-                          初始能量：<span className="text-energy-700 font-bold">500 ⚡/组</span>
+                          {tx("初始能量：")}<span className="text-energy-700 font-bold">{tx("500 ⚡/组")}</span>
                         </div>
                         <div className="flex items-center gap-1.5 text-[11px] font-bold text-ink-500">
                           <span className="w-1.5 h-1.5 rounded-full bg-mission-500 animate-pulse" />
@@ -473,7 +461,7 @@ export default function Login() {
         </div>
         <button type="button" className="login-product-intro" onClick={() => openInfo('产品介绍')}>
           <span className="login-play-icon"><Play size={24} fill="currentColor" /></span>
-          <span><strong>观看产品介绍</strong><small>1 分钟了解平台如何助力你的物理探究之旅</small></span><ChevronRight size={23} />
+          <span><strong>{tx("观看产品介绍")}</strong><small>{tx("1 分钟了解平台如何助力你的物理探究之旅")}</small></span><ChevronRight size={23} />
         </button>
       </div>
       <LoginInfoDialog topic={infoTopic} onClose={() => setInfoTopic(null)} onEnter={enterLogin} />

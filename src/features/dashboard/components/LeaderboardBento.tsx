@@ -1,3 +1,4 @@
+import { useLocale } from '@/i18n/useLocale';
 import React from "react";
 import { BentoCard } from "@/design-system/components/BentoCard";
 
@@ -37,6 +38,7 @@ export const LeaderboardBento: React.FC<LeaderboardBentoProps> = ({
   news,
   onNavigate,
 }) => {
+  const { tx } = useLocale();
   return (
     <div className="grid grid-cols-1 gap-4 min-w-0">
       {/* 小组天梯排名 */}
@@ -45,15 +47,14 @@ export const LeaderboardBento: React.FC<LeaderboardBentoProps> = ({
           <div className="flex items-center gap-2">
             <Trophy size={16} className="text-alert-500" />
             <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
-              研究小组天梯榜
-            </h3>
+              {tx("研究小组天梯榜")}</h3>
           </div>
           <button
             type="button"
             onClick={() => onNavigate("/coins")}
             className="text-[11px] text-mission-600 dark:text-mission-400 hover:underline flex items-center gap-0.5"
           >
-            完整榜单 <ArrowRight size={12} />
+            {tx("完整榜单")}<ArrowRight size={12} />
           </button>
         </div>
 
@@ -66,21 +67,20 @@ export const LeaderboardBento: React.FC<LeaderboardBentoProps> = ({
           <div className="flex items-center gap-2">
             <Megaphone size={16} className="text-mission-500" />
             <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
-              实验室动态资讯
-            </h3>
+              {tx("实验室动态资讯")}</h3>
           </div>
           <button
             type="button"
             onClick={() => onNavigate("/coins?view=ledger")}
             className="text-[11px] text-mission-600 dark:text-mission-400 hover:underline flex items-center gap-0.5"
           >
-            收支账本 <ArrowRight size={12} />
+            {tx("收支账本")}<ArrowRight size={12} />
           </button>
         </div>
 
         <div className="space-y-2">
           {news.length === 0 ? (
-            <div className="py-6 text-center text-xs text-slate-400">暂无最新动态简讯</div>
+            <div className="py-6 text-center text-xs text-slate-400">{tx("暂无最新动态简讯")}</div>
           ) : (
             news.slice(0, 5).map((item, idx) => (
               <div
@@ -90,7 +90,7 @@ export const LeaderboardBento: React.FC<LeaderboardBentoProps> = ({
                 <div className="flex items-center gap-2 truncate pr-2">
                   <span className="text-[10px] text-slate-400 font-mono">{item.time}</span>
                   <span className="font-medium text-slate-700 dark:text-slate-300 truncate">
-                    <strong>{item.group}</strong>: {item.event}
+                    <strong>{item.group}</strong>: {tx(item.event)}
                   </span>
                 </div>
                 <span

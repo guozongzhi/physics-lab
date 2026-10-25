@@ -1,3 +1,4 @@
+import { useLocale } from '@/i18n/useLocale';
 import { useEffect, useRef, useState } from 'react';
 import { Video, Gauge, Repeat, AlertCircle } from 'lucide-react';
 import { resolveShowcaseVideoUrl, showcaseApi } from '@/lib/api/projects';
@@ -13,6 +14,7 @@ export default function VideoShowcasePlayer({
   poster?: string;
   title: string;
 }) {
+  const { tx } = useLocale();
   const videoRef = useRef<HTMLVideoElement>(null);
   const [speed, setSpeed] = useState<number>(1);
   const [loop, setLoop] = useState(false);
@@ -48,8 +50,7 @@ export default function VideoShowcasePlayer({
           <Video size={14} className="text-sky-400 shrink-0" />
           <span className="font-semibold truncate">{title}</span>
           <span className="text-[10px] px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-300 shrink-0">
-            实验视频影像
-          </span>
+            {tx("实验视频影像")}</span>
         </div>
 
         <div className="flex flex-wrap items-center gap-2 min-w-0">
@@ -77,15 +78,14 @@ export default function VideoShowcasePlayer({
             }`}
           >
             <Repeat size={12} />
-            循环播放
-          </button>
+            {tx("循环播放")}</button>
         </div>
       </div>
 
       {loadErr ? (
         <div className="h-[320px] flex flex-col items-center justify-center gap-2 p-6 text-center text-slate-400 text-xs">
           <AlertCircle size={28} className="text-amber-400" />
-          <p className="font-semibold text-slate-200">视频源加载失败或格式不受当前浏览器支持</p>
+          <p className="font-semibold text-slate-200">{tx("视频源加载失败或格式不受当前浏览器支持")}</p>
           <p className="text-slate-400 break-all max-w-md">{src.slice(0, 120)}</p>
         </div>
       ) : (
@@ -98,7 +98,7 @@ export default function VideoShowcasePlayer({
           loop={loop}
           preload="metadata"
           onError={() => setLoadErr(true)}
-          aria-label={`播放视频 ${title}`}
+          aria-label={tx("播放视频 {0}", { 0: title })}
           className="w-full max-h-[62vh] min-h-[260px] bg-black object-contain"
         />
       )}

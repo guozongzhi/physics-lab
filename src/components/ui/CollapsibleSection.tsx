@@ -1,3 +1,4 @@
+import { useLocale } from '@/i18n/useLocale';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown } from 'lucide-react';
@@ -20,6 +21,7 @@ export default function CollapsibleSection({
   className = '',
   children,
 }: CollapsibleSectionProps) {
+  const { tx } = useLocale();
   const [isOpen, setIsOpen] = useState(defaultOpen);
 
   return (
@@ -32,13 +34,13 @@ export default function CollapsibleSection({
           {icon && <div className="shrink-0">{icon}</div>}
           <div>
             {subtitle && (
-              <span className="mission-label">{subtitle}</span>
+              <span className="mission-label">{tx(subtitle)}</span>
             )}
             <h3 className={cn(
               'text-[18px] font-extrabold text-ink-800',
               subtitle && 'mt-1'
             )}>
-              {title}
+              {tx(title)}
             </h3>
           </div>
         </div>
@@ -47,7 +49,7 @@ export default function CollapsibleSection({
             'text-[11px] font-semibold transition-colors',
             isOpen ? 'text-mission-600' : 'text-ink-400'
           )}>
-            {isOpen ? '收起' : '展开'}
+            {isOpen ? tx("收起") : tx("展开")}
           </span>
           <motion.div
             animate={{ rotate: isOpen ? 180 : 0 }}

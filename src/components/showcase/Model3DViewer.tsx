@@ -1,3 +1,4 @@
+import { useLocale } from '@/i18n/useLocale';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Box, RotateCcw, ZoomIn, ZoomOut, Grid, Play, Pause } from 'lucide-react';
 import type { Model3DFormat } from '@/lib/showcaseMedia';
@@ -271,6 +272,7 @@ export default function Model3DViewer({
   data: string;
   title: string;
 }) {
+  const { tx } = useLocale();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [yaw, setYaw] = useState(0.6);
   const [pitch, setPitch] = useState(0.42);
@@ -384,8 +386,7 @@ export default function Model3DViewer({
           <Box size={14} className="text-cyan-400 shrink-0" />
           <span className="font-semibold truncate">{title}</span>
           <span className="text-[10px] px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300 shrink-0">
-            3D 网格检视 ({mesh.vertices.length} 顶点 · {mesh.faces.length} 面)
-          </span>
+            {tx("3D 网格检视 (")}{mesh.vertices.length} {tx("顶点 ·")}{mesh.faces.length} {tx("面)")}</span>
         </div>
 
         <div className="flex items-center gap-1.5 shrink-0">
@@ -395,7 +396,7 @@ export default function Model3DViewer({
             className="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 inline-flex items-center gap-1 transition"
           >
             {autoSpin ? <Pause size={12} /> : <Play size={12} />}
-            {autoSpin ? '暂停旋转' : '自动旋转'}
+            {autoSpin ? tx("暂停旋转") : tx("自动旋转")}
           </button>
           <button
             type="button"
@@ -405,14 +406,14 @@ export default function Model3DViewer({
             }`}
           >
             <Grid size={12} />
-            {wireframe ? '实体着色' : '线框网格'}
+            {wireframe ? tx("实体着色") : tx("线框网格")}
           </button>
           <button
             type="button"
             onClick={() => setZoom((z) => Math.min(2.2, +(z + 0.2).toFixed(2)))}
             className="p-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200"
-            title="放大"
-            aria-label="放大模型"
+            title={tx("放大")}
+            aria-label={tx("放大模型")}
           >
             <ZoomIn size={13} />
           </button>
@@ -420,8 +421,8 @@ export default function Model3DViewer({
             type="button"
             onClick={() => setZoom((z) => Math.max(0.5, +(z - 0.2).toFixed(2)))}
             className="p-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200"
-            title="缩小"
-            aria-label="缩小模型"
+            title={tx("缩小")}
+            aria-label={tx("缩小模型")}
           >
             <ZoomOut size={13} />
           </button>
@@ -435,8 +436,7 @@ export default function Model3DViewer({
             className="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 inline-flex items-center gap-1 transition"
           >
             <RotateCcw size={12} />
-            复位视角
-          </button>
+            {tx("复位视角")}</button>
         </div>
       </div>
 
@@ -466,7 +466,7 @@ export default function Model3DViewer({
           className="w-full max-h-[55vh] cursor-grab active:cursor-grabbing"
         />
         <div className="absolute bottom-2.5 left-3.5 text-[11px] text-slate-400 pointer-events-none">
-          按住拖拽可 360° 旋转检视 · 当前缩放 {Math.round(zoom * 100)}%
+          {tx("按住拖拽可 360° 旋转检视 · 当前缩放")}{Math.round(zoom * 100)}%
         </div>
       </div>
     </div>

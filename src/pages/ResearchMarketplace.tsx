@@ -1,3 +1,4 @@
+import { useLocale } from '@/i18n/useLocale';
 import type { LucideIcon } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
@@ -57,6 +58,7 @@ function useTicker(target: number, duration = 800) {
 }
 
 export default function ResearchMarketplace() {
+  const { tx } = useLocale();
   const { groups, users } = useGroupStore();
   const { groupId: currentGroupId, userId, role } = useAuthStore();
   const { recruitments, projects, placeBid, assignRecruitment, resolveRecruitment } = useProjectStore();
@@ -242,12 +244,10 @@ export default function ResearchMarketplace() {
                 <div>
                   <span className="mission-label">RECRUITMENT · OPEN CALL</span>
                   <h1 className="mt-3 text-[26px] md:text-[30px] font-extrabold text-ink-900 leading-tight tracking-tight">
-                    人才招募大厅
-                  </h1>
-                  <p className="mt-2 text-base font-semibold text-mission-700">找到你的任务 · 贡献你的才华</p>
+                    {tx("人才招募大厅")}</h1>
+                  <p className="mt-2 text-base font-semibold text-mission-700">{tx("找到你的任务 · 贡献你的才华")}</p>
                   <p className="mt-3 text-[14px] text-ink-500 leading-relaxed max-w-md">
-                    跨组协作市场：用你的专业技能为其他小组解决难题，赢取能量币 ⚡ 奖励与全基地认可。
-                  </p>
+                    {tx("跨组协作市场：用你的专业技能为其他小组解决难题，赢取能量币 ⚡ 奖励与全基地认可。")}</p>
                 </div>
               </div>
             </div>
@@ -259,7 +259,7 @@ export default function ResearchMarketplace() {
                 <input
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  placeholder="搜索项目名、角色名…"
+                  placeholder={tx("搜索项目名、角色名…")}
                   className="w-full min-w-0 flex-1 bg-transparent outline-none py-2 px-2 sm:px-0 text-[14px] text-ink-800 placeholder:text-ink-400"
                 />
                 <div className="hidden sm:block h-7 w-px bg-ink-200/60 mx-1" />
@@ -270,8 +270,8 @@ export default function ResearchMarketplace() {
                     onChange={(e) => setSort(e.target.value as SortKey)}
                     className="bg-transparent outline-none text-[13px] font-semibold text-ink-700 cursor-pointer pr-6"
                   >
-                    <option value="reward">酬劳 高 → 低</option>
-                    <option value="deadline">截止 近 → 远</option>
+                    <option value="reward">{tx("酬劳 高 → 低")}</option>
+                    <option value="deadline">{tx("截止 近 → 远")}</option>
                   </select>
                 </div>
               </div>
@@ -289,7 +289,7 @@ export default function ResearchMarketplace() {
                           : 'bg-mission-50/70 border-mission-200/60 text-mission-700'
                       )}
                     >
-                      {label}
+                      {tx(label)}
                     </button>
                   );
                 })}
@@ -303,8 +303,7 @@ export default function ResearchMarketplace() {
             <div className="flex items-center justify-between">
               <div className="student-market-sort flex items-center gap-2 text-[12px] text-ink-500">
                 <TrendingDown size={14} className="text-energy-500" />
-                按{sort === 'reward' ? '酬劳' : '截止时间'}排序 · 共 {myGroupRecs.length + otherGroupRecs.length} 个可投
-              </div>
+                {tx("按")}{sort === 'reward' ? tx("酬劳") : tx("截止时间")}{tx("排序 · 共")}{myGroupRecs.length + otherGroupRecs.length} {tx("个可投")}</div>
             </div>
 
             {/* ===== 分类一：所属项目组任务 ===== */}
@@ -315,17 +314,15 @@ export default function ResearchMarketplace() {
                 </div>
                 <div>
                   <h2 className="text-[18px] font-bold text-ink-800">
-                    所属项目组任务
-                    {myGroupName && <span className="text-mission-600 ml-2">· {myGroupName}</span>}
+                    {tx("所属项目组任务")}{myGroupName && <span className="text-mission-600 ml-2">· {myGroupName}</span>}
                   </h2>
-                  <p className="text-[11px] text-ink-400">本组发布的需求，组内成员可直接认领</p>
+                  <p className="text-[11px] text-ink-400">{tx("本组发布的需求，组内成员可直接认领")}</p>
                 </div>
                 <div className="ml-auto flex items-center gap-2">
-                  <span className="chip-mission">{myGroupRecs.length} 个</span>
+                  <span className="chip-mission">{myGroupRecs.length} {tx("个")}</span>
                   {isLeader && myGroupProject && (
                     <button className="btn-energy !py-1.5 !px-3 text-[12px] flex items-center gap-1.5" onClick={() => setRecruitOpen(true)}>
-                      <Megaphone size={13} />发布任务招募
-                    </button>
+                      <Megaphone size={13} />{tx("发布任务招募")}</button>
                   )}
                 </div>
               </div>
@@ -336,7 +333,7 @@ export default function ResearchMarketplace() {
                 {myGroupRecs.length === 0 && (
                   <div className="col-span-full glass-card p-10 text-center rounded-2xl">
                     <Home size={36} className="mx-auto text-ink-300 mb-3" />
-                    <p className="text-ink-500 text-[14px]">本组暂无招募任务</p>
+                    <p className="text-ink-500 text-[14px]">{tx("本组暂无招募任务")}</p>
                   </div>
                 )}
               </div>
@@ -349,10 +346,10 @@ export default function ResearchMarketplace() {
                   <Globe size={18} />
                 </div>
                 <div>
-                  <h2 className="text-[18px] font-bold text-ink-800">其他组任务</h2>
-                  <p className="text-[11px] text-ink-400">跨组协作，用你的技能赢取能量币 ⚡</p>
+                  <h2 className="text-[18px] font-bold text-ink-800">{tx("其他组任务")}</h2>
+                  <p className="text-[11px] text-ink-400">{tx("跨组协作，用你的技能赢取能量币 ⚡")}</p>
                 </div>
-                <span className="chip-nova ml-auto">{otherGroupRecs.length} 个</span>
+                <span className="chip-nova ml-auto">{otherGroupRecs.length} {tx("个")}</span>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
                 {otherGroupRecs.map((r, idx) => (
@@ -361,7 +358,7 @@ export default function ResearchMarketplace() {
                 {otherGroupRecs.length === 0 && (
                   <div className="col-span-full glass-card p-10 text-center rounded-2xl">
                     <Globe size={36} className="mx-auto text-ink-300 mb-3" />
-                    <p className="text-ink-500 text-[14px]">暂无其他组任务</p>
+                    <p className="text-ink-500 text-[14px]">{tx("暂无其他组任务")}</p>
                   </div>
                 )}
               </div>
@@ -380,8 +377,8 @@ export default function ResearchMarketplace() {
                   <Award size={18} />
                 </div>
                 <div>
-                  <h3 className="font-bold text-ink-800 text-[15px]">我的投标</h3>
-                  <p className="text-[11px] text-ink-400">我的投标记录</p>
+                  <h3 className="font-bold text-ink-800 text-[15px]">{tx("我的投标")}</h3>
+                  <p className="text-[11px] text-ink-400">{tx("我的投标记录")}</p>
                 </div>
               </div>
               <div className="space-y-3">
@@ -414,12 +411,12 @@ export default function ResearchMarketplace() {
                         </div>
                         <span className={cn(sc.chip, 'shrink-0 !py-0.5 !px-2 !text-[10px]')}>
                           <Icon size={10} />
-                          {sc.label}
+                          {tx(sc.label)}
                         </span>
                       </div>
                       <div className="mb-2">
                         <div className="flex justify-between text-[10px] text-ink-400 mb-1 font-medium">
-                          <span>进度</span>
+                          <span>{tx("进度")}</span>
                           <span>{b.progress}%</span>
                         </div>
                         <div className="h-1.5 w-full rounded-full bg-ink-100 overflow-hidden">
@@ -439,7 +436,7 @@ export default function ResearchMarketplace() {
                       {resultLabel && (
                         <div className="flex items-center justify-between pt-2 border-t border-ink-100/80">
                           <span className={cn(resultLabel.chip, '!py-0.5 !px-2 !text-[10px]')}>
-                            裁决：{resultLabel.text}
+                            {tx("裁决：")}{tx(resultLabel.text)}
                           </span>
                           <span className="text-[12px] font-bold text-gradient-energy tabular-nums">
                             +{resultLabel.pay}⚡
@@ -463,8 +460,8 @@ export default function ResearchMarketplace() {
                   <Users size={18} />
                 </div>
                 <div>
-                  <h3 className="font-bold text-ink-800 text-[15px]">我的发布</h3>
-                  <p className="text-[11px] text-ink-400">等待裁决中标者</p>
+                  <h3 className="font-bold text-ink-800 text-[15px]">{tx("我的发布")}</h3>
+                  <p className="text-[11px] text-ink-400">{tx("等待裁决中标者")}</p>
                 </div>
               </div>
               <div className="space-y-3">
@@ -479,8 +476,7 @@ export default function ResearchMarketplace() {
                       <div className="flex items-center justify-between text-[11px] text-ink-500 mb-3">
                         <div className="flex items-center gap-3">
                           <span className="flex items-center gap-1">
-                            <Users size={11} /> {p.bids} 投标
-                          </span>
+                            <Users size={11} /> {p.bids} {tx("投标")}</span>
                           <span className="flex items-center gap-1">
                             <Zap size={11} className="text-energy-500" /> {p.reward}
                           </span>
@@ -493,7 +489,7 @@ export default function ResearchMarketplace() {
                         className="btn-mission w-full !py-2 !px-3 text-[12px]"
                         onClick={() => setManageRecId(p.id)}
                       >
-                        {p.status === 'done' || p.status === 'failed' ? '查看裁决结果' : p.status === 'assigned' ? '验收并裁决报酬' : '选定中标者'}
+                        {p.status === 'done' || p.status === 'failed' ? tx("查看裁决结果") : p.status === 'assigned' ? tx("验收并裁决报酬") : tx("选定中标者")}
                       </button>
                     </div>
                   );
@@ -514,20 +510,20 @@ export default function ResearchMarketplace() {
           <Dialog
             open={Boolean(managedRec)}
             onClose={() => { if (!manageBusy) setManageRecId(null); }}
-            title={`招募管理 · ${managedRec.title}`}
+            title={tx("招募管理 · {0}", { 0: managedRec.title })}
             size="md"
           >
             <div className="space-y-4">
               <div className="p-3.5 rounded-xl bg-ink-50/80 border border-ink-100 flex items-center justify-between text-xs">
-                <span className="text-ink-600">悬赏报酬：<strong className="text-energy-600">{managedRec.reward} ⚡</strong></span>
-                <span className="text-ink-500">当前状态：<strong>{managedRec.status === 'open' ? '竞标中' : managedRec.status === 'assigned' ? '协作进行中' : '已结项'}</strong></span>
+                <span className="text-ink-600">{tx("悬赏报酬：")}<strong className="text-energy-600">{managedRec.reward} ⚡</strong></span>
+                <span className="text-ink-500">{tx("当前状态：")}<strong>{managedRec.status === 'open' ? tx("竞标中") : managedRec.status === 'assigned' ? tx("协作进行中") : tx("已结项")}</strong></span>
               </div>
 
               {managedRec.status === 'open' && (
                 <div className="space-y-2.5">
-                  <div className="text-xs font-bold text-ink-700">投标申请人 ({managedRec.bids?.length || 0})</div>
+                  <div className="text-xs font-bold text-ink-700">{tx("投标申请人 (")}{managedRec.bids?.length || 0})</div>
                   {(!managedRec.bids || managedRec.bids.length === 0) ? (
-                    <div className="py-6 text-center text-xs text-ink-400">暂无同学投标，请等待其他小组成员申请</div>
+                    <div className="py-6 text-center text-xs text-ink-400">{tx("暂无同学投标，请等待其他小组成员申请")}</div>
                   ) : (
                     managedRec.bids.map((b) => {
                       const applicant = usersByIdMap.get(b.userId);
@@ -535,7 +531,7 @@ export default function ResearchMarketplace() {
                         <div key={b.userId} className="p-3 rounded-xl border border-ink-100 flex items-center justify-between gap-3">
                           <div className="min-w-0">
                             <div className="text-sm font-bold text-ink-800">{applicant?.name || b.userId}</div>
-                            <div className="text-xs text-ink-500 truncate">{b.skillDesc || '申请参与协作'} · 预计投入 {b.hours || 1}h</div>
+                            <div className="text-xs text-ink-500 truncate">{b.skillDesc || tx("申请参与协作")} {tx("· 预计投入")}{b.hours || 1}h</div>
                           </div>
                           <button
                             type="button"
@@ -543,8 +539,7 @@ export default function ResearchMarketplace() {
                             disabled={manageBusy}
                             onClick={() => void handleManage(managedRec.id, 'assign', b.userId)}
                           >
-                            选为中标人
-                          </button>
+                            {tx("选为中标人")}</button>
                         </div>
                       );
                     })
@@ -555,8 +550,7 @@ export default function ResearchMarketplace() {
               {managedRec.status === 'assigned' && (
                 <div className="space-y-3">
                   <div className="p-3.5 rounded-xl bg-mission-50/70 border border-mission-200/60 text-xs text-ink-700">
-                    中标协作者：<strong>{assignee?.name || managedRec.assigneeUserId}</strong>。请根据其实际协作成果裁决并发放能量币：
-                  </div>
+                    {tx("中标协作者：")}<strong>{assignee?.name || managedRec.assigneeUserId}</strong>{tx("。请根据其实际协作成果裁决并发放能量币：")}</div>
                   <div className="grid grid-cols-3 gap-2.5">
                     <button
                       type="button"
@@ -564,7 +558,7 @@ export default function ResearchMarketplace() {
                       disabled={manageBusy}
                       onClick={() => void handleManage(managedRec.id, 'success')}
                     >
-                      全额通过 (+{managedRec.reward}⚡)
+                      {tx("全额通过 (+")}{managedRec.reward}⚡)
                     </button>
                     <button
                       type="button"
@@ -572,7 +566,7 @@ export default function ResearchMarketplace() {
                       disabled={manageBusy}
                       onClick={() => void handleManage(managedRec.id, 'partial')}
                     >
-                      部分完成 (+{Math.floor(managedRec.reward / 2)}⚡)
+                      {tx("部分完成 (+")}{Math.floor(managedRec.reward / 2)}⚡)
                     </button>
                     <button
                       type="button"
@@ -580,15 +574,14 @@ export default function ResearchMarketplace() {
                       disabled={manageBusy}
                       onClick={() => void handleManage(managedRec.id, 'fail')}
                     >
-                      未达标 (0⚡)
-                    </button>
+                      {tx("未达标 (0⚡)")}</button>
                   </div>
                 </div>
               )}
 
               {(managedRec.status === 'done' || managedRec.status === 'failed') && (
                 <div className="p-4 rounded-xl bg-growth-50/60 border border-growth-200 text-xs text-growth-800">
-                  该招募已完成裁决（中标人：{assignee?.name || managedRec.assigneeUserId || '无'}，发放报酬：{managedRec.actualPay ?? 0} ⚡）。
+                  {tx("该招募已完成裁决（中标人：")}{assignee?.name || managedRec.assigneeUserId || tx("无")}{tx("，发放报酬：")}{managedRec.actualPay ?? 0} ⚡）。
                 </div>
               )}
             </div>
@@ -620,6 +613,7 @@ interface RecCardProps {
 }
 
 function RecCard({ r, idx, groups, usersByIdMap, groupUsersById, pushToast, userId, placeBid }: RecCardProps) {
+  const { tx } = useLocale();
   const { rec, projectName, ownerGroupId } = r;
   const g = groups.find((x) => x.id === ownerGroupId);
   const members = groupUsersById(ownerGroupId);
@@ -674,7 +668,7 @@ function RecCard({ r, idx, groups, usersByIdMap, groupUsersById, pushToast, user
               <RewardTicker reward={rec.reward} />
               <span className="text-[11px] text-ink-400 font-semibold ml-1">⚡</span>
             </div>
-            <div className="text-[11px] text-ink-400 mt-0.5">能量币奖励</div>
+            <div className="text-[11px] text-ink-400 mt-0.5">{tx("能量币奖励")}</div>
           </div>
           <div className="flex items-center gap-2">
             <AvatarStack users={bidders} max={3} size={24} />
@@ -700,17 +694,7 @@ function RecCard({ r, idx, groups, usersByIdMap, groupUsersById, pushToast, user
           }}
         >
           <Send size={14} />
-          {hasBid
-            ? '已提交投标'
-            : rec.status === 'done'
-              ? '已结项'
-              : rec.status === 'assigned'
-                ? '已选定中标人'
-                : isExpired
-                  ? '已截止'
-                  : recruitOpen
-                    ? '立即投标'
-                    : '招募窗口已关闭'}
+          {hasBid ? tx("已提交投标") : rec.status === 'done' ? tx("已结项") : rec.status === 'assigned' ? tx("已选定中标人") : isExpired ? tx("已截止") : recruitOpen ? tx("立即投标") : tx("招募窗口已关闭")}
         </button>
       </div>
     </motion.article>

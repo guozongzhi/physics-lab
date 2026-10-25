@@ -1,3 +1,4 @@
+import { useLocale } from '@/i18n/useLocale';
 import type { LucideIcon } from 'lucide-react';
 import { applyAvatarFallback } from '@/lib/imageFallback';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -117,6 +118,7 @@ interface ShowcaseCard {
 }
 
 export default function AchievementHall() {
+  const { tx } = useLocale();
   const { groups, users } = useGroupStore();
   const {
     showcaseItems,
@@ -607,11 +609,10 @@ export default function AchievementHall() {
                   <span className="mission-label">HALL OF ACHIEVEMENTS · PUBLIC EXHIBITION</span>
                   <h1 className="mt-3 text-[30px] md:text-[36px] font-extrabold text-ink-900 leading-[1.1] tracking-tight">
                     Achievement Hall
-                    <span className="block text-gradient-energy mt-1">成果展览馆</span>
+                    <span className="block text-gradient-energy mt-1">{tx("成果展览馆")}</span>
                   </h1>
                   <p className="mt-2 text-[14px] text-ink-500 max-w-xl">
-                    全方位收录实验摄影、研究视频、学术论文、3D 物理模型与交互仿真。优秀成果经教师审批可获能量币嘉奖。
-                  </p>
+                    {tx("全方位收录实验摄影、研究视频、学术论文、3D 物理模型与交互仿真。优秀成果经教师审批可获能量币嘉奖。")}</p>
                 </div>
               </div>
             </div>
@@ -632,7 +633,7 @@ export default function AchievementHall() {
                       )}
                     >
                       <Icon size={14} className="shrink-0" />
-                      {t.label}
+                      {tx(t.label)}
                       <span
                         className={cn(
                           'text-[11px] font-bold tabular-nums',
@@ -652,8 +653,7 @@ export default function AchievementHall() {
                   )}
                 >
                   <Upload size={14} />
-                  上传作品
-                </button>
+                  {tx("上传作品")}</button>
               </div>
             </div>
           </div>
@@ -664,26 +664,24 @@ export default function AchievementHall() {
             <div className="flex items-center justify-between mb-4">
               <h2 className="flex items-center gap-2 text-[18px] font-bold text-ink-800">
                 <ImageIcon size={20} className="text-mission-500" />
-                精选展廊
-              </h2>
+                {tx("精选展廊")}</h2>
               <div className="flex items-center gap-3 text-[12px] text-ink-500">
                 <span className="chip-mission">
-                  {CATEGORY_LABEL[tab]} · {visibleCards.length} 项
-                </span>
-                <span className="chip-ink">全部 {cards.length} 项</span>
+                  {tx(CATEGORY_LABEL[tab])} · {visibleCards.length} {tx("项")}</span>
+                <span className="chip-ink">{tx("全部")}{cards.length} {tx("项")}</span>
               </div>
             </div>
 
             <div className="flex flex-wrap items-center gap-3 mb-4">
-              <input aria-label="搜索作品" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="搜索作品、简介或作者" className="min-w-0 flex-1 rounded-xl border border-blue-200 bg-white/90 px-3 py-2.5 text-sm" />
-              <select aria-label="作品排序" value={sort} onChange={(event) => setSort(event.target.value)} className="rounded-xl border border-blue-200 bg-white/90 px-3 py-2.5 text-sm">
-                <option value="newest">最新发布</option><option value="loves">点赞最多</option>
+              <input aria-label={tx("搜索作品")} value={query} onChange={(event) => setQuery(event.target.value)} placeholder={tx("搜索作品、简介或作者")} className="min-w-0 flex-1 rounded-xl border border-blue-200 bg-white/90 px-3 py-2.5 text-sm" />
+              <select aria-label={tx("作品排序")} value={sort} onChange={(event) => setSort(event.target.value)} className="rounded-xl border border-blue-200 bg-white/90 px-3 py-2.5 text-sm">
+                <option value="newest">{tx("最新发布")}</option><option value="loves">{tx("点赞最多")}</option>
               </select>
             </div>
-            {openingId && <p role="status" className="mb-3 text-sm text-blue-700">正在加载作品内容…</p>}
+            {openingId && <p role="status" className="mb-3 text-sm text-blue-700">{tx("正在加载作品内容…")}</p>}
             {visibleCards.length === 0 ? (
               <div className="glass-card p-10 rounded-[22px] text-center text-ink-400 text-[13px]">
-                {query ? '没有找到匹配的作品，请尝试其他关键词' : `「${CATEGORY_LABEL[tab]}」下还没有作品`}
+                {query ? tx("没有找到匹配的作品，请尝试其他关键词") : tx("「{0}」下还没有作品", { 0: tx(CATEGORY_LABEL[tab]) })}
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
@@ -737,12 +735,12 @@ export default function AchievementHall() {
                               </span>
                               {mediaBadge && (
                                 <span className="chip-growth !py-0.5 !px-2 !text-[10px]">
-                                  {mediaBadge}
+                                  {tx(mediaBadge)}
                                 </span>
                               )}
                               {card.status === 'approved' && card.awardedCoins > 0 && (
                                 <span className="chip-energy !py-0.5 !px-2 !text-[10px]">
-                                  ⚡ 获奖 +{card.awardedCoins}
+                                  {tx("⚡ 获奖 +")}{card.awardedCoins}
                                 </span>
                               )}
                               {isMine && card.status !== 'approved' && (
@@ -752,7 +750,7 @@ export default function AchievementHall() {
                                     '!py-0.5 !px-2 !text-[10px] backdrop-blur-md'
                                   )}
                                 >
-                                  {card.status === 'pending' ? '待审批' : '已驳回'}
+                                  {card.status === 'pending' ? tx("待审批") : tx("已驳回")}
                                 </span>
                               )}
                             </div>
@@ -762,12 +760,12 @@ export default function AchievementHall() {
                               </h3>
                               {linkedProject && (
                                 <p className="text-[11px] text-sky-200 truncate">
-                                  关联课题：{linkedProject.title}
+                                  {tx("关联课题：")}{linkedProject.title}
                                 </p>
                               )}
                               {isMine && card.status === 'rejected' && card.rejectReason && (
                                 <p className="text-[11.5px] text-danger-100 leading-snug mt-1">
-                                  驳回理由：{card.rejectReason}
+                                  {tx("驳回理由：")}{card.rejectReason}
                                 </p>
                               )}
                             </div>
@@ -779,7 +777,7 @@ export default function AchievementHall() {
                                   event.stopPropagation();
                                   handleToggleLove(card.id);
                                 }}
-                                aria-label={`点赞 ${card.title}`}
+                                aria-label={tx("点赞 {0}", { 0: card.title })}
                                 className={cn(
                                   'flex items-center gap-1 text-[12px] font-semibold transition-all',
                                   loved ? 'text-danger-600' : 'text-ink-500 hover:text-danger-600'
@@ -794,9 +792,7 @@ export default function AchievementHall() {
                               </button>
                               <div className="flex items-center gap-1 text-[12px] text-ink-500 font-semibold">
                                 <span className="text-[11px]">
-                                  {mediaBadge
-                                    ? `打开${mediaBadge.split(' · ')[0]} →`
-                                    : CATEGORY_LABEL[card.category]}
+                                  {mediaBadge ? tx("打开{0} →", { 0: mediaBadge.split(' · ')[0] }) : tx(CATEGORY_LABEL[card.category])}
                                 </span>
                               </div>
                             </div>
@@ -814,8 +810,8 @@ export default function AchievementHall() {
                                     openEdit(card);
                                   }}
                                   className="w-7 h-7 rounded-lg flex items-center justify-center text-ink-400 hover:text-mission-600 hover:bg-mission-50 transition"
-                                  title="修改本组作品（改后需教师重新审批）"
-                                  aria-label={`修改作品 ${card.title}`}
+                                  title={tx("修改本组作品（改后需教师重新审批）")}
+                                  aria-label={tx("修改作品 {0}", { 0: card.title })}
                                 >
                                   <Pencil size={13} />
                                 </button>
@@ -829,10 +825,10 @@ export default function AchievementHall() {
                 ))}
               </div>
             )}
-            {pageCount > 1 && <nav aria-label="作品分页" className="flex items-center justify-center gap-4 mt-5">
-              <button className="btn-outline" disabled={currentPage === 1} onClick={() => setPage(currentPage - 1)}>上一页</button>
-              <span className="text-sm text-blue-800">第 {currentPage} / {pageCount} 页</span>
-              <button className="btn-outline" disabled={currentPage === pageCount} onClick={() => setPage(currentPage + 1)}>下一页</button>
+            {pageCount > 1 && <nav aria-label={tx("作品分页")} className="flex items-center justify-center gap-4 mt-5">
+              <button className="btn-outline" disabled={currentPage === 1} onClick={() => setPage(currentPage - 1)}>{tx("上一页")}</button>
+              <span className="text-sm text-blue-800">{tx("第 {page} / {total} 页", { page: currentPage, total: pageCount })}</span>
+              <button className="btn-outline" disabled={currentPage === pageCount} onClick={() => setPage(currentPage + 1)}>{tx("下一页")}</button>
             </nav>}
           </div>
 
@@ -848,8 +844,8 @@ export default function AchievementHall() {
                   <Medal size={18} />
                 </div>
                 <div>
-                  <h3 className="font-bold text-ink-800 text-[15px]">优秀作品名人堂</h3>
-                  <p className="text-[11px] text-ink-400">点赞 Top3 · 点击可预览</p>
+                  <h3 className="font-bold text-ink-800 text-[15px]">{tx("优秀作品名人堂")}</h3>
+                  <p className="text-[11px] text-ink-400">{tx("点赞 Top3 · 点击可预览")}</p>
                 </div>
               </div>
               <div className="space-y-4">
@@ -887,7 +883,7 @@ export default function AchievementHall() {
                               className="w-4 h-4 rounded-full ring-1 ring-white"
                             />
                           )}
-                          作者：{hof.author}
+                          {tx("作者：")}{hof.author}
                         </span>
                         <span className="flex items-center gap-1 font-semibold text-danger-600">
                           <Heart size={11} fill="currentColor" />
@@ -897,7 +893,7 @@ export default function AchievementHall() {
                       <div className="pt-2 border-t border-alert-100/60">
                         <div className="text-[10px] font-semibold text-alert-700 mb-1 flex items-center gap-1">
                           <MessageSquare size={10} />
-                          {hof.tutor}
+                          {tx(hof.tutor)}
                         </div>
                         <p className="text-[11.5px] text-ink-600 leading-relaxed line-clamp-2">
                           「{hof.comment}」
@@ -920,8 +916,8 @@ export default function AchievementHall() {
                   <Activity size={18} />
                 </div>
                 <div>
-                  <h3 className="font-bold text-ink-800 text-[15px]">精选数据集</h3>
-                  <p className="text-[11px] text-ink-400">开放共享 · 可下载</p>
+                  <h3 className="font-bold text-ink-800 text-[15px]">{tx("精选数据集")}</h3>
+                  <p className="text-[11px] text-ink-400">{tx("开放共享 · 可下载")}</p>
                 </div>
               </div>
               <div className="space-y-3">
@@ -935,13 +931,13 @@ export default function AchievementHall() {
                   >
                     <div className="flex items-start justify-between mb-1">
                       <h4 className="font-bold text-[12.5px] text-ink-800 leading-snug pr-2">
-                        {ds.title}
+                        {tx(ds.title)}
                       </h4>
                       <span className={cn(ds.chip, '!py-0.5 !px-2 !text-[10px] shrink-0 mt-0.5')}>
                         {ds.chart === 'line' ? <LineChart size={10} /> : <BarChart3 size={10} />}
                       </span>
                     </div>
-                    <p className="text-[11px] text-ink-500 mb-2">{ds.subtitle}</p>
+                    <p className="text-[11px] text-ink-500 mb-2">{tx(ds.subtitle)}</p>
                     <div className="h-[90px] -mx-2">
                       <ResponsiveContainer width="100%" height="100%">
                         {ds.chart === 'line' ? (
@@ -1027,8 +1023,7 @@ export default function AchievementHall() {
                       }}
                     >
                       <BookOpen size={12} />
-                      查看详情 · 下载 CSV
-                    </button>
+                      {tx("查看详情 · 下载 CSV")}</button>
                   </motion.div>
                 ))}
               </div>
@@ -1038,15 +1033,14 @@ export default function AchievementHall() {
       </div>
 
       {/* ============ 上传 / 编辑作品弹窗 ============ */}
-      <Dialog open={uploadDialogOpen} onClose={closeUpload} title={editingId ? '编辑作品' : '上传作品'} size="xl" className="!max-w-2xl">
-        <p role="status" className="mb-4 text-xs text-blue-700">草稿自动保存在本机，关闭后可继续编辑 · 提交后等待教师审核</p>
+      <Dialog open={uploadDialogOpen} onClose={closeUpload} title={editingId ? tx("编辑作品") : tx("上传作品")} size="xl" className="!max-w-2xl">
+        <p role="status" className="mb-4 text-xs text-blue-700">{tx("草稿自动保存在本机，关闭后可继续编辑 · 提交后等待教师审核")}</p>
         {draftWarning && <p role="alert" className="mb-3 text-sm text-red-700">{draftWarning}</p>}
         <fieldset disabled={saving} className="min-w-0">
               <div className="space-y-4">
                 <div>
                   <label className="block text-[12px] font-semibold text-ink-700 mb-2">
-                    作品形式
-                  </label>
+                    {tx("作品形式")}</label>
                   <div className="flex flex-wrap gap-2">
                     {UPLOAD_TYPES.map((t) => {
                       const Icon = t.icon;
@@ -1064,7 +1058,7 @@ export default function AchievementHall() {
                           )}
                         >
                           <Icon size={12} />
-                          {t.label}
+                          {tx(t.label)}
                         </button>
                       );
                     })}
@@ -1080,17 +1074,16 @@ export default function AchievementHall() {
                 {myGroupProjects.length > 0 && (
                   <div>
                     <label className="block text-[12px] font-semibold text-ink-700 mb-2">
-                      关联课题（选填）
-                    </label>
+                      {tx("关联课题（选填）")}</label>
                     <select
-                      aria-label="关联本组课题"
+                      aria-label={tx("关联本组课题")}
                       value={uploadForm.projectId}
                       onChange={(e) =>
                         setUploadForm((prev) => ({ ...prev, projectId: e.target.value }))
                       }
                       className="w-full px-4 py-2.5 rounded-xl bg-white/80 border border-ink-200 text-ink-800 text-sm focus:outline-none focus:border-mission-400"
                     >
-                      <option value="">不关联课题</option>
+                      <option value="">{tx("不关联课题")}</option>
                       {myGroupProjects.map((proj) => (
                         <option key={proj.id} value={proj.id}>
                           {proj.title}（{proj.topic}）
@@ -1102,31 +1095,29 @@ export default function AchievementHall() {
 
                 <div>
                   <label className="block text-[12px] font-semibold text-ink-700 mb-2">
-                    作品标题
-                  </label>
+                    {tx("作品标题")}</label>
                   <input
                     type="text"
-                    data-dialog-autofocus aria-label="作品标题"
+                    data-dialog-autofocus aria-label={tx("作品标题")}
                     value={uploadForm.title}
                     onChange={(e) =>
                       setUploadForm((prev) => ({ ...prev, title: e.target.value }))
                     }
-                    placeholder="输入作品标题..."
+                    placeholder={tx("输入作品标题...")}
                     className="w-full px-4 py-2.5 rounded-xl bg-white/80 border border-ink-200 text-ink-800 text-sm focus:outline-none focus:border-mission-400 focus:ring-2 focus:ring-mission-500/10 transition-all"
                   />
                 </div>
 
                 <div>
                   <label className="block text-[12px] font-semibold text-ink-700 mb-2">
-                    作品简介（选填）
-                  </label>
+                    {tx("作品简介（选填）")}</label>
                   <textarea
-                    aria-label="作品描述"
+                    aria-label={tx("作品描述")}
                     value={uploadForm.description}
                     onChange={(e) =>
                       setUploadForm((prev) => ({ ...prev, description: e.target.value }))
                     }
-                    placeholder="用一两句话介绍作品"
+                    placeholder={tx("用一两句话介绍作品")}
                     rows={2}
                     className="w-full px-4 py-2.5 rounded-xl bg-white/80 border border-ink-200 text-ink-800 text-sm focus:outline-none focus:border-mission-400 focus:ring-2 focus:ring-mission-500/10 transition-all resize-none"
                   />
@@ -1134,20 +1125,19 @@ export default function AchievementHall() {
 
                 <details key={`cover-${uploadForm.type}`} open={uploadForm.type === 'photo' || uploadForm.type === 'award' || !!uploadForm.imageUrl || undefined}>
                   <summary className="cursor-pointer text-[12px] font-semibold text-ink-700 mb-2">
-                    {uploadForm.type === 'photo' || uploadForm.type === 'award' ? '作品图片 / 封面' : '自定义封面（选填）'}
+                    {uploadForm.type === 'photo' || uploadForm.type === 'award' ? tx("作品图片 / 封面") : tx("自定义封面（选填）")}
                   </summary>
                   <div className="relative">
                     {uploadForm.imageUrl ? (
                       <div className="h-28 rounded-xl overflow-hidden ring-2 ring-mission-400/50">
                         <img
                           src={uploadForm.imageUrl}
-                          alt="预览"
+                          alt={tx("预览")}
                           className="w-full h-full object-cover"
                         />
                         <label className="absolute bottom-2 right-2 rounded-lg bg-white px-3 py-2 text-blue-700 text-xs cursor-pointer">
-                          更换封面
-                          <input
-                            aria-label="更换封面"
+                          {tx("更换封面")}<input
+                            aria-label={tx("更换封面")}
                             type="file"
                             accept="image/*"
                             className="hidden"
@@ -1158,9 +1148,9 @@ export default function AchievementHall() {
                     ) : (
                       <label className="flex flex-col items-center justify-center w-full h-28 rounded-xl border-2 border-dashed border-ink-300 bg-ink-50/50 hover:border-mission-400 hover:bg-mission-50/50 transition-all cursor-pointer">
                         <Plus size={22} className="text-ink-400 mb-1.5" />
-                        <span className="text-[12px] text-ink-500">点击上传图片</span>
+                        <span className="text-[12px] text-ink-500">{tx("点击上传图片")}</span>
                         <input
-                          aria-label="上传封面图片"
+                          aria-label={tx("上传封面图片")}
                           type="file"
                           accept="image/*"
                           className="hidden"
@@ -1177,8 +1167,7 @@ export default function AchievementHall() {
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-bold text-sky-900 flex items-center gap-1.5">
                         <Video size={15} />
-                        实验视频
-                      </span>
+                        {tx("实验视频")}</span>
                       {parsedFormMedia.kind === 'video' && (
                         <button
                           type="button"
@@ -1188,14 +1177,12 @@ export default function AchievementHall() {
                           }}
                           className="text-xs text-red-600 underline"
                         >
-                          移除视频
-                        </button>
+                          {tx("移除视频")}</button>
                       )}
                     </div>
                     <label className="block text-xs font-medium text-sky-800">
-                      选择视频 · MP4 / WebM / MOV，最大 100 MB
-                      <input
-                        aria-label="上传实验视频"
+                      {tx("选择视频 · MP4 / WebM / MOV，最大 100 MB")}<input
+                        aria-label={tx("上传实验视频")}
                         type="file"
                         disabled={videoUploading}
                         accept="video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov"
@@ -1204,11 +1191,11 @@ export default function AchievementHall() {
                       />
                     </label>
                     <details className="text-xs text-sky-800">
-                      <summary className="cursor-pointer font-medium">使用视频链接</summary>
+                      <summary className="cursor-pointer font-medium">{tx("使用视频链接")}</summary>
                       <div className="mt-2">
                     <input
                       type="url"
-                      aria-label="视频地址"
+                      aria-label={tx("视频地址")}
                       disabled={videoUploading}
                       value={parsedFormMedia.kind === 'video' && !parsedFormMedia.videoSrc.startsWith('data:') ? parsedFormMedia.videoSrc : ''}
                       onChange={(e) =>
@@ -1216,7 +1203,7 @@ export default function AchievementHall() {
                           encodeShowcaseMedia({ kind: 'video', videoSrc: e.target.value })
                         )
                       }
-                      placeholder="或粘贴视频直链 https://…"
+                      placeholder={tx("或粘贴视频直链 https://…")}
                       className="w-full px-3.5 py-2 rounded-lg bg-white border border-sky-200 text-xs text-slate-800"
                     />
                       </div>
@@ -1224,7 +1211,7 @@ export default function AchievementHall() {
                     {videoUploading && (
                       <div className="space-y-1">
                         <div className="flex items-center justify-between text-xs text-sky-800 font-semibold">
-                          <span>正在上传…</span>
+                          <span>{tx("正在上传…")}</span>
                           <span>{videoUploadProgress}%</span>
                         </div>
                         <div className="w-full h-2 rounded-full bg-sky-200 overflow-hidden">
@@ -1239,7 +1226,7 @@ export default function AchievementHall() {
                       <VideoShowcasePlayer
                         src={parsedFormMedia.videoSrc}
                         poster={uploadForm.imageUrl || showcaseFallback}
-                        title={uploadForm.title || '实验视频预览'}
+                        title={uploadForm.title || tx("实验视频预览")}
                       />
                     )}
                   </div>
@@ -1250,8 +1237,7 @@ export default function AchievementHall() {
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <span className="text-sm font-bold text-indigo-900 flex items-center gap-1.5">
                         <FileText size={15} />
-                        论文正文
-                      </span>
+                        {tx("论文正文")}</span>
                       <div className="flex items-center gap-2">
                         <button
                           type="button"
@@ -1265,14 +1251,13 @@ export default function AchievementHall() {
                           }
                           className="px-2.5 py-1 rounded-lg bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-500 transition"
                         >
-                          使用模板
-                        </button>
+                          {tx("使用模板")}</button>
                         <button
                           type="button"
                           onClick={() => setPaperPreviewMode((m) => !m)}
                           className="px-2.5 py-1 rounded-lg bg-white border border-indigo-200 text-indigo-700 text-xs font-semibold"
                         >
-                          {paperPreviewMode ? '返回编辑正文' : '预览排版'}
+                          {paperPreviewMode ? tx("返回编辑正文") : tx("预览排版")}
                         </button>
                       </div>
                     </div>
@@ -1291,14 +1276,13 @@ export default function AchievementHall() {
                           }
                           className="px-2.5 py-1 rounded-lg bg-white border border-indigo-200 text-indigo-800 hover:bg-indigo-100/70 text-[11.5px] font-semibold transition"
                         >
-                          范例：{tpl.name}
+                          {tx("范例：")}{tx(tpl.name)}
                         </button>
                       ))}
                     </div>
                     <label className="block text-xs text-indigo-800">
-                      导入本地 Markdown / 文本论文（.md / .txt）：
-                      <input
-                        aria-label="上传论文文稿"
+                      {tx("导入本地 Markdown / 文本论文（.md / .txt）：")}<input
+                        aria-label={tx("上传论文文稿")}
                         type="file"
                         accept=".md,.markdown,.txt,text/markdown,text/plain"
                         className="block w-full text-xs mt-1"
@@ -1308,11 +1292,11 @@ export default function AchievementHall() {
                     {paperPreviewMode && parsedFormMedia.kind === 'paper' ? (
                       <PaperArticleReader
                         markdown={parsedFormMedia.markdown}
-                        title={uploadForm.title || '论文预览'}
+                        title={uploadForm.title || tx("论文预览")}
                       />
                     ) : (
                       <textarea
-                        aria-label="论文正文"
+                        aria-label={tx("论文正文")}
                         rows={8}
                         value={parsedFormMedia.kind === 'paper' ? parsedFormMedia.markdown : ''}
                         onChange={(e) =>
@@ -1320,7 +1304,7 @@ export default function AchievementHall() {
                             encodeShowcaseMedia({ kind: 'paper', markdown: e.target.value })
                           )
                         }
-                        placeholder="支持 Markdown 标题 (# / ##)、实验数据表格 (| 列1 | 列2 |)、公式代码等..."
+                        placeholder={tx("支持 Markdown 标题 (# / ##)、实验数据表格 (| 列1 | 列2 |)、公式代码等...")}
                         className="w-full p-3 rounded-xl bg-white border border-indigo-200 text-xs font-mono text-slate-800 leading-relaxed"
                       />
                     )}
@@ -1332,8 +1316,7 @@ export default function AchievementHall() {
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <span className="text-sm font-bold text-cyan-900 flex items-center gap-1.5">
                         <Box size={15} />
-                        三维物理模型 (.obj / .stl) 或内置实验装置
-                      </span>
+                        {tx("三维物理模型 (.obj / .stl) 或内置实验装置")}</span>
                       {parsedFormMedia.kind === 'model3d' && (
                         <button
                           type="button"
@@ -1342,8 +1325,7 @@ export default function AchievementHall() {
                           }
                           className="text-xs text-red-600 underline"
                         >
-                          移除 3D 模型
-                        </button>
+                          {tx("移除 3D 模型")}</button>
                       )}
                     </div>
                     <div className="flex flex-wrap gap-1.5">
@@ -1368,14 +1350,13 @@ export default function AchievementHall() {
                               : 'bg-white text-cyan-800 border-cyan-200 hover:bg-cyan-100/60'
                           )}
                         >
-                          预设：{preset.name}
+                          {tx("预设：")}{tx(preset.name)}
                         </button>
                       ))}
                     </div>
                     <label className="block text-xs text-cyan-900">
-                      选择模型 · OBJ / ASCII STL，最大 1 MB
-                      <input
-                        aria-label="上传 3D 模型"
+                      {tx("选择模型 · OBJ / ASCII STL，最大 1 MB")}<input
+                        aria-label={tx("上传 3D 模型")}
                         type="file"
                         accept=".obj,.stl"
                         className="block w-full text-xs mt-1"
@@ -1386,7 +1367,7 @@ export default function AchievementHall() {
                       <Model3DViewer
                         format={parsedFormMedia.format}
                         data={parsedFormMedia.data}
-                        title={uploadForm.title || '3D 物理模型预览'}
+                        title={uploadForm.title || tx("3D 物理模型预览")}
                       />
                     )}
                   </div>
@@ -1394,12 +1375,11 @@ export default function AchievementHall() {
 
                 {/* ============ 通用交互作品 HTML 上传与在线源码面板 ============ */}
                 <details key={editingId || "new-work"} open={uploadForm.type === "html" || parsedFormMedia.kind === "html" || undefined} className="rounded-xl border border-blue-200 bg-blue-50/60 p-4 space-y-3">
-                  <summary className="cursor-pointer text-sm font-semibold text-blue-800">交互 HTML 文件</summary>
+                  <summary className="cursor-pointer text-sm font-semibold text-blue-800">{tx("交互 HTML 文件")}</summary>
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <label className="block text-sm font-bold text-blue-900">
-                      交互作品 HTML
-                      <input
-                        aria-label="上传 HTML 作品"
+                      {tx("交互作品 HTML")}<input
+                        aria-label={tx("上传 HTML 作品")}
                         type="file"
                         accept=".html,.htm,text/html"
                         className="block w-full text-xs mt-3"
@@ -1434,21 +1414,19 @@ export default function AchievementHall() {
                         }}
                         className="px-2.5 py-1 rounded-lg bg-blue-600 text-white text-xs font-semibold hover:bg-blue-500 transition"
                       >
-                        载入仿真模板
-                      </button>
+                        {tx("载入仿真模板")}</button>
                       <button
                         type="button"
                         onClick={() => setShowHtmlCodeEditor((v) => !v)}
                         className="px-2.5 py-1 rounded-lg bg-white border border-blue-200 text-blue-800 text-xs font-semibold inline-flex items-center gap-1"
                       >
                         <Code2 size={12} />
-                        {showHtmlCodeEditor ? '收起代码框' : '在线编辑 HTML'}
+                        {showHtmlCodeEditor ? tx("收起代码框") : tx("在线编辑 HTML")}
                       </button>
                     </div>
                   </div>
                   <p className="text-xs text-blue-800 leading-5">
-                    单文件 HTML，最大 1 MB；请将样式、脚本和图片嵌入文件。
-                  </p>
+                    {tx("单文件 HTML，最大 1 MB；请将样式、脚本和图片嵌入文件。")}</p>
                   <div className="flex flex-wrap gap-1.5">
                     {HTML_SIM_TEMPLATES.map((tpl) => (
                       <button
@@ -1465,17 +1443,17 @@ export default function AchievementHall() {
                         }}
                         className="px-2.5 py-1.5 rounded-lg bg-white border border-blue-200 text-blue-800 hover:bg-blue-100/70 text-[11.5px] font-semibold transition"
                       >
-                        Demo：{tpl.name}（{tpl.tag.split(' · ')[0]}）
+                        Demo：{tx(tpl.name)}（{tpl.tag.split(' · ')[0]}）
                       </button>
                     ))}
                   </div>
                   {showHtmlCodeEditor && (
                     <textarea
-                      aria-label="HTML 源码编辑"
+                      aria-label={tx("HTML 源码编辑")}
                       rows={6}
                       value={parsedFormMedia.kind === 'html' ? parsedFormMedia.html : ''}
                       onChange={(e) => setEncodedMedia(e.target.value)}
-                      placeholder="<!doctype html> 在此粘贴或编写自包含的物理交互仿真 HTML 代码..."
+                      placeholder={tx("<!doctype html> 在此粘贴或编写自包含的物理交互仿真 HTML 代码...")}
                       className="w-full p-3 rounded-xl bg-slate-900 text-emerald-300 font-mono text-xs leading-relaxed"
                     />
                   )}
@@ -1486,7 +1464,7 @@ export default function AchievementHall() {
                   )}
                   {parsedFormMedia.kind === 'html' && (
                     <>
-                      <HtmlDemo html={parsedFormMedia.html} title="HTML 作品预览" />
+                      <HtmlDemo html={parsedFormMedia.html} title={tx("HTML 作品预览")} />
                       <button
                         type="button"
                         className="text-sm text-blue-700 underline"
@@ -1494,8 +1472,7 @@ export default function AchievementHall() {
                           setUploadForm((prev) => ({ ...prev, htmlContent: '' }))
                         }
                       >
-                        移除 HTML 作品
-                      </button>
+                        {tx("移除 HTML 作品")}</button>
                     </>
                   )}
                 </details>
@@ -1510,16 +1487,16 @@ export default function AchievementHall() {
                   onClick={handleUpload}
                   className="w-full py-3 rounded-xl bg-gradient-to-br from-blue-600 to-sky-500 text-white font-semibold shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30 transition-all"
                 >
-                  {videoUploading ? '上传中…' : saving ? '正在保存…' : editingId ? '保存作品' : '提交审核'}
+                  {videoUploading ? tx("上传中…") : saving ? tx("正在保存…") : editingId ? tx("保存作品") : tx("提交审核")}
                 </button>
-                <button type="button" disabled={saving} onClick={() => setDiscardOpen(true)} className="w-full py-2 text-sm text-slate-500 hover:text-red-700">清空草稿</button>
+                <button type="button" disabled={saving} onClick={() => setDiscardOpen(true)} className="w-full py-2 text-sm text-slate-500 hover:text-red-700">{tx("清空草稿")}</button>
               </div>
         </fieldset>
       </Dialog>
-      <Dialog open={discardOpen} onClose={() => setDiscardOpen(false)} title="清空作品草稿" size="sm" footer={<>
-        <button className="btn-ghost" onClick={() => setDiscardOpen(false)}>继续编辑</button>
-        <button className="btn-outline" onClick={() => { resetForm(); setDiscardOpen(false); if (draftKey) localStorage.removeItem(draftKey); }}>确认清空</button>
-      </>}><p className="text-sm text-slate-600">将清空本机的未提交内容，已发布的作品不受影响。</p></Dialog>
+      <Dialog open={discardOpen} onClose={() => setDiscardOpen(false)} title={tx("清空作品草稿")} size="sm" footer={<>
+        <button className="btn-ghost" onClick={() => setDiscardOpen(false)}>{tx("继续编辑")}</button>
+        <button className="btn-outline" onClick={() => { resetForm(); setDiscardOpen(false); if (draftKey) localStorage.removeItem(draftKey); }}>{tx("确认清空")}</button>
+      </>}><p className="text-sm text-slate-600">{tx("将清空本机的未提交内容，已发布的作品不受影响。")}</p></Dialog>
 
 
       {/* ============ 作品详情与多模态交互预览弹窗 ============ */}
@@ -1540,7 +1517,7 @@ export default function AchievementHall() {
               <button
                 onClick={() => setLightboxId(null)}
                 className="absolute top-3 right-3 z-20 w-9 h-9 rounded-xl bg-ink-900/60 text-white flex items-center justify-center hover:bg-ink-900/80 transition-colors"
-                aria-label="关闭"
+                aria-label={tx("关闭")}
               >
                 <X size={18} />
               </button>
@@ -1561,25 +1538,22 @@ export default function AchievementHall() {
               <div className="p-6">
                 <div className="flex items-center gap-2 flex-wrap mb-2">
                   <span className="chip-mission !py-0.5 !px-2 !text-[10px]">
-                    {CATEGORY_LABEL[lightbox.category]}
+                    {tx(CATEGORY_LABEL[lightbox.category])}
                   </span>
                   <span className="chip-ink !py-0.5 !px-2 !text-[10px]">
                     {lightbox.authorUserId ||
-                      groups.find((g) => g.id === lightbox.groupId)?.name ||
-                      '未知小组'}
+                      groups.find((g) => g.id === lightbox.groupId)?.name || tx("未知小组")}
                   </span>
                   {lightbox.projectId && (
                     <span className="chip-nova !py-0.5 !px-2 !text-[10px] inline-flex items-center gap-1">
                       <FolderKanban size={10} />
-                      课题：
-                      {projects.find((p) => p.id === lightbox.projectId)?.title ||
+                      {tx("课题：")}{projects.find((p) => p.id === lightbox.projectId)?.title ||
                         lightbox.projectId}
                     </span>
                   )}
                   {lightbox.status === 'approved' && lightbox.awardedCoins > 0 && (
                     <span className="chip-energy !py-0.5 !px-2 !text-[10px]">
-                      ⚡ 基地嘉奖 +{lightbox.awardedCoins} 能量币
-                    </span>
+                      {tx("⚡ 基地嘉奖 +")}{lightbox.awardedCoins} {tx("能量币")}</span>
                   )}
                   {lightbox.status !== 'approved' && (
                     <span
@@ -1588,7 +1562,7 @@ export default function AchievementHall() {
                         '!py-0.5 !px-2 !text-[10px]'
                       )}
                     >
-                      {lightbox.status === 'pending' ? '待审批' : '已驳回'}
+                      {lightbox.status === 'pending' ? tx("待审批") : tx("已驳回")}
                     </span>
                   )}
                 </div>
@@ -1612,8 +1586,7 @@ export default function AchievementHall() {
                       size={16}
                       fill={isCardLoved(lightbox) ? 'currentColor' : 'none'}
                     />
-                    {lightbox.loves} 人点赞
-                  </button>
+                    {lightbox.loves} {tx("人点赞")}</button>
                 </div>
               </div>
             </div>

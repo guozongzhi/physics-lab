@@ -1,3 +1,4 @@
+import { useLocale } from '@/i18n/useLocale';
 import type { LucideIcon } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
 import { safetyApi, safetyAssignmentApi, SafetyRecord, SafetyAssignment } from '@/lib/apiService';
@@ -87,6 +88,7 @@ function TickerNumber({ value, duration = 1200 }: { value: number; duration?: nu
 }
 
 export default function SafetyLab() {
+  const { tx } = useLocale();
   const navigate = useNavigate();
   const pushToast = useUIStore((s) => s.pushToast);
   const [activeTip, setActiveTip] = useState<SafetyTip | null>(null);
@@ -215,9 +217,8 @@ export default function SafetyLab() {
                     </div>
                     <div>
                       <div className="mission-label mb-2">
-                        <Sparkles size={11} /> 安全知识库 · 深度贴士
-                      </div>
-                      <h2 className="text-2xl font-black text-ink-800 leading-tight">{activeTip.title}</h2>
+                        <Sparkles size={11} /> {tx("安全知识库 · 深度贴士")}</div>
+                      <h2 className="text-2xl font-black text-ink-800 leading-tight">{tx(activeTip.title)}</h2>
                     </div>
                   </div>
                   <button
@@ -230,11 +231,11 @@ export default function SafetyLab() {
               </div>
               <div className="p-6 max-h-[60vh] overflow-y-auto scroll-thin">
                 <div className="prose prose-sm max-w-none text-ink-700 leading-relaxed">
-                  <p className="text-base mb-4">{activeTip.summary}</p>
+                  <p className="text-base mb-4">{tx(activeTip.summary)}</p>
                   <div className="p-5 rounded-2xl bg-gradient-to-br from-growth-50/60 via-mission-50/40 to-nova-50/40 border border-mission-100/50">
                     <div className="flex items-center gap-2 mb-3">
                       <ShieldCheck size={18} className="text-growth-600" />
-                      <h4 className="font-black text-ink-800 text-base m-0">关键操作要点</h4>
+                      <h4 className="font-black text-ink-800 text-base m-0">{tx("关键操作要点")}</h4>
                     </div>
                     {/* 用该领域真实撰写的要点，替换原先"关于「X」的第 N 条…"的生成套话 */}
                     <ul className="space-y-2 m-0 p-0 list-none">
@@ -251,15 +252,14 @@ export default function SafetyLab() {
                       onClick={() => { setActiveTip(null); setReviewCategory(activeTip.category); }}
                       className="mt-4 text-[13px] font-bold text-mission-600 hover:text-mission-700 inline-flex items-center gap-1"
                     >
-                      <BookOpen size={13} />阅读完整《{safetyNotices[activeTip.category]?.title || '安全须知'}》
+                      <BookOpen size={13} />{tx("阅读完整《")}{safetyNotices[activeTip.category]?.title || tx("安全须知")}》
                     </button>
                   </div>
                 </div>
               </div>
               <div className="p-5 border-t border-ink-100/80 flex items-center justify-end gap-3 bg-gradient-to-t from-ink-50/80 to-transparent">
                 <button onClick={() => setActiveTip(null)} className="btn-ghost text-sm">
-                  关闭
-                </button>
+                  {tx("关闭")}</button>
                 <button
                   onClick={() => {
                     pushToast(`已标记「${activeTip.title}」为掌握`, 'success');
@@ -267,8 +267,7 @@ export default function SafetyLab() {
                   }}
                   className="btn-growth !py-2.5 !px-5 !text-sm"
                 >
-                  <CheckCircle2 size={14} /> 我已掌握本要点
-                </button>
+                  <CheckCircle2 size={14} /> {tx("我已掌握本要点")}</button>
               </div>
             </motion.div>
           </motion.div>
@@ -298,16 +297,15 @@ export default function SafetyLab() {
                 </div>
                 <div className="min-w-0">
                   <div className="text-[11px] font-bold text-mission-600 tracking-wider uppercase">
-                    复习材料 · 安全须知
-                  </div>
+                    {tx("复习材料 · 安全须知")}</div>
                   <h3 className="font-black text-[18px] text-ink-900 truncate">
-                    {safetyNotices[reviewCategory]?.title || '安全须知'}
+                    {safetyNotices[reviewCategory]?.title || tx("安全须知")}
                   </h3>
                 </div>
                 <button
                   onClick={() => setReviewCategory(null)}
                   className="ml-auto w-8 h-8 rounded-lg hover:bg-ink-100 flex items-center justify-center text-ink-400 shrink-0"
-                  aria-label="关闭复习材料"
+                  aria-label={tx("关闭复习材料")}
                 >
                   <X size={16} />
                 </button>
@@ -320,8 +318,7 @@ export default function SafetyLab() {
                 <div className="mt-6 p-4 rounded-2xl bg-growth-50 ring-1 ring-growth-200">
                   <h4 className="font-bold text-growth-800 text-sm mb-2.5 flex items-center gap-2">
                     <ShieldCheck size={15} />
-                    安全操作要点（记住这些关键规范）
-                  </h4>
+                    {tx("安全操作要点（记住这些关键规范）")}</h4>
                   <div className="flex flex-wrap gap-2">
                     {(safetyNotices[reviewCategory]?.keyPoints || []).map((kp, i) => (
                       <span key={i} className="chip-growth !text-[12px] !px-3 !py-1.5">
@@ -335,8 +332,7 @@ export default function SafetyLab() {
 
               <div className="p-4 border-t border-ink-100/80 flex items-center justify-end gap-3 shrink-0">
                 <button onClick={() => setReviewCategory(null)} className="btn-ghost text-sm">
-                  关闭
-                </button>
+                  {tx("关闭")}</button>
                 <button
                   onClick={() => {
                     pushToast('已标记完成复习', 'success');
@@ -344,8 +340,7 @@ export default function SafetyLab() {
                   }}
                   className="btn-growth !py-2.5 !px-5 !text-sm"
                 >
-                  <CheckCircle2 size={14} /> 已完成复习
-                </button>
+                  <CheckCircle2 size={14} /> {tx("已完成复习")}</button>
               </div>
             </motion.div>
           </motion.div>
@@ -371,12 +366,11 @@ export default function SafetyLab() {
                 SAFETY FIRST · ZERO INCIDENT
               </div>
               <h1 className="student-safety-title font-black tracking-tight mb-2.5 leading-tight">
-                <span className="block text-ink-800">安全实验舱</span>
-                <span className="block text-mission-600 text-base font-semibold mt-1">Safety Lab</span>
+                <span className="block text-ink-800">{tx("安全实验舱")}</span>
+                <span className="student-safety-subtitle block text-mission-600 text-base font-semibold mt-1">Safety Lab</span>
               </h1>
               <p className="text-lg text-ink-600 font-medium leading-relaxed">
-                安全是一切研究的基石。通过严格考核，守护每一次探索。
-              </p>
+                {tx("安全是一切研究的基石。通过严格考核，守护每一次探索。")}</p>
             </div>
           </div>
 
@@ -408,7 +402,7 @@ export default function SafetyLab() {
                       <span className={cn('text-2xl font-black text-ink-300', '')}>/ {stat.total}</span>
                     </div>
                     <div className="text-xs font-bold uppercase tracking-wider text-ink-500">
-                      {stat.label}
+                      {tx(stat.label)}
                     </div>
                   </div>
                 </motion.div>
@@ -422,8 +416,7 @@ export default function SafetyLab() {
         <section className="lg:col-span-8 space-y-4">
           <div className="mission-label">
             <ShieldCheck size={12} />
-            六大安全领域 · 分类考核
-          </div>
+            {tx("六大安全领域 · 分类考核")}</div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {domains.map((domain, idx) => {
               const Icon = domain.icon;
@@ -471,41 +464,37 @@ export default function SafetyLab() {
                           <Icon size={22} className="text-white" />
                         </div>
                         <div>
-                          <h3 className="font-black text-lg text-ink-800 mb-0.5">{domain.name}</h3>
+                          <h3 className="font-black text-lg text-ink-800 mb-0.5">{tx(domain.name)}</h3>
                           <p className="text-xs text-ink-500 font-medium">
-                            {domain.category === 'electric' && '实验室用电与仪器操作'}
-                            {domain.category === 'thermal' && '高温操作与热源管理'}
-                            {domain.category === 'optical' && '激光/强光源与光学元件'}
-                            {domain.category === 'mechanical' && '加工设备与重物装配'}
-                            {domain.category === 'radiation' && '放射源与电离/电磁辐射'}
-                            {domain.category === 'chemical' && '试剂使用与废液处理'}
+                            {domain.category === 'electric' && tx("实验室用电与仪器操作")}
+                            {domain.category === 'thermal' && tx("高温操作与热源管理")}
+                            {domain.category === 'optical' && tx("激光/强光源与光学元件")}
+                            {domain.category === 'mechanical' && tx("加工设备与重物装配")}
+                            {domain.category === 'radiation' && tx("放射源与电离/电磁辐射")}
+                            {domain.category === 'chemical' && tx("试剂使用与废液处理")}
                           </p>
                         </div>
                       </div>
                       {domain.status === 'passed' && (
                         <div className="chip-growth !py-1 !text-[11px]">
-                          <CheckCircle2 size={11} /> 已通过
-                        </div>
+                          <CheckCircle2 size={11} /> {tx("已通过")}</div>
                       )}
                       {domain.status === 'review' && (
                         <div className="chip-alert !py-1 !text-[11px]">
-                          <AlertTriangle size={11} /> 待重考
-                        </div>
+                          <AlertTriangle size={11} /> {tx("待重考")}</div>
                       )}
                       {domain.status === 'pending' && (
                         <div className="chip-alert !py-1 !text-[11px]">
-                          <AlertTriangle size={11} /> 待考核
-                        </div>
+                          <AlertTriangle size={11} /> {tx("待考核")}</div>
                       )}
                     </div>
 
                     <div className="mb-4">
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-xs font-bold text-ink-600">
-                          已通过 <span className={cn(`text-${domain.color}-600`)}>{domain.passedQuestions}</span>/{domain.totalQuestions} 题
-                        </span>
+                          {tx("已通过")} <span className={cn(`text-${domain.color}-600`)}>{domain.passedQuestions}</span>/{domain.totalQuestions} {tx("题")}</span>
                         <span className={cn('text-xs font-black tabular-nums', `text-${domain.color}-600`)}>
-                          通过率 {domain.passRate}%
+                          {tx("通过率")} {domain.passRate}%
                         </span>
                       </div>
                       <div className="h-2.5 w-full rounded-full bg-ink-100 overflow-hidden">
@@ -522,31 +511,25 @@ export default function SafetyLab() {
                       {domain.status === 'passed' && (
                         <>
                           <div className="chip-growth !text-[11px] !py-1.5 flex-1 justify-center">
-                            <CheckCircle2 size={11} /> 认证有效
-                          </div>
+                            <CheckCircle2 size={11} /> {tx("认证有效")}</div>
                           <button className="btn-mission !py-2 !px-3.5 !text-[11px] !rounded-xl" onClick={() => { pushToast(`开始《${domain.name}》重学巩固 · 共 ${domain.totalQuestions} 题`, 'info'); navigate(`/safety-exam/${domain.category}`); }}>
-                            <RotateCcw size={12} /> 重学巩固
-                          </button>
+                            <RotateCcw size={12} /> {tx("重学巩固")}</button>
                         </>
                       )}
                       {domain.status === 'review' && (
                         <>
                           <button className="btn-energy flex-1 !py-2.5 !text-xs !rounded-xl" onClick={() => { pushToast(`重新参加《${domain.name}》安全考核`, 'info'); navigate(`/safety-exam/${domain.category}`); }}>
-                            <RotateCcw size={13} /> 重新考核
-                          </button>
+                            <RotateCcw size={13} /> {tx("重新考核")}</button>
                           <button className="btn-ghost !text-xs !rounded-xl !px-3.5 border border-mission-200 text-mission-600" onClick={() => setReviewCategory(domain.category)}>
-                            复习材料
-                          </button>
+                            {tx("复习材料")}</button>
                         </>
                       )}
                       {domain.status === 'pending' && (
                         <>
                           <button className="btn-energy flex-1 !py-2.5 !text-xs !rounded-xl" onClick={() => { pushToast(`进入《${domain.name}》安全考核`, 'info'); navigate(`/safety-exam/${domain.category}`); }}>
-                            <PlayCircle size={13} /> 参加考核
-                          </button>
+                            <PlayCircle size={13} /> {tx("参加考核")}</button>
                           <button className="btn-ghost !text-xs !rounded-xl !px-3.5 border border-mission-200 text-mission-600" onClick={() => setReviewCategory(domain.category)}>
-                            复习材料
-                          </button>
+                            {tx("复习材料")}</button>
                         </>
                       )}
                     </div>
@@ -566,19 +549,17 @@ export default function SafetyLab() {
                   <AlertTriangle size={18} className="text-white" />
                 </div>
                 <div>
-                  <h3 className="font-black text-ink-800">今日安全考核</h3>
+                  <h3 className="font-black text-ink-800">{tx("今日安全考核")}</h3>
                   <p className="text-[11px] text-ink-500 font-medium">
-                    {pendingAssignments.length > 0 ? `共 ${pendingAssignments.length} 项待通过` : '暂无待完成的指派'}
+                    {pendingAssignments.length > 0 ? tx("共 {0} 项待通过", { 0: pendingAssignments.length }) : tx("暂无待完成的指派")}
                   </p>
                 </div>
               </div>
 
               {assignments.length === 0 ? (
                 <div className="student-safety-empty p-4 rounded-2xl bg-white/60 border border-ink-100 text-left text-[13px] text-ink-500 leading-relaxed">
-                  老师还没有布置安全考核。
-                  <br />
-                  可以先去下方各领域「参加考核」自主练习。
-                </div>
+                  {tx("老师还没有布置安全考核。")}<br />
+                  {tx("可以先去下方各领域「参加考核」自主练习。")}</div>
               ) : (
               <div className="space-y-3">
                 {assignments.map((exam, idx) => {
@@ -611,16 +592,15 @@ export default function SafetyLab() {
                               {domain?.name || exam.category}
                             </span>
                             {done && <span className="chip-growth !py-0.5 !text-[10px]">
-                              <CheckCircle2 size={9} />已通过
-                            </span>}
-                            {!done && expired && <span className="chip-ink !py-0.5 !text-[10px]">已截止</span>}
+                              <CheckCircle2 size={9} />{tx("已通过")}</span>}
+                            {!done && expired && <span className="chip-ink !py-0.5 !text-[10px]">{tx("已截止")}</span>}
                           </div>
                           <h4 className="font-black text-sm text-ink-800 leading-tight truncate">
-                            {exam.title}
+                            {tx(exam.title)}
                           </h4>
                           {exam.deadline && !expired && (
                             <div className="text-[10.5px] text-ink-400 mt-0.5">
-                              截止 {new Date(exam.deadline).toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                              {tx("截止")}{new Date(exam.deadline).toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                             </div>
                           )}
                         </div>
@@ -629,15 +609,15 @@ export default function SafetyLab() {
                       <div className="grid grid-cols-3 gap-2 mb-3.5">
                         <div className="p-2 rounded-lg bg-ink-50/80 text-center">
                           <div className="text-sm font-black text-ink-800 tabular-nums">{exam.questionCount}</div>
-                          <div className="text-[9px] font-bold text-ink-500 uppercase tracking-wider">题目</div>
+                          <div className="text-[9px] font-bold text-ink-500 uppercase tracking-wider">{tx("题目")}</div>
                         </div>
                         <div className="p-2 rounded-lg bg-ink-50/80 text-center">
                           <div className="text-sm font-black text-ink-800 tabular-nums">{exam.timeLimit}<span className="text-xs">m</span></div>
-                          <div className="text-[9px] font-bold text-ink-500 uppercase tracking-wider">限时</div>
+                          <div className="text-[9px] font-bold text-ink-500 uppercase tracking-wider">{tx("限时")}</div>
                         </div>
                         <div className="p-2 rounded-lg bg-ink-50/80 text-center">
                           <div className="text-sm font-black text-growth-600 tabular-nums">{exam.passScore}</div>
-                          <div className="text-[9px] font-bold text-ink-500 uppercase tracking-wider">及格</div>
+                          <div className="text-[9px] font-bold text-ink-500 uppercase tracking-wider">{tx("及格")}</div>
                         </div>
                       </div>
 
@@ -652,7 +632,7 @@ export default function SafetyLab() {
                         {!locked && <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition" />}
                         <Zap size={15} className={cn('relative', !locked && 'fill-white/30')} />
                         <span className="relative">
-                          {expired ? '已截止' : done ? '已通过 · 可重考' : 'START EXAM · 开始考核'}
+                          {expired ? tx("已截止") : done ? tx("已通过 · 可重考") : tx("START EXAM · 开始考核")}
                         </span>
                       </button>
                     </motion.div>
@@ -671,8 +651,8 @@ export default function SafetyLab() {
                   <BookOpen size={18} className="text-white" />
                 </div>
                 <div>
-                  <h3 className="font-black text-ink-800">安全知识库</h3>
-                  <p className="text-[11px] text-ink-500 font-medium">点击查看详细要点</p>
+                  <h3 className="font-black text-ink-800">{tx("安全知识库")}</h3>
+                  <p className="text-[11px] text-ink-500 font-medium">{tx("点击查看详细要点")}</p>
                 </div>
               </div>
 
@@ -700,10 +680,10 @@ export default function SafetyLab() {
                             TIP-{String(idx + 1).padStart(2, '0')}
                           </div>
                           <h4 className="font-bold text-sm text-ink-800 leading-snug mb-1 group-hover:text-mission-700 transition-colors">
-                            {tip.title}
+                            {tx(tip.title)}
                           </h4>
                           <p className="text-[11px] text-ink-500 leading-relaxed line-clamp-2">
-                            {tip.summary}
+                            {tx(tip.summary)}
                           </p>
                         </div>
                       </div>

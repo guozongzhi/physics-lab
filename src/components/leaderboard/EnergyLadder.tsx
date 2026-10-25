@@ -1,3 +1,4 @@
+import { useLocale } from '@/i18n/useLocale';
 import { useId, useState } from 'react';
 import { Coins, Trophy, Users } from 'lucide-react';
 import RankAvatars, { type EnergyStudent } from './RankAvatars';
@@ -47,23 +48,24 @@ function Award({ rank, uid }: { rank: number; uid: string }) {
 }
 
 export default function EnergyLadder({ rows, highlightId, metric = '小组能量', compact = false, personal = false }: EnergyLadderProps) {
+  const { tx } = useLocale();
   const uid = useId().replace(/:/g, '');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const sorted = [...rows].sort((a, b) => b.coins - a.coins);
   const selected = sorted.find((r) => r.id === selectedId) || sorted.find((r) => r.id === highlightId) || sorted[0];
   const myIndex = sorted.findIndex((r) => r.id === highlightId);
-  if (!sorted.length) return <div className="energy-ladder-empty"><Trophy size={28} /><p>暂无排名数据</p></div>;
+  if (!sorted.length) return <div className="energy-ladder-empty"><Trophy size={28} /><p>{tx("暂无排名数据")}</p></div>;
   return <div className={`energy-ladder${compact ? ' energy-ladder--compact' : ''}`}>
     {myIndex >= 0 && <div className="energy-ladder-standing">
-      <span><Trophy size={16} />{personal ? '我的名次' : '我的小组'} <strong>第 {myIndex + 1} 名</strong></span>
-      <span>{myIndex === 0 ? '当前位居榜首' : sorted[myIndex - 1].coins === sorted[myIndex].coins ? '与前一名能量相同' : `距前一名 ${number(sorted[myIndex - 1].coins - sorted[myIndex].coins)} ⚡`}</span>
+      <span><Trophy size={16} />{personal ? tx("我的名次") : tx("我的小组")} <strong>{tx("第{0}名", { 0: myIndex + 1 })}</strong></span>
+      <span>{myIndex === 0 ? tx("当前位居榜首") : sorted[myIndex - 1].coins === sorted[myIndex].coins ? tx("与前一名能量相同") : tx("距前一名 {0} ⚡", { 0: number(sorted[myIndex - 1].coins - sorted[myIndex].coins) })}</span>
     </div>}
     <div className="energy-ladder-stage">
-      <div className="energy-ladder-stage-caption"><span>荣耀领奖台</span><span>{metric}</span></div>
-      <div className="energy-ladder-podium" role="group" aria-label={`${metric}前三名领奖台，台阶表示名次`}>
+      <div className="energy-ladder-stage-caption"><span>{tx("荣耀领奖台")}</span><span>{tx(metric)}</span></div>
+      <div className="energy-ladder-podium" role="group" aria-label={tx("{0}前三名领奖台，台阶表示名次", { 0: tx(metric) })}>
         {sorted.slice(0, 3).map((row, i) => <button type="button" key={row.id}
           className={`energy-ladder-column energy-ladder-place--${i + 1}${row.id === highlightId ? ' is-mine' : ''}${selected.id === row.id ? ' is-selected' : ''}`}
-          aria-label={`${honors[i]}，第${i + 1}名，${row.name}，${metric}${number(row.coins)}`}
+          aria-label={tx("{0}，第{1}名，{2}，{3}{4}", { 0: tx(honors[i]), 1: i + 1, 2: row.name, 3: tx(metric), 4: number(row.coins) })}
           aria-pressed={selected.id === row.id} onClick={() => setSelectedId(row.id)}>
           <div className="energy-ladder-contender">
             <div className={`energy-ladder-contender-visual${personal && row.students?.length ? ' is-personal' : ''}`}>
@@ -71,24 +73,24 @@ export default function EnergyLadder({ rows, highlightId, metric = '小组能量
               {!!row.students?.length && <RankAvatars students={row.students} />}
             </div>
             <span className="energy-ladder-contender-name" title={row.name}>{row.name}</span>
-            <span className="energy-ladder-contender-score" title={`${number(row.coins)} 能量币`}><span className="energy-ladder-coin" aria-hidden="true">ϟ</span>{podiumNumber(row.coins)}</span>
+            <span className="energy-ladder-contender-score" title={tx("{0} 能量币", { 0: number(row.coins) })}><span className="energy-ladder-coin" aria-hidden="true">ϟ</span>{podiumNumber(row.coins)}</span>
           </div>
-          <div className="energy-ladder-step"><span className="energy-ladder-step-number" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span><span>{honors[i]}</span></div>
+          <div className="energy-ladder-step"><span className="energy-ladder-step-number" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span><span>{tx(honors[i])}</span></div>
         </button>)}
       </div>
       <div className="energy-ladder-detail" aria-live="polite" aria-atomic="true">
         <span className="energy-ladder-detail-name">{selected.name}</span>
-        <span>{selected.memberCount !== undefined && <><Users size={12} /> {selected.memberCount} 人 <span className="energy-ladder-divider" /></>}<Coins size={15} aria-hidden="true" /><strong>{number(selected.coins)}</strong></span>
+        <span>{selected.memberCount !== undefined && <><Users size={12} /> {selected.memberCount} {tx("人")}<span className="energy-ladder-divider" /></>}<Coins size={15} aria-hidden="true" /><strong>{number(selected.coins)}</strong></span>
       </div>
     </div>
-    <div className="energy-ladder-list-heading"><span>{compact ? (personal ? '个人排名' : '小组排名') : '完整排名'}</span><span>{sorted.length} {personal ? '位研究员' : '个小组'}</span></div>
-    <ol className="energy-ladder-list" aria-label={`${metric}${compact ? '排名摘要' : '完整排名'}`}>
+    <div className="energy-ladder-list-heading"><span>{compact ? (personal ? tx("个人排名") : tx("小组排名")) : tx("完整排名")}</span><span>{sorted.length} {personal ? tx("位研究员") : tx("个小组")}</span></div>
+    <ol className="energy-ladder-list" aria-label={tx("{0}{1}", { 0: tx(metric), 1: tx(compact ? '排名摘要' : '完整排名') })}>
       {sorted.map((row, index) => compact && index >= 5 && row.id !== highlightId ? null : <li key={row.id}>
         <button type="button" className={`energy-ladder-row${row.id === highlightId ? ' is-mine' : ''}${row.id === selected.id ? ' is-active' : ''}`} aria-pressed={row.id === selected.id} onClick={() => setSelectedId(row.id)}>
-          <span className={`energy-ladder-rank energy-ladder-rank--${Math.min(index + 1, 4)}`} aria-label={honors[index] || `第${index + 1}名`}>{String(index + 1).padStart(2, '0')}</span>
+          <span className={`energy-ladder-rank energy-ladder-rank--${Math.min(index + 1, 4)}`} aria-label={tx(honors[index]) || tx("第{0}名", { 0: index + 1 })}>{String(index + 1).padStart(2, '0')}</span>
           {!!row.students?.length && <span className="energy-ladder-row-avatars"><RankAvatars students={row.students} /></span>}
-          <span className="energy-ladder-row-name">{row.name}{row.id === highlightId && <small>{personal ? '我' : '我的小组'}</small>}</span>
-          {row.memberCount !== undefined && !compact && <span className="energy-ladder-members">{row.memberCount} 人</span>}
+          <span className="energy-ladder-row-name">{row.name}{row.id === highlightId && <small>{personal ? tx("我") : tx("我的小组")}</small>}</span>
+          {row.memberCount !== undefined && !compact && <span className="energy-ladder-members">{row.memberCount} {tx("人")}</span>}
           <span className="energy-ladder-score">{number(row.coins)}<Coins size={14} aria-hidden="true" /></span>
         </button>
       </li>)}

@@ -1,3 +1,4 @@
+import { useLocale } from '@/i18n/useLocale';
 import { useState } from 'react';
 import { HelpCircle, ChevronDown, ChevronUp, AlertTriangle, Download } from 'lucide-react';
 import type { ShowcaseCategory } from '@/types';
@@ -26,6 +27,7 @@ export default function UploadGuidePanel({ category, htmlContent }: {
   category: ShowcaseCategory;
   htmlContent: string;
 }) {
+  const { tx } = useLocale();
   const [expanded, setExpanded] = useState(false);
   const inspection = inspectShowcaseMedia(htmlContent);
   const parsed = parseShowcaseMedia(htmlContent);
@@ -34,17 +36,17 @@ export default function UploadGuidePanel({ category, htmlContent }: {
       <button type="button" aria-expanded={expanded} onClick={() => setExpanded(v => !v)}
         className="w-full flex items-center gap-2 text-xs font-medium text-blue-700">
         <HelpCircle size={15} />
-        <span>格式说明</span>
+        <span>{tx("格式说明")}</span>
         {expanded ? <ChevronUp size={14} className="ml-auto" /> : <ChevronDown size={14} className="ml-auto" />}
       </button>
       {expanded && <div className="space-y-3 border-t border-blue-100 pt-2 text-xs leading-5 text-slate-600">
-        <p>{CATEGORY_GUIDE[category]}</p>
+        <p>{tx(CATEGORY_GUIDE[category])}</p>
         {(category === 'html' || category === 'model') && <button type="button"
           onClick={() => category === 'model'
             ? downloadTextFile('sample.obj', SAMPLE_OBJ_CONTENT)
             : downloadTextFile('physics-sim-template.html', HTML_SIM_TEMPLATE, 'text/html;charset=utf-8')}
           className="inline-flex items-center gap-1 text-blue-700 font-medium">
-          <Download size={12} />{category === 'model' ? '下载示例模型' : '下载 HTML 模板'}
+          <Download size={12} />{category === 'model' ? tx("下载示例模型") : tx("下载 HTML 模板")}
         </button>}
       </div>}
       {/* 实时内容体检与配额进度条 */}
@@ -52,11 +54,9 @@ export default function UploadGuidePanel({ category, htmlContent }: {
         <div className="pt-2 border-t border-blue-100 space-y-2">
           <div className="flex items-center justify-between text-[11px]">
             <span className="font-semibold text-ink-700">
-              {parsed.kind === 'video' && parsed.videoSrc.startsWith('/api/showcase/video/')
-                ? '已绑定服务端独立视频流（不占用 1 MB 文本配额）'
-                : `当前内联作品载荷：${(inspection.byteLength / 1024).toFixed(1)} KB / ${(
+              {parsed.kind === 'video' && parsed.videoSrc.startsWith('/api/showcase/video/') ? tx("已绑定服务端独立视频流（不占用 1 MB 文本配额）") : tx("当前内联作品载荷：{0} KB / {1} KB ({2}%)", { 0: (inspection.byteLength / 1024).toFixed(1), 1: (
                     inspection.maxBytes / 1000
-                  ).toFixed(0)} KB (${inspection.percent}%)`}
+                  ).toFixed(0), 2: inspection.percent })}
             </span>
             <span
               className={
@@ -65,7 +65,7 @@ export default function UploadGuidePanel({ category, htmlContent }: {
                   : 'text-emerald-700 font-semibold'
               }
             >
-              {inspection.byteLength > inspection.maxBytes ? '超出 1 MB 上限' : '格式预检通过'}
+              {inspection.byteLength > inspection.maxBytes ? tx("超出 1 MB 上限") : tx("格式预检通过")}
             </span>
           </div>
           <div className="w-full h-1.5 rounded-full bg-slate-200 overflow-hidden">

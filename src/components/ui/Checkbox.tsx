@@ -1,3 +1,4 @@
+import { useLocale } from '@/i18n/useLocale';
 import { Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { InputHTMLAttributes, useId } from 'react';
@@ -10,6 +11,7 @@ interface CheckboxProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'siz
 }
 
 export default function Checkbox({ label, checked, onCheckedChange, size = 'md', className, id, ...rest }: CheckboxProps) {
+  const { tx } = useLocale();
   const boxSize = size === 'sm' ? 'w-4 h-4' : 'w-5 h-5';
   const chkSize = size === 'sm' ? 10 : 14;
   const generatedId = useId();
@@ -38,7 +40,7 @@ export default function Checkbox({ label, checked, onCheckedChange, size = 'md',
           {checked && <Check size={chkSize} className="text-white" strokeWidth={3} />}
         </span>
       </span>
-      {label && <span className="text-sm text-ink-700 leading-6 pt-0.5">{label}</span>}
+      {label && <span className="text-sm text-ink-700 leading-6 pt-0.5">{tx(label)}</span>}
     </label>
   );
 }

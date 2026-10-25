@@ -1,3 +1,4 @@
+import { useLocale } from '@/i18n/useLocale';
 import type { LucideIcon } from 'lucide-react';
 import { applyAvatarFallback, avatarFallback } from '@/lib/imageFallback';
 import type { ReactNode } from 'react';
@@ -5,7 +6,7 @@ import { createPortal } from 'react-dom';
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { useEffect, useRef, useState } from 'react';
-import { LayoutDashboard, BookOpen, Sparkles, FolderKanban, ShieldCheck, ShoppingCart, Trophy, Swords, Medal, Users, UsersRound, Rocket, Bell, LogOut, Zap, Info, CheckCircle2, AlertTriangle, X, Camera, Gauge, ClipboardList, Shield, Menu, FileCheck, KeyRound, UserRound, ChevronRight, Search, ArrowRight, Sun, Moon } from 'lucide-react';
+import { LayoutDashboard, BookOpen, Sparkles, FolderKanban, ShieldCheck, ShoppingCart, Trophy, Swords, Medal, Users, UsersRound, Rocket, Bell, LogOut, Zap, Info, CheckCircle2, AlertTriangle, X, Camera, Gauge, ClipboardList, Shield, Menu, FileCheck, KeyRound, UserRound, ChevronRight, Search, ArrowRight, Sun, Moon, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { useGroupStore } from '@/store/groupStore';
 import { useUIStore } from '@/store/uiStore';
@@ -15,6 +16,8 @@ import { apiEnabled } from '@/lib/apiClient';
 import { usersApi } from '@/lib/apiService';
 import Dialog from '@/components/ui/Dialog';
 import ChangePasswordModal from '@/components/ui/ChangePasswordModal';
+import LanguageSwitch from '@/components/ui/LanguageSwitch';
+import { readNavCollapsed, saveNavCollapsed } from '@/lib/navigationPreference';
 
 interface MissionShellProps {
   children: ReactNode;
@@ -101,7 +104,8 @@ const ADMIN_NAV_ITEMS: NavItem[] = [
   { id: 'admin', label: '教师账号', subLabel: '账号管理', icon: Shield, to: '/admin' },
 ];
 
-function MissionHeader({ onOpenNav, onOpenSearch }: { onOpenNav: () => void; onOpenSearch: () => void }) {
+function MissionHeader({ onOpenNav, onOpenSearch, collapsed, onToggleNav }: { onOpenNav: () => void; onOpenSearch: () => void; collapsed: boolean; onToggleNav: () => void }) {
+  const { tx } = useLocale();
   const navigate = useNavigate();
   const { userId, role, groupId, name, logout } = useAuthStore();
   const getUserById = useGroupStore((s) => s.getUserById);
@@ -175,34 +179,40 @@ function MissionHeader({ onOpenNav, onOpenSearch }: { onOpenNav: () => void; onO
       <header className="mission-header fixed top-0 left-0 right-0 z-50 h-16 flex items-center justify-between px-4 md:px-8">
         {/* 左侧：菜单开关与品牌 */}
         <div className="flex items-center gap-3">
+          <button type="button" onClick={onToggleNav} aria-label={tx(collapsed ? '展开侧边栏' : '收起侧边栏')}
+            aria-expanded={!collapsed} aria-controls="workspace-navigation"
+            className="mission-menu-button hidden md:flex shrink-0 w-9 h-9 rounded-xl items-center justify-center transition-colors"
+            title={tx(collapsed ? '展开侧边栏' : '收起侧边栏')}>
+            {collapsed ? <PanelLeftOpen size={20} /> : <PanelLeftClose size={20} />}
+          </button>
           <button
             onClick={onOpenNav}
-            aria-label="打开导航菜单"
+            aria-label={tx("打开导航菜单")}
             className="mission-menu-button md:hidden shrink-0 w-9 h-9 rounded-xl flex items-center justify-center transition-colors"
           >
             <Menu size={20} />
           </button>
 
-          <button aria-label="返回指挥中心" className="flex items-center gap-3 text-left" onClick={() => navigate(role === 'teacher' ? '/teacher/overview' : role === 'admin' ? '/admin' : '/dashboard')}>
+          <button aria-label={tx("返回指挥中心")} className="flex items-center gap-3 text-left" onClick={() => navigate(role === 'teacher' ? '/teacher/overview' : role === 'admin' ? '/admin' : '/dashboard')}>
             <div className="mission-brand-mark w-9 h-9 rounded-xl bg-gradient-to-br from-mission-500 to-nova-600 flex items-center justify-center text-white shadow-sm shadow-mission-500/20 shrink-0">
               <Rocket size={18} />
             </div>
             <div className="leading-tight">
               <div className="mission-brand-title text-[14px] font-bold tracking-tight">
-                <span className="sm:hidden">物理任务</span>
-                <span className="hidden sm:inline">物理任务指挥中心</span>
+                <span className="sm:hidden">{tx("物理任务")}</span>
+                <span className="hidden sm:inline">{tx("物理任务指挥中心")}</span>
               </div>
               <div className="mission-brand-subtitle hidden sm:block text-[11px] font-medium">
-                PBL 高中物理探究平台
-              </div>
+                {tx("PBL 高中物理探究平台")}</div>
             </div>
           </button>
         </div>
 
         {/* 右侧：能量统计与用户档案 */}
         <div className="flex items-center gap-3">
-          <button className="workspace-search-button" onClick={onOpenSearch} aria-label="查找页面">
-            <Search size={17} /><span>查找页面</span><kbd>⌘ K</kbd>
+          <LanguageSwitch />
+          <button className="workspace-search-button" onClick={onOpenSearch} aria-label={tx("查找页面")}>
+            <Search size={17} /><span>{tx("查找页面")}</span><kbd>⌘ K</kbd>
           </button>
           {role === 'student'  && (
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-energy-50/80 dark:bg-energy-950/40 border border-energy-200/80 dark:border-energy-800/60 text-xs">
@@ -210,23 +220,23 @@ function MissionHeader({ onOpenNav, onOpenSearch }: { onOpenNav: () => void; onO
               <span className="font-bold text-energy-700 dark:text-energy-300 font-mono">
                 {coreCoins}
               </span>
-              <span className="text-[10px] text-energy-600 dark:text-energy-400 font-medium">⚡能量</span>
+              <span className="text-[10px] text-energy-600 dark:text-energy-400 font-medium">{tx("⚡能量")}</span>
             </div>
           )}
 
           <div className="relative">
             <button
-              aria-label="用户菜单" aria-expanded={userMenuOpen}
+              aria-label={tx("用户菜单")} aria-expanded={userMenuOpen}
               onClick={() => setUserMenuOpen(!userMenuOpen)}
               className="mission-profile-button flex items-center gap-2 p-1 rounded-xl transition-colors"
             >
               <img
                 src={currentUser?.avatar || avatarFallback} onError={applyAvatarFallback}
-                alt={displayName}
+                alt={tx(displayName)}
                 className="w-8 h-8 rounded-lg object-cover border border-slate-200 dark:border-slate-700"
               />
               <span className="mission-profile-name hidden sm:inline text-xs font-semibold max-w-[90px] truncate">
-                {displayName}
+                {tx(displayName)}
               </span>
             </button>
 
@@ -242,8 +252,8 @@ function MissionHeader({ onOpenNav, onOpenSearch }: { onOpenNav: () => void; onO
                     className="absolute right-0 mt-2 w-48 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl py-1.5 z-50 text-xs"
                   >
                     <div className="px-3 py-2 border-b border-slate-100 dark:border-slate-800">
-                      <p className="font-bold text-slate-900 dark:text-slate-100">{displayName}</p>
-                      <p className="text-[11px] text-slate-400 capitalize">角色：{roleLabel}</p>
+                      <p className="font-bold text-slate-900 dark:text-slate-100">{tx(displayName)}</p>
+                      <p className="text-[11px] text-slate-400 capitalize">{tx("角色：")}{tx(roleLabel)}</p>
                     </div>
 
                     {role === 'student' && (
@@ -254,8 +264,7 @@ function MissionHeader({ onOpenNav, onOpenSearch }: { onOpenNav: () => void; onO
                         }}
                         className="w-full text-left px-3 py-2 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-2"
                       >
-                        <UserRound size={14} /> 个人档案
-                      </button>
+                        <UserRound size={14} /> {tx("个人档案")}</button>
                     )}
 
                     <button
@@ -265,8 +274,7 @@ function MissionHeader({ onOpenNav, onOpenSearch }: { onOpenNav: () => void; onO
                       }}
                       className="w-full text-left px-3 py-2 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-2"
                     >
-                      <Camera size={14} /> 更换头像
-                    </button>
+                      <Camera size={14} /> {tx("更换头像")}</button>
 
                     <button
                       onClick={() => {
@@ -275,8 +283,7 @@ function MissionHeader({ onOpenNav, onOpenSearch }: { onOpenNav: () => void; onO
                       }}
                       className="w-full text-left px-3 py-2 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-2"
                     >
-                      <KeyRound size={14} /> 修改密码
-                    </button>
+                      <KeyRound size={14} /> {tx("修改密码")}</button>
 
                     <button
                       onClick={() => {
@@ -286,7 +293,7 @@ function MissionHeader({ onOpenNav, onOpenSearch }: { onOpenNav: () => void; onO
                       className="w-full text-left px-3 py-2 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-2"
                     >
                       {isDark ? <Sun size={14} /> : <Moon size={14} />}
-                      {isDark ? '切换浅色模式' : '切换深色模式'}
+                      {isDark ? tx("切换浅色模式") : tx("切换深色模式")}
                     </button>
 
                     <div className="border-t border-slate-100 dark:border-slate-800 mt-1 pt-1">
@@ -298,8 +305,7 @@ function MissionHeader({ onOpenNav, onOpenSearch }: { onOpenNav: () => void; onO
                         }}
                         className="w-full text-left px-3 py-2 text-danger-600 dark:text-danger-400 hover:bg-danger-50 dark:hover:bg-danger-950/40 flex items-center gap-2"
                       >
-                        <LogOut size={14} /> 退出登录
-                      </button>
+                        <LogOut size={14} /> {tx("退出登录")}</button>
                     </div>
                   </motion.div>
                 </>
@@ -313,7 +319,7 @@ function MissionHeader({ onOpenNav, onOpenSearch }: { onOpenNav: () => void; onO
       <Dialog
         open={showAvatarModal}
         onClose={() => setShowAvatarModal(false)}
-        title="选择个性头像"
+        title={tx("选择个性头像")}
         size="sm"
       >
         <div className="grid grid-cols-4 gap-2.5 mb-5">
@@ -329,7 +335,7 @@ function MissionHeader({ onOpenNav, onOpenSearch }: { onOpenNav: () => void; onO
                   : 'border-transparent hover:border-mission-200'
               )}
             >
-              <img src={avatar} onError={applyAvatarFallback} alt={`头像 ${idx + 1}`} className="w-full h-full object-cover" />
+              <img src={avatar} onError={applyAvatarFallback} alt={tx("头像 {0}", { 0: idx + 1 })} className="w-full h-full object-cover" />
               {selectedAvatar === avatar && (
                 <div className="absolute inset-0 bg-mission-500/20 flex items-center justify-center">
                   <CheckCircle2 size={18} className="text-mission-500" />
@@ -342,7 +348,7 @@ function MissionHeader({ onOpenNav, onOpenSearch }: { onOpenNav: () => void; onO
         <div className="mb-5">
           <label className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer transition-colors">
             <Camera size={14} />
-            {compressing ? '正在处理…' : '上传自定义照片'}
+            {compressing ? tx("正在处理…") : tx("上传自定义照片")}
             <input
               type="file"
               accept="image/*"
@@ -355,23 +361,21 @@ function MissionHeader({ onOpenNav, onOpenSearch }: { onOpenNav: () => void; onO
           </label>
           {avatarErr && (
             <p className="mt-2 text-xs text-danger-600 flex items-center gap-1">
-              <AlertTriangle size={12} /> {avatarErr}
+              <AlertTriangle size={12} /> {tx(avatarErr)}
             </p>
           )}
         </div>
 
         <div className="flex gap-2">
           <button type="button" onClick={() => setShowAvatarModal(false)} className="flex-1 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800">
-            取消
-          </button>
+            {tx("取消")}</button>
           <button
             type="button"
             onClick={handleAvatarChange}
             disabled={!selectedAvatar || compressing}
             className="flex-1 py-2 text-xs rounded-xl bg-mission-600 text-white font-medium hover:bg-mission-500 disabled:opacity-50"
           >
-            确认更换
-          </button>
+            {tx("确认更换")}</button>
         </div>
       </Dialog>
 
@@ -380,7 +384,8 @@ function MissionHeader({ onOpenNav, onOpenSearch }: { onOpenNav: () => void; onO
   );
 }
 
-function NavRail({ open, onClose }: { open: boolean; onClose: () => void }) {
+function NavRail({ open, onClose, collapsed, onToggle }: { open: boolean; onClose: () => void; collapsed: boolean; onToggle: () => void }) {
+  const { tx } = useLocale();
   const railRef = useRef<HTMLElement>(null);
   const closeRef = useRef(onClose);
   closeRef.current = onClose;
@@ -437,7 +442,7 @@ function NavRail({ open, onClose }: { open: boolean; onClose: () => void }) {
         )}
       </AnimatePresence>
 
-      <aside ref={railRef} aria-label="主要导航" aria-hidden={mobile && !open}
+      <aside id="workspace-navigation" ref={railRef} aria-label={tx("主要导航")} aria-hidden={mobile && !open}
         className={cn(
           'mission-nav fixed z-40 flex flex-col transition-transform duration-300 ease-out',
           // 桌面端：紧凑型常驻面板
@@ -448,10 +453,16 @@ function NavRail({ open, onClose }: { open: boolean; onClose: () => void }) {
           open ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
         )}
       >
-        <button tabIndex={mobile && !open ? -1 : undefined} onClick={onClose} aria-label="关闭导航菜单" className="mission-nav-close flex md:hidden items-center justify-between text-white pb-4 px-3">
-          <span>研究导航</span><X size={20} />
+        <button tabIndex={mobile && !open ? -1 : undefined} onClick={onClose} aria-label={tx("关闭导航菜单")} className="mission-nav-close flex md:hidden items-center justify-between text-white pb-4 px-3">
+          <span>{tx("研究导航")}</span><X size={20} />
         </button>
-        <div className="space-y-1 flex-1 overflow-y-auto pr-1">
+        <button type="button" onClick={onToggle} aria-label={tx(collapsed ? '展开侧边栏' : '收起侧边栏')}
+          aria-expanded={!collapsed} aria-controls="workspace-navigation" title={tx(collapsed ? '展开侧边栏' : '收起侧边栏')}
+          className="mission-nav-fold hidden md:flex items-center gap-3 shrink-0">
+          {collapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
+          <span className="mission-nav-copy">{tx('收起导航')}</span>
+        </button>
+        <div className="mission-nav-links space-y-1 flex-1 min-h-0 overflow-y-auto pr-1">
           {allItems.map((item) => {
             const Icon = item.icon;
             const active = isNavItemActive(location.pathname, item.to);
@@ -468,19 +479,21 @@ function NavRail({ open, onClose }: { open: boolean; onClose: () => void }) {
                     : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-slate-100'
                 )}
                 aria-current={active ? 'page' : undefined}
+                aria-label={tx(item.label)}
+                title={collapsed && !mobile ? `${tx(item.label)} · ${tx(item.subLabel || '')}` : undefined}
                 data-active={active}
               >
                 <Icon size={16} className={active ? 'text-mission-600 dark:text-mission-400 shrink-0' : 'text-slate-400 shrink-0'} />
-                <div className="truncate flex-1">
-                  <div className="truncate">{item.label}</div>
+                <div className="mission-nav-copy min-w-0 flex-1">
+                  <div className="truncate">{tx(item.label)}</div>
                   {item.subLabel && (
                     <div className="text-[10px] text-slate-400 dark:text-slate-500 font-normal truncate">
-                      {item.subLabel}
+                      {tx(item.subLabel)}
                     </div>
                   )}
                 </div>
                 {active && (
-                  <div className="w-1.5 h-1.5 rounded-full bg-mission-500 shrink-0" />
+                  <div className="mission-nav-active-dot w-1.5 h-1.5 rounded-full bg-mission-500 shrink-0" />
                 )}
               </Link>
             );
@@ -506,6 +519,7 @@ function toastAppearance(type: string) {
 }
 
 function ToastStack() {
+  const { tx } = useLocale();
   const { toasts, removeToast, clearToasts } = useUIStore();
   const [isOpen, setIsOpen] = useState(false);
   const [dismissedIds, setDismissedIds] = useState<string[]>([]);
@@ -560,10 +574,10 @@ function ToastStack() {
                 className="toast-item text-xs"
               >
                 <Icon size={16} className={cn(iconClass, 'shrink-0 mt-0.5')} />
-                <span className="flex-1 text-slate-800 dark:text-slate-100 leading-snug font-medium">{t.msg}</span>
+                <span className="flex-1 text-slate-800 dark:text-slate-100 leading-snug font-medium">{tx(t.msg)}</span>
                 <button
                   type="button"
-                  aria-label="关闭提示"
+                  aria-label={tx("关闭提示")}
                   onClick={() => {
                     const timer = timersRef.current.get(t.id);
                     if (timer) {
@@ -584,7 +598,7 @@ function ToastStack() {
 
       <button
         onClick={() => setIsOpen(!isOpen)}
-        aria-label="查看通知"
+        aria-label={tx("查看通知")}
         className="fixed bottom-6 right-6 z-50 w-11 h-11 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl flex items-center justify-center text-slate-600 dark:text-slate-300 hover:text-mission-600 hover:scale-105 transition-all"
       >
         <Bell size={18} />
@@ -606,17 +620,16 @@ function ToastStack() {
               className="fixed bottom-20 right-6 z-50 w-80 max-h-96 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl p-4 flex flex-col"
             >
               <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800 mb-2">
-                <span className="font-bold text-xs text-slate-900 dark:text-slate-100">通知消息中心</span>
+                <span className="font-bold text-xs text-slate-900 dark:text-slate-100">{tx("通知消息中心")}</span>
                 {toasts.length > 0 && (
                   <button onClick={clearToasts} className="text-[11px] text-mission-600 hover:underline">
-                    全部清空
-                  </button>
+                    {tx("全部清空")}</button>
                 )}
               </div>
 
               <div className="flex-1 overflow-y-auto space-y-2 text-xs">
                 {toasts.length === 0 ? (
-                  <div className="py-8 text-center text-slate-400 text-xs">暂无未读消息通知</div>
+                  <div className="py-8 text-center text-slate-400 text-xs">{tx("暂无未读消息通知")}</div>
                 ) : (
                   toasts.map((t) => {
                     const { Icon, iconClass } = toastAppearance(t.type);
@@ -624,7 +637,7 @@ function ToastStack() {
                       <div key={t.id} className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 flex items-start justify-between gap-2">
                         <div className="flex items-start gap-2">
                           <Icon size={14} className={cn(iconClass, 'shrink-0 mt-0.5')} />
-                          <span className="text-slate-700 dark:text-slate-300 leading-snug">{t.msg}</span>
+                          <span className="text-slate-700 dark:text-slate-300 leading-snug">{tx(t.msg)}</span>
                         </div>
                         <button onClick={() => removeToast(t.id)} className="text-slate-400 hover:text-slate-600"><X size={12} /></button>
                       </div>
@@ -641,10 +654,16 @@ function ToastStack() {
 }
 
 export default function MissionShell({ children, requireAuth = true }: MissionShellProps) {
+  const { tx } = useLocale();
   const location = useLocation();
   const reduceMotion = useReducedMotion();
   const { userId, role, init } = useAuthStore();
   const [navOpen, setNavOpen] = useState(false);
+  const [navCollapsed, setNavCollapsed] = useState(readNavCollapsed);
+  const toggleNav = () => setNavCollapsed((value) => {
+    saveNavCollapsed(!value);
+    return !value;
+  });
   const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState('');
   const navigate = useNavigate();
@@ -674,25 +693,25 @@ export default function MissionShell({ children, requireAuth = true }: MissionSh
 
   return (
     <>
-      <div data-workspace-role={role} className="mission-stage min-h-screen w-full relative text-slate-900 dark:text-slate-100">
+      <div data-workspace-role={role} data-nav-collapsed={navCollapsed} className="mission-stage min-h-screen w-full relative text-slate-900 dark:text-slate-100">
         <div className="mission-ambient" aria-hidden="true">
           <span className="mission-ambient-orb mission-ambient-orb-a" />
           <span className="mission-ambient-orb mission-ambient-orb-b" />
           <span className="mission-ambient-orb mission-ambient-orb-c" />
         </div>
-        <a href="#workspace-main" className="workspace-skip-link">跳到页面内容</a>
-        <MissionHeader onOpenNav={() => setNavOpen(true)} onOpenSearch={() => { setQuery(''); setSearchOpen(true); }} />
-        <NavRail open={navOpen} onClose={() => setNavOpen(false)} />
+        <a href="#workspace-main" className="workspace-skip-link">{tx("跳到页面内容")}</a>
+        <MissionHeader collapsed={navCollapsed} onToggleNav={toggleNav} onOpenNav={() => setNavOpen(true)} onOpenSearch={() => { setQuery(''); setSearchOpen(true); }} />
+        <NavRail collapsed={navCollapsed} onToggle={toggleNav} open={navOpen} onClose={() => setNavOpen(false)} />
         <ToastStack />
 
         {/* 桌面端常驻导航预留 220px 边距 */}
         <main id="workspace-main" tabIndex={-1} className="mission-content md:ml-[220px] px-4 md:px-8 pt-20 pb-12">
           <div className="max-w-[1440px] mx-auto w-full">
             {pageLabel && location.pathname !== homePath && (
-              <nav className="mission-page-context" aria-label="当前位置">
-                <Link to={homePath}>{homeLabel}</Link>
+              <nav className="mission-page-context" aria-label={tx("当前位置")}>
+                <Link to={homePath}>{tx(homeLabel)}</Link>
                 <ChevronRight size={13} aria-hidden="true" />
-                <span aria-current="page">{pageLabel}</span>
+                <span aria-current="page">{tx(pageLabel)}</span>
               </nav>
             )}
             {/* 路由内容只做进入动画：AnimatePresence 的退出等待与懒加载页面的
@@ -708,17 +727,17 @@ export default function MissionShell({ children, requireAuth = true }: MissionSh
             </motion.div>
           </div>
         </main>
-        <Dialog open={searchOpen} onClose={() => setSearchOpen(false)} title="查找页面" size="lg">
-          <label className="field-label" htmlFor="workspace-search">输入页面名称或功能</label>
-          <input data-dialog-autofocus id="workspace-search" className="input-field" placeholder="例如：课题、安全、能量" value={query} onChange={(event) => setQuery(event.target.value)} />
+        <Dialog open={searchOpen} onClose={() => setSearchOpen(false)} title={tx("查找页面")} size="lg">
+          <label className="field-label" htmlFor="workspace-search">{tx("输入页面名称或功能")}</label>
+          <input data-dialog-autofocus id="workspace-search" className="input-field" placeholder={tx("例如：课题、安全、能量")} value={query} onChange={(event) => setQuery(event.target.value)} />
           <div className="workspace-search-results">
-            {navItems.filter((item) => `${item.label} ${item.subLabel}`.includes(query.trim())).map((item) => {
+            {navItems.filter((item) => `${item.label} ${item.subLabel} ${tx(item.label)} ${tx(item.subLabel || '')}`.toLowerCase().includes(query.trim().toLowerCase())).map((item) => {
               const Icon = item.icon;
               return <button key={item.id} className="workspace-search-result" onClick={() => { setSearchOpen(false); navigate(item.to); }}>
-                <Icon size={20} /><span className="flex-1"><strong>{item.label}</strong><small>{item.subLabel}</small></span><ArrowRight size={17} />
+                <Icon size={20} /><span className="flex-1"><strong>{tx(item.label)}</strong><small>{tx(item.subLabel)}</small></span><ArrowRight size={17} />
               </button>;
             })}
-            {!navItems.some((item) => `${item.label} ${item.subLabel}`.includes(query.trim())) && <p role="status" className="text-sm text-center py-6">没有找到相关页面，请换一个关键词。</p>}
+            {!navItems.some((item) => `${item.label} ${item.subLabel} ${tx(item.label)} ${tx(item.subLabel || '')}`.toLowerCase().includes(query.trim().toLowerCase())) && <p role="status" className="text-sm text-center py-6">{tx("没有找到相关页面，请换一个关键词。")}</p>}
           </div>
         </Dialog>
       </div>

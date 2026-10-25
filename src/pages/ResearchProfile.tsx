@@ -1,3 +1,4 @@
+import { translate, useLocale } from '@/i18n/useLocale';
 import { apiEnabled } from '@/lib/apiClient';
 import type { LucideIcon } from 'lucide-react';
 import { applyAvatarFallback } from '@/lib/imageFallback';
@@ -67,6 +68,7 @@ const SEMESTER_GOALS = [
 ];
 
 export default function ResearchProfile() {
+  const { tx, locale } = useLocale();
   const { users, groups } = useGroupStore();
   const authUserId = useAuthStore((s) => s.userId);
   const me = useMemo(() => users.find((u) => u.id === authUserId) || { id: authUserId || '', name: '研究员', groupId: null, role: 'member', personalCoins: 0, avatar: '' }, [users, authUserId]);
@@ -129,12 +131,12 @@ export default function ResearchProfile() {
   const timeline = useMemo(() => {
     const events: TimelineEvent[] = [];
     const dstr = (v: Date | string) => { const d = v instanceof Date ? v : new Date(v); return `${d.getMonth() + 1}/${d.getDate()}`; };
-    for (const p of projects) if (Boolean(me.groupId) && p.ownerGroupId === me.groupId) events.push({ id: `p-${p.id}`, date: dstr(p.startDate), timestamp: new Date(p.startDate).getTime(), type: 'project', title: p.title, desc: `小组项目 · 进度 ${p.progress}%`, coins: p.status === 'done' ? p.rewardCoins : 0 });
-    for (const c of challenges) if (Boolean(me.groupId) && c.creatorGroupId === me.groupId) events.push({ id: `c-${c.id}`, date: dstr(c.deadline), timestamp: new Date(c.deadline).getTime(), type: 'challenge', title: c.title, desc: '发起知识挑战', coins: 0 });
-    for (const qs of quizSessions) events.push({ id: `q-${qs.id}`, date: dstr(qs.createdAt), timestamp: new Date(qs.createdAt).getTime(), type: 'exam', title: '理论 / 安全测验', desc: `${qs.score} 分 · ${qs.passed ? '通过' : '未过'}`, coins: 0 });
-    for (const r of recruitments) if (r.assigneeUserId === me.id) events.push({ id: `r-${r.id}`, date: dstr(r.deadline), timestamp: new Date(r.deadline).getTime(), type: 'recruit', title: r.title, desc: '跨组协助', coins: r.actualPay || 0 });
+    for (const p of projects) if (Boolean(me.groupId) && p.ownerGroupId === me.groupId) events.push({ id: `p-${p.id}`, date: dstr(p.startDate), timestamp: new Date(p.startDate).getTime(), type: 'project', title: p.title, desc: translate(locale, "小组项目 · 进度 {progress}%", { progress: p.progress }), coins: p.status === 'done' ? p.rewardCoins : 0 });
+    for (const c of challenges) if (Boolean(me.groupId) && c.creatorGroupId === me.groupId) events.push({ id: `c-${c.id}`, date: dstr(c.deadline), timestamp: new Date(c.deadline).getTime(), type: 'challenge', title: c.title, desc: translate(locale, "发起知识挑战"), coins: 0 });
+    for (const qs of quizSessions) events.push({ id: `q-${qs.id}`, date: dstr(qs.createdAt), timestamp: new Date(qs.createdAt).getTime(), type: 'exam', title: '理论 / 安全测验', desc: translate(locale, "{score} 分 · {status}", { score: qs.score, status: translate(locale, qs.passed ? "通过" : "未过") }), coins: 0 });
+    for (const r of recruitments) if (r.assigneeUserId === me.id) events.push({ id: `r-${r.id}`, date: dstr(r.deadline), timestamp: new Date(r.deadline).getTime(), type: 'recruit', title: r.title, desc: translate(locale, "跨组协助"), coins: r.actualPay || 0 });
     return events.sort((a, b) => b.timestamp - a.timestamp).slice(0, 20);
-  }, [me, projects, challenges, quizSessions, recruitments]);
+  }, [me, projects, challenges, quizSessions, recruitments, locale]);
   // Personal checklists are stored per account on this device.
   const goalKey = `plab_semester_goals:${authUserId || 'anonymous'}`;
   const [savedGoals, setSavedGoals] = useState<Record<string, boolean>>({});
@@ -188,8 +190,7 @@ export default function ResearchProfile() {
                 className="btn-ghost !py-1.5 !px-3 text-[12px] inline-flex items-center gap-1.5"
               >
                 <Lock size={13} className="text-mission-500" />
-                修改密码
-              </button>
+                {tx("修改密码")}</button>
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
               <div className="col-span-12 md:col-span-7 flex items-start gap-5">
@@ -197,7 +198,7 @@ export default function ResearchProfile() {
                   <div className="absolute -inset-2 rounded-[36px] bg-gradient-to-br from-mission-400/30 via-nova-400/20 to-energy-400/20 blur-lg" />
                   <div className="relative w-24 h-24 md:w-28 md:h-28 rounded-[32px] overflow-hidden ring-4 ring-white shadow-glowMission bg-gradient-to-br from-mission-100 to-nova-100">
                     {me.avatar ? (
-                      <img src={me.avatar} onError={applyAvatarFallback} alt={me.name} className="w-full h-full object-cover" />
+                      <img src={me.avatar} onError={applyAvatarFallback} alt={tx(me.name)} className="w-full h-full object-cover" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
                         <User size={44} className="text-mission-600" />
@@ -214,22 +215,20 @@ export default function ResearchProfile() {
                   <div className="flex flex-wrap items-center gap-2 mb-2">
                     <span className="chip-nova !py-1 !px-3 !text-[11px]">
                       <Star size={10} fill="currentColor" />
-                      LV.{level} 研究员
-                    </span>
+                      LV.{level} {tx("研究员")}</span>
                     {me.role === 'leader' && (
                       <span className="chip-energy !py-1 !px-3 !text-[11px]">
                         <Crown size={10} />
-                        组长
-                      </span>
+                        {tx("组长")}</span>
                     )}
                   </div>
                   <h1 className="text-[28px] md:text-[32px] font-extrabold text-ink-900 leading-[1.1] tracking-tight">
-                    {me.name || '研究员'}
+                    {me.name || tx("研究员")}
                     <span className="block text-[14px] md:text-[15px] font-semibold text-ink-500 mt-1 flex items-center gap-1.5">
                       <Flag size={14} className="text-mission-500" />
-                      {myGroup?.name || '未分组'}
+                      {myGroup?.name || tx("未分组")}
                       <span className="text-ink-300 mx-1">·</span>
-                      <span className="italic text-gradient-mission font-serif">「大胆假设，小心求证」</span>
+                      <span className="italic text-gradient-mission font-serif">{tx("「大胆假设，小心求证」")}</span>
                     </span>
                   </h1>
                 </div>
@@ -257,12 +256,12 @@ export default function ResearchProfile() {
                         >
                           <Icon size={14} />
                         </div>
-                        <span className="text-[10px] text-ink-400 font-mono">{s.unit}</span>
+                        <span className="text-[10px] text-ink-400 font-mono">{s.unit === '⚡' || locale === 'zh-CN' ? s.unit : null}</span>
                       </div>
                       <div className="ticker ticker-anim text-[24px] font-extrabold text-ink-800 leading-none tabular-nums">
                         <StatTicker val={s.val} />
                       </div>
-                      <div className="text-[11px] text-ink-500 mt-1 font-medium">{s.label}</div>
+                      <div className="text-[11px] text-ink-500 mt-1 font-medium">{tx(s.label)}</div>
                     </motion.div>
                   );
                 })}
@@ -273,8 +272,8 @@ export default function ResearchProfile() {
               <div>
                 <div className="flex items-center justify-between mb-1.5">
                   <div className="flex items-center gap-2">
-                    <span className="chip-growth !py-0.5 !px-2 !text-[11px]">升级进度</span>
-                    <span className="text-[12px] text-ink-500">距离 LV.{level + 1} 研究员</span>
+                    <span className="chip-growth !py-0.5 !px-2 !text-[11px]">{tx("升级进度")}</span>
+                    <span className="text-[12px] text-ink-500">{tx("距离 LV.")}{level + 1} {tx("研究员")}</span>
                   </div>
                   <span className="text-[12px] font-bold text-gradient-mission tabular-nums">{levelProgress}%</span>
                 </div>
@@ -289,15 +288,15 @@ export default function ResearchProfile() {
                   </motion.div>
                 </div>
                 <div className="flex items-center justify-between mt-1 text-[11px] text-ink-400 font-mono">
-                  <span>{earnedCoins % 500} / 500 累计能量</span>
-                  <span>还需 {500 - earnedCoins % 500} 能量</span>
+                  <span>{earnedCoins % 500} {tx("/ 500 累计能量")}</span>
+                  <span>{tx("还需")} {500 - earnedCoins % 500} {tx("能量")}</span>
                 </div>
               </div>
 
               <div>
                 <div className="flex items-center gap-2 mb-3">
                   <Award size={15} className="text-alert-500" />
-                  <span className="text-[13px] font-bold text-ink-800">徽章墙</span>
+                  <span className="text-[13px] font-bold text-ink-800">{tx("徽章墙")}</span>
                   <span className="text-[11px] text-ink-400 font-mono">{earnedBadgeCount} / {BADGES.length}</span>
                 </div>
                 <div className="flex flex-wrap gap-3">
@@ -311,7 +310,7 @@ export default function ResearchProfile() {
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ duration: 0.35, delay: 0.15 + i * 0.04, type: 'spring' }}
                         className="relative group cursor-pointer"
-                        title={earned ? b.name : `${b.name} · 未获得`}
+                        title={earned ? tx(b.name) : tx("{0} · 未获得", { 0: tx(b.name) })}
                       >
                         {earned && (
                           <div className="absolute -inset-1 rounded-full bg-gradient-to-br opacity-30 blur-md group-hover:opacity-60 transition-opacity"
@@ -327,7 +326,7 @@ export default function ResearchProfile() {
                           <Icon size={20} strokeWidth={2.2} />
                         </div>
                         <div className="absolute left-1/2 -translate-x-1/2 top-full mt-1.5 whitespace-nowrap text-[10px] font-semibold text-ink-600 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                          {b.name}{earned ? '' : ' · 未获得'}
+                          {tx(b.name)}{earned ? '' : tx(" · 未获得")}
                         </div>
                       </motion.div>
                     );
@@ -357,9 +356,8 @@ export default function ResearchProfile() {
               <div className="flex items-center justify-between mb-5">
                 <h2 className="flex items-center gap-2 text-[17px] font-bold text-ink-800">
                   <Calendar size={19} className="text-nova-500" />
-                  学习与研究路径
-                </h2>
-                <span className="chip-nova !py-0.5 !px-2 !text-[10px]">最近 {timeline.length} 条活动</span>
+                  {tx("学习与研究路径")}</h2>
+                <span className="chip-nova !py-0.5 !px-2 !text-[10px]">{tx("最近")} {timeline.length} {tx("条活动")}</span>
               </div>
               <div className="relative pl-1">
                 <div
@@ -370,7 +368,7 @@ export default function ResearchProfile() {
                   }}
                 />
                 <div className="space-y-4 max-h-[720px] overflow-y-auto pr-2 scroll-thin">
-                  {timeline.length === 0 && <p className="text-sm text-ink-500 py-6 pl-10">暂无活动记录，开始学习或参与项目后会在这里显示。</p>}
+                  {timeline.length === 0 && <p className="text-sm text-ink-500 py-6 pl-10">{tx("暂无活动记录，开始学习或参与项目后会在这里显示。")}</p>}
                   {timeline.map((e, i) => {
                     const cfg = timelineCfg[e.type];
                     const Icon = cfg.icon;
@@ -391,7 +389,7 @@ export default function ResearchProfile() {
                           <Icon size={8} className="text-white" strokeWidth={3} />
                         </div>
                         <div className="flex items-center gap-2 flex-wrap mb-1">
-                          <span className={cn(cfg.chip, '!py-0.5 !px-2 !text-[10.5px]')}>{e.title}</span>
+                          <span className={cn(cfg.chip, '!py-0.5 !px-2 !text-[10.5px]')}>{tx(e.title)}</span>
                           <span className="text-[11px] text-ink-400 font-mono">{e.date}</span>
                           <span className="text-[11px] font-bold text-gradient-energy tabular-nums ml-auto">
                             +{e.coins}⚡
@@ -416,13 +414,12 @@ export default function ResearchProfile() {
               <div className="flex items-center justify-between mb-4">
                 <h2 className="flex items-center gap-2 text-[17px] font-bold text-ink-800">
                   <Radar size={19} className="text-mission-500" />
-                  Skill Radar · 能力六维图
-                </h2>
-                <span className="chip-mission !py-0.5 !px-2 !text-[10px]">综合 {radarGrade}</span>
+                  {tx("Skill Radar · 能力六维图")}</h2>
+                <span className="chip-mission !py-0.5 !px-2 !text-[10px]">{tx("综合")}{radarGrade}</span>
               </div>
               <div className="h-[300px] -mx-2">
                 <ResponsiveContainer width="100%" height="100%">
-                  <RadarChart data={radar} outerRadius="78%">
+                  <RadarChart data={radar.map((point) => ({ ...point, skill: tx(point.skill) }))} outerRadius="78%">
                     <defs>
                       <linearGradient id="radarFill" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="0%" stopColor="#4F7CFF" stopOpacity={0.55} />
@@ -465,17 +462,16 @@ export default function ResearchProfile() {
               </div>
               {radarAvg === 0 && (
                 <p className="mt-2 text-center text-[12px] text-ink-400 leading-relaxed">
-                  还没有可统计的表现。完成测验、安全考核、出题或项目研发后，各项能力会按实际数据增长。
-                </p>
+                  {tx("还没有可统计的表现。完成测验、安全考核、出题或项目研发后，各项能力会按实际数据增长。")}</p>
               )}
               <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mt-2">
                 {radar.map((s, i) => {
                   const palette = ['#4F7CFF', '#FF8A34', '#22C55E', '#8B5CF6', '#F59E0B', '#06B6D4'];
                   const c = palette[i % 6];
                   return (
-                    <div key={s.skill} className="flex items-center gap-2">
+                    <div key={tx(s.skill)} className="flex items-center gap-2">
                       <span className="w-2 h-2 rounded-full shrink-0" style={{ background: c }} />
-                      <span className="text-[11.5px] text-ink-600 flex-1">{s.skill}</span>
+                      <span className="text-[11.5px] text-ink-600 flex-1">{tx(s.skill)}</span>
                       <span className="text-[12px] font-bold tabular-nums" style={{ color: c }}>
                         {s.A}
                       </span>
@@ -494,8 +490,7 @@ export default function ResearchProfile() {
               <div className="flex items-center justify-between mb-4">
                 <h2 className="flex items-center gap-2 text-[17px] font-bold text-ink-800">
                   <Target size={19} className="text-growth-500" />
-                  本学期目标
-                </h2>
+                  {tx("本学期目标")}</h2>
                 <span className="chip-growth !py-0.5 !px-2 !text-[10px]">
                   <CheckCircle2 size={10} />
                   {doneCount} / {SEMESTER_GOALS.length}
@@ -503,7 +498,7 @@ export default function ResearchProfile() {
               </div>
               <div className="mb-4">
                 <div className="flex justify-between text-[11px] text-ink-400 font-mono mb-1">
-                  <span>完成度</span>
+                  <span>{tx("完成度")}</span>
                   <span className="font-bold text-growth-600">
                     {Math.round((doneCount / SEMESTER_GOALS.length) * 100)}%
                   </span>
@@ -517,7 +512,7 @@ export default function ResearchProfile() {
                   />
                 </div>
               </div>
-              <p className="text-xs text-ink-500 mb-3">系统自动同步已达成目标；手动勾选保存在当前账号的本机清单中。</p>
+              <p className="text-xs text-ink-500 mb-3">{tx("系统自动同步已达成目标；手动勾选保存在当前账号的本机清单中。")}</p>
               <div className="space-y-2.5">
                 {SEMESTER_GOALS.map((g, i) => (
                   <motion.div
@@ -537,7 +532,7 @@ export default function ResearchProfile() {
                       onCheckedChange={(c) =>
                         updateGoal(g.id, c)
                       }
-                      label={g.text}
+                      label={tx(g.text)}
                       id={`goal-${g.id}`}
                     />
                   </motion.div>

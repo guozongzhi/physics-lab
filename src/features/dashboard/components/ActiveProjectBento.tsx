@@ -1,3 +1,4 @@
+import { useLocale } from '@/i18n/useLocale';
 import React from "react";
 import type { Project } from '@/types';
 import { BentoCard } from "@/design-system/components/BentoCard";
@@ -18,6 +19,7 @@ export const ActiveProjectBento: React.FC<ActiveProjectBentoProps> = ({
   onNavigate,
   onCreateProject,
 }) => {
+  const { tx } = useLocale();
   const currentProject = projects[0];
 
   return (
@@ -34,11 +36,9 @@ export const ActiveProjectBento: React.FC<ActiveProjectBentoProps> = ({
             </div>
             <div>
               <h2 className="text-sm font-bold text-slate-900 dark:text-slate-100">
-                本组重点科研项目
-              </h2>
+                {tx("本组重点科研项目")}</h2>
               <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                当前进行中的实验研发与阶段攻关
-              </p>
+                {tx("当前进行中的实验研发与阶段攻关")}</p>
             </div>
           </div>
           <Button
@@ -47,21 +47,19 @@ export const ActiveProjectBento: React.FC<ActiveProjectBentoProps> = ({
             onClick={() => onNavigate("/projects")}
             rightIcon={<ArrowRight size={13} />}
           >
-            全部项目 ({projects.length})
+            {tx("全部项目 (")}{projects.length})
           </Button>
         </div>
 
         {!hasGroup ? (
           <div className="py-8 text-center text-slate-400 text-xs">
-            您尚未加入任何研究小组，加入后即可认领或立项科研课题。
-          </div>
+            {tx("您尚未加入任何研究小组，加入后即可认领或立项科研课题。")}</div>
         ) : !currentProject ? (
           <div className="py-8 text-center space-y-3">
-            <p className="text-xs text-slate-500">本组暂无处于进行中的课题项目</p>
+            <p className="text-xs text-slate-500">{tx("本组暂无处于进行中的课题项目")}</p>
             {onCreateProject && (
               <Button size="sm" variant="primary" leftIcon={<Plus size={14} />} onClick={onCreateProject}>
-                发起新科研立项
-              </Button>
+                {tx("发起新科研立项")}</Button>
             )}
           </div>
         ) : (
@@ -69,7 +67,7 @@ export const ActiveProjectBento: React.FC<ActiveProjectBentoProps> = ({
             <div className="flex items-start justify-between gap-4">
               <div>
                 <span className="text-xs font-semibold text-mission-600 dark:text-mission-400 uppercase tracking-wider">
-                  课题方向：{currentProject.topic || "物理综合探索"}
+                  {tx("课题方向：")}{currentProject.topic || tx("物理综合探索")}
                 </span>
                 <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 mt-0.5">
                   {currentProject.title}
@@ -85,11 +83,7 @@ export const ActiveProjectBento: React.FC<ActiveProjectBentoProps> = ({
                 }
                 size="sm"
               >
-                {currentProject.status === "done"
-                  ? "已结题"
-                  : currentProject.status === "review"
-                  ? "审核中"
-                  : "研发中"}
+                {currentProject.status === "done" ? tx("已结题") : currentProject.status === "review" ? tx("审核中") : tx("研发中")}
               </Badge>
             </div>
 
@@ -97,8 +91,7 @@ export const ActiveProjectBento: React.FC<ActiveProjectBentoProps> = ({
             <div>
               <div className="flex justify-between text-xs text-slate-500 mb-1.5 font-medium">
                 <span className="flex items-center gap-1">
-                  <Clock size={12} /> 里程碑进度
-                </span>
+                  <Clock size={12} /> {tx("里程碑进度")}</span>
                 <span>{currentProject.progress || 0}%</span>
               </div>
               <div className="w-full h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
@@ -113,7 +106,7 @@ export const ActiveProjectBento: React.FC<ActiveProjectBentoProps> = ({
 
             {/* 器材与安全认证情况 */}
             <div className="flex flex-wrap items-center gap-2 pt-2 text-xs">
-              <span className="text-slate-500">实验器材:</span>
+              <span className="text-slate-500">{tx("实验器材:")}</span>
               {currentProject.equipmentList && currentProject.equipmentList.length > 0 ? (
                 currentProject.equipmentList.slice(0, 3).map((eq, idx) => (
                   <Badge key={idx} variant="neutral" size="sm">
@@ -121,13 +114,13 @@ export const ActiveProjectBento: React.FC<ActiveProjectBentoProps> = ({
                   </Badge>
                 ))
               ) : (
-                <span className="text-slate-400">常规教具</span>
+                <span className="text-slate-400">{tx("常规教具")}</span>
               )}
 
               {Object.values(currentProject.safetyPassed || {}).some(Boolean) ? (
                 <div className="ml-auto flex items-center gap-1 text-growth-600 dark:text-growth-400 font-medium">
                   <ShieldCheck size={14} />
-                  <span>安全规程已就绪</span>
+                  <span>{tx("安全规程已就绪")}</span>
                 </div>
               ) : (
                 <button
@@ -136,7 +129,7 @@ export const ActiveProjectBento: React.FC<ActiveProjectBentoProps> = ({
                   className="ml-auto flex items-center gap-1 text-alert-600 dark:text-alert-400 hover:underline font-medium"
                 >
                   <ShieldAlert size={14} />
-                  <span>待完成安全准入 →</span>
+                  <span>{tx("待完成安全准入 →")}</span>
                 </button>
               )}
             </div>
@@ -147,15 +140,14 @@ export const ActiveProjectBento: React.FC<ActiveProjectBentoProps> = ({
       {currentProject && (
         <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between">
           <span className="text-xs text-slate-500">
-            预估完成报酬：<strong className="text-energy-600">+{currentProject.rewardCoins || 100} ⚡</strong>
+            {tx("预估完成报酬：")}<strong className="text-energy-600">+{currentProject.rewardCoins || 100} ⚡</strong>
           </span>
           <Button
             size="sm"
             variant="outline"
             onClick={() => onNavigate(`/projects`)}
           >
-            进入实验看板
-          </Button>
+            {tx("进入实验看板")}</Button>
         </div>
       )}
     </BentoCard>

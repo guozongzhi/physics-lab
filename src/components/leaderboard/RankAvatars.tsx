@@ -1,3 +1,4 @@
+import { useLocale } from '@/i18n/useLocale';
 import { useState } from 'react';
 
 export interface EnergyStudent {
@@ -19,8 +20,9 @@ function StudentPortrait({ student }: { student: EnergyStudent }) {
 }
 
 export default function RankAvatars({ students }: { students: EnergyStudent[] }) {
+  const { tx } = useLocale();
   if (!students.length) return null;
-  return <span className="energy-student-avatars" role="group" aria-label={`学生：${students.map((student) => student.name).join('、')}`}>
+  return <span className="energy-student-avatars" role="group" aria-label={tx("学生：{0}", { 0: students.map((student) => student.name).join('、') })}>
     {students.map((student) => <StudentPortrait key={student.id} student={student} />)}
   </span>;
 }

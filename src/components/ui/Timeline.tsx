@@ -1,3 +1,4 @@
+import { useLocale } from '@/i18n/useLocale';
 import { cn } from '@/lib/utils';
 
 type TimelineEventType = 'info' | 'success' | 'warning' | 'energy';
@@ -31,6 +32,7 @@ const typeChipMap: Record<TimelineEventType, string> = {
 };
 
 export default function Timeline({ events, className }: TimelineProps) {
+  const { tx } = useLocale();
   return (
     <div className={cn('relative pl-1.5', className)}>
       <div
@@ -81,8 +83,7 @@ export default function Timeline({ events, className }: TimelineProps) {
         })}
         {events.length === 0 && (
           <div className="text-center py-8 text-ink-400 text-sm">
-            暂无动态
-          </div>
+            {tx("暂无动态")}</div>
         )}
       </div>
     </div>

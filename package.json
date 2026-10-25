@@ -9,7 +9,8 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "check": "tsc -b --noEmit",
-    "test:core": "node scripts/test-core-contracts.cjs"
+    "test:core": "node scripts/test-core-contracts.cjs",
+    "test:locale": "node scripts/test-workspace-locale.cjs"
   },
   "dependencies": {
     "clsx": "^2.1.1",

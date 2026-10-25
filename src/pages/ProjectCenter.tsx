@@ -1,3 +1,4 @@
+import { useLocale } from '@/i18n/useLocale';
 import type { LucideIcon } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -109,6 +110,7 @@ function buildPlanets(projects: Project[], groups: Group[], users: StudentUser[]
 const STATUSES: ProjectStatus[] = ['planning', 'progress', 'review', 'done', 'failed', 'frozen'];
 
 export default function ProjectCenter() {
+  const { tx } = useLocale();
   const userId = useAuthStore((s) => s.userId);
   const role = useAuthStore((s) => s.role);
   const navigate = useNavigate();
@@ -266,24 +268,24 @@ export default function ProjectCenter() {
                   MISSION CONTROL CENTER
                 </div>
                 <h1 className="text-3xl font-black tracking-tight">
-                  <span className="student-project-title text-ink-800">项目指挥中心</span>
+                  <span className="student-project-title text-ink-800">{tx("项目指挥中心")}</span>
                   <span className="student-project-subtitle text-gradient-mission">Project Center</span>
                 </h1>
               </div>
             </div>
-            <p className="text-ink-600 font-medium leading-relaxed max-w-2xl">{planets.length} 个项目正在推进。查看里程碑、技术风险与奖励进度，选择项目进入任务中心。</p>
+            <p className="text-ink-600 font-medium leading-relaxed max-w-2xl">{planets.length} {tx("个项目正在推进。查看里程碑、技术风险与奖励进度，选择项目进入任务中心。")}</p>
             <div className="flex flex-wrap gap-2.5 mt-5">
               <span className="chip-mission !py-1.5 !px-3">
-                <Rocket size={12} /> 进行中 {stats.progress}
+                <Rocket size={12} /> {tx("进行中")}{stats.progress}
               </span>
               <span className="chip-alert !py-1.5 !px-3">
-                <Users size={12} /> 评审中 {stats.review}
+                <Users size={12} /> {tx("评审中")}{stats.review}
               </span>
               <span className="chip-growth !py-1.5 !px-3">
-                <CheckCircle2 size={12} /> 完成 {stats.done}
+                <CheckCircle2 size={12} /> {tx("完成")}{stats.done}
               </span>
               <span className="chip-nova !py-1.5 !px-3">
-                <Snowflake size={12} /> 冻结 {stats.frozen}
+                <Snowflake size={12} /> {tx("冻结")}{stats.frozen}
               </span>
             </div>
           </div>
@@ -303,7 +305,7 @@ export default function ProjectCenter() {
                   <div className={cn('text-3xl font-black tabular-nums', `text-${cfg.color}-600`)}>
                     {stats[stat]}
                   </div>
-                  <div className="text-[11px] font-bold text-ink-500 mt-1">{cfg.label}</div>
+                  <div className="text-[11px] font-bold text-ink-500 mt-1">{tx(cfg.label)}</div>
                 </motion.div>
               );
             })}
@@ -319,28 +321,28 @@ export default function ProjectCenter() {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="搜索项目名、关键词..."
+              placeholder={tx("搜索项目名、关键词...")}
               className="input-field !pl-11 !py-2.5 !rounded-xl"
             />
           </div>
 
           <div className="flex items-center gap-2">
             <Filter size={14} className="text-mission-500 shrink-0" />
-            <span className="text-xs font-bold text-ink-500 uppercase tracking-wide shrink-0">小组</span>
+            <span className="text-xs font-bold text-ink-500 uppercase tracking-wide shrink-0">{tx("小组")}</span>
             <select
               value={groupFilter}
               onChange={(e) => setGroupFilter(e.target.value)}
               className="glass-card !py-2 !px-3 rounded-xl text-sm font-bold text-ink-600 border-0 outline-none cursor-pointer min-w-[140px]"
             >
               {groupOptions.map((g) => (
-                <option key={g}>{g}</option>
+                <option key={g} value={g}>{g === '全部小组' ? tx(g) : g}</option>
               ))}
             </select>
           </div>
 
           {/* flex-wrap：窄屏时状态按钮换行，否则会被压成"规/划/中"竖排 */}
           <div className="flex flex-wrap items-center gap-1.5">
-            <span className="text-xs font-bold text-ink-500 uppercase tracking-wide shrink-0">状态</span>
+            <span className="text-xs font-bold text-ink-500 uppercase tracking-wide shrink-0">{tx("状态")}</span>
             {STATUSES.map((s) => {
               const cfg = STATUS_CONFIG[s];
               const active = statusFilters.includes(s);
@@ -353,14 +355,14 @@ export default function ProjectCenter() {
                     active ? cfg.chip : 'glass-card text-ink-500 hover:text-ink-700'
                   )}
                 >
-                  {cfg.label}
+                  {tx(cfg.label)}
                 </button>
               );
             })}
           </div>
 
           <div className="flex items-center gap-1.5 ml-auto">
-            <span className="text-xs font-bold text-ink-500 uppercase tracking-wide">排序</span>
+            <span className="text-xs font-bold text-ink-500 uppercase tracking-wide">{tx("排序")}</span>
             <button
               onClick={() => setSortBy('due')}
               className={cn(
@@ -368,8 +370,7 @@ export default function ProjectCenter() {
                 sortBy === 'due' ? 'chip-mission' : 'glass-card text-ink-500'
               )}
             >
-              <Clock size={11} /> 截止近
-            </button>
+              <Clock size={11} /> {tx("截止近")}</button>
             <button
               onClick={() => setSortBy('reward')}
               className={cn(
@@ -377,8 +378,7 @@ export default function ProjectCenter() {
                 sortBy === 'reward' ? 'chip-energy' : 'glass-card text-ink-500'
               )}
             >
-              <Zap size={11} /> 奖励高
-            </button>
+              <Zap size={11} /> {tx("奖励高")}</button>
           </div>
         </div>
       </section>
@@ -386,8 +386,8 @@ export default function ProjectCenter() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         <section className="project-mission-board lg:col-span-8 glass-card rounded-[20px]">
           <header className="project-board-heading">
-            <div><span className="mission-label">RESEARCH MISSIONS</span><h2>探索你的研究任务</h2><p>选择课题，查看器材、技术要点与下一步行动。</p></div>
-            <span className="project-board-count">{filteredPlanets.length} 个项目</span>
+            <div><span className="mission-label">RESEARCH MISSIONS</span><h2>{tx("探索你的研究任务")}</h2><p>{tx("选择课题，查看器材、技术要点与下一步行动。")}</p></div>
+            <span className="project-board-count">{filteredPlanets.length} {tx("个项目")}</span>
           </header>
           <div className="project-mission-grid">
             {filteredPlanets.map((planet, idx) => {
@@ -409,19 +409,19 @@ export default function ProjectCenter() {
                     <span className="project-art-topic">{planet.topic}</span>
                   </div>
                   <div className="project-mission-body">
-                    <div className="project-mission-meta"><span className={cfg.chip}>{cfg.label}</span><span><Zap size={13} /> +{planet.rewardCoins}</span></div>
+                    <div className="project-mission-meta"><span className={cfg.chip}>{tx(cfg.label)}</span><span><Zap size={13} /> +{planet.rewardCoins}</span></div>
                     <h3>{planet.title}</h3>
-                    <p className="project-mission-description">{planet.description || '从提出问题到实验验证，开启你的物理研究。'}</p>
-                    <div className="project-mission-progress"><span>研究进度</span><strong>{planet.progress}%</strong></div>
+                    <p className="project-mission-description">{planet.description || tx("从提出问题到实验验证，开启你的物理研究。")}</p>
+                    <div className="project-mission-progress"><span>{tx("研究进度")}</span><strong>{planet.progress}%</strong></div>
                     <div className="project-mission-track"><span style={{ width: `${planet.progress}%` }} /></div>
                     <div className="project-mission-footer"><span><Users size={14} />{planet.groupName}</span><ChevronRight size={18} /></div>
-                    <div className="project-mission-facts"><span><Wrench size={12} /> 器材 {planet.equipmentList.length} 项</span><span><ShieldCheck size={12} />{planet.safetyPassed ? '安全已通过' : '待安全认证'}</span></div>
+                    <div className="project-mission-facts"><span><Wrench size={12} /> {tx("器材")}{planet.equipmentList.length} {tx("项")}</span><span><ShieldCheck size={12} />{planet.safetyPassed ? tx("安全已通过") : tx("待安全认证")}</span></div>
                   </div>
                 </button>
               );
             })}
           </div>
-          {filteredPlanets.length === 0 && <div className="project-board-empty"><Search size={30} /><h3>没有匹配的项目</h3><p>试试其他关键词，或调整小组与状态筛选。</p></div>}
+          {filteredPlanets.length === 0 && <div className="project-board-empty"><Search size={30} /><h3>{tx("没有匹配的项目")}</h3><p>{tx("试试其他关键词，或调整小组与状态筛选。")}</p></div>}
         </section>
 
         <aside id="mission-focus-panel" className="lg:col-span-4 space-y-4 scroll-mt-24">
@@ -446,7 +446,7 @@ export default function ProjectCenter() {
                     )}
                   >
                     <Icon size={13} />
-                    {tab.label}
+                    {tx(tab.label)}
                   </button>
                 );
               })}
@@ -455,8 +455,7 @@ export default function ProjectCenter() {
 
           {!selectedPlanet ? (
             <div className="glass-card p-8 rounded-2xl text-center text-ink-400 text-xs">
-              暂无可查看的项目详情
-            </div>
+              {tx("暂无可查看的项目详情")}</div>
           ) : (
           <motion.div
             key={`${selectedPlanet.id}-${missionTab}`}
@@ -470,7 +469,7 @@ export default function ProjectCenter() {
                 <div>
                   <div className="flex items-center gap-2 mb-1.5">
                     <span className={cn(STATUS_CONFIG[selectedPlanet.status].chip, '!py-0.5 !text-[10px]')}>
-                      {STATUS_CONFIG[selectedPlanet.status].label}
+                      {tx(STATUS_CONFIG[selectedPlanet.status].label)}
                     </span>
                     <span className="chip-mission !py-0.5 !text-[10px]">{selectedPlanet.groupName}</span>
                   </div>
@@ -493,9 +492,9 @@ export default function ProjectCenter() {
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-2">
                         <Wrench size={14} className="text-mission-500" />
-                        <span className="text-sm font-black text-ink-800">器材清单</span>
+                        <span className="text-sm font-black text-ink-800">{tx("器材清单")}</span>
                       </div>
-                      <span className="text-xs font-bold text-ink-500">{selectedPlanet.equipmentList.length} 项</span>
+                      <span className="text-xs font-bold text-ink-500">{selectedPlanet.equipmentList.length} {tx("项")}</span>
                     </div>
                     <div className="space-y-1.5">
                       {selectedPlanet.equipmentList.length > 0 ? (
@@ -506,7 +505,7 @@ export default function ProjectCenter() {
                           </div>
                         ))
                       ) : (
-                        <div className="text-xs text-ink-400 text-center py-2">暂未录入器材</div>
+                        <div className="text-xs text-ink-400 text-center py-2">{tx("暂未录入器材")}</div>
                       )}
                     </div>
                   </div>
@@ -515,19 +514,19 @@ export default function ProjectCenter() {
                     <div className="p-4 rounded-2xl glass-card">
                       <div className="flex items-center gap-2 mb-2">
                         <ShieldCheck size={16} className={selectedPlanet.safetyPassed ? 'text-growth-500' : 'text-danger-500'} />
-                        <span className="text-xs font-bold text-ink-500 uppercase">安全状态</span>
+                        <span className="text-xs font-bold text-ink-500 uppercase">{tx("安全状态")}</span>
                       </div>
                       <div className={cn(
                         'text-lg font-black',
                         selectedPlanet.safetyPassed ? 'text-growth-600' : 'text-danger-600'
                       )}>
-                        {selectedPlanet.safetyPassed ? '已认证' : '待通过'}
+                        {selectedPlanet.safetyPassed ? tx("已认证") : tx("待通过")}
                       </div>
                     </div>
                     <div className="p-4 rounded-2xl glass-card">
                       <div className="flex items-center gap-2 mb-2">
                         <Award size={16} className="text-energy-500" />
-                        <span className="text-xs font-bold text-ink-500 uppercase">能量奖励</span>
+                        <span className="text-xs font-bold text-ink-500 uppercase">{tx("能量奖励")}</span>
                       </div>
                       <div className="text-lg font-black text-energy-600 tabular-nums">
                         +{selectedPlanet.rewardCoins}⚡
@@ -538,7 +537,7 @@ export default function ProjectCenter() {
                   <div className="p-4 rounded-2xl bg-gradient-to-br from-nova-50/60 to-mission-50/40 border border-nova-100/50">
                     <div className="flex items-center gap-2 mb-3">
                       <Users size={14} className="text-nova-500" />
-                      <span className="text-sm font-black text-ink-800">参与小组</span>
+                      <span className="text-sm font-black text-ink-800">{tx("参与小组")}</span>
                     </div>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
@@ -554,7 +553,7 @@ export default function ProjectCenter() {
                             </div>
                           ))}
                         </div>
-                        <span className="text-xs font-bold text-ink-600">{selectedPlanet.owners.length} 名成员</span>
+                        <span className="text-xs font-bold text-ink-600">{selectedPlanet.owners.length} {tx("名成员")}</span>
                       </div>
                       <span className="text-xs text-nova-600 font-bold">{selectedPlanet.groupName}</span>
                     </div>
@@ -563,19 +562,18 @@ export default function ProjectCenter() {
                   <div className="p-4 rounded-2xl bg-gradient-to-br from-energy-50/60 to-alert-50/40 border border-energy-100/50">
                     <div className="flex items-center gap-2 mb-3">
                       <ListTodo size={14} className="text-energy-500" />
-                      <span className="text-sm font-black text-ink-800">招募任务</span>
-                      <span className="chip-energy !py-0.5 !text-[10px] ml-auto">{projectRecruits.length} 条</span>
+                      <span className="text-sm font-black text-ink-800">{tx("招募任务")}</span>
+                      <span className="chip-energy !py-0.5 !text-[10px] ml-auto">{projectRecruits.length} {tx("条")}</span>
                     </div>
                     <div className="space-y-2">
                       {projectRecruits.length === 0 ? (
-                        <div className="text-xs text-ink-400 text-center py-2">暂无招募，组长发布后学生可投标</div>
+                        <div className="text-xs text-ink-400 text-center py-2">{tx("暂无招募，组长发布后学生可投标")}</div>
                       ) : projectRecruits.map((r) => (
                         <div key={r.id} className="flex items-center justify-between py-1.5 px-2.5 rounded-lg bg-white/70">
                           <div className="min-w-0">
                             <div className="text-xs font-semibold text-ink-700 truncate">{r.title}</div>
                             <div className="text-[10px] text-ink-400">
-                              {r.status === 'open' ? '招募中' : r.status === 'assigned' ? '已分配' : '已结束'} · {r.bids?.length || 0} 人投
-                            </div>
+                              {r.status === 'open' ? tx("招募中") : r.status === 'assigned' ? tx("已分配") : tx("已结束")} · {r.bids?.length || 0} {tx("人投")}</div>
                           </div>
                           <span className="chip-energy !py-0.5 !px-2 text-[10px] shrink-0">+{r.reward}⚡</span>
                         </div>
@@ -590,10 +588,9 @@ export default function ProjectCenter() {
                   <div className="p-4 rounded-2xl bg-gradient-to-br from-danger-50/50 to-alert-50/40 border border-danger-100/50">
                     <div className="flex items-center gap-2 mb-3">
                       <AlertTriangle size={14} className="text-danger-500" />
-                      <span className="text-sm font-black text-ink-800">技术难点</span>
+                      <span className="text-sm font-black text-ink-800">{tx("技术难点")}</span>
                       <span className="chip-danger !py-0.5 !text-[10px] ml-auto">
-                        {selectedPlanet.difficulties.length} 项
-                      </span>
+                        {selectedPlanet.difficulties.length} {tx("项")}</span>
                     </div>
                     <div className="space-y-1.5">
                       {selectedPlanet.difficulties.map((d, i) => (
@@ -610,18 +607,17 @@ export default function ProjectCenter() {
                   <div className="p-4 rounded-2xl bg-gradient-to-br from-growth-50/50 to-mission-50/40 border border-growth-100/50">
                     <div className="flex items-center gap-2 mb-3">
                       <Lightbulb size={14} className="text-growth-500" />
-                      <span className="text-sm font-black text-ink-800">解决方案</span>
+                      <span className="text-sm font-black text-ink-800">{tx("解决方案")}</span>
                       <span className="chip-growth !py-0.5 !text-[10px] ml-auto">
-                        {selectedPlanet.solutions.length} 项
-                      </span>
+                        {selectedPlanet.solutions.length} {tx("项")}</span>
                     </div>
                     {selectedPlanet.solutions.length > 0 ? (
                       <div className="space-y-2">
                         {selectedPlanet.solutions.map((s, i) => (
                           <div key={i} className="p-3 rounded-xl bg-white/85 border border-growth-100">
                             <p className="text-xs font-semibold text-ink-700 leading-relaxed mb-2">
-                              <span className="chip-growth !py-0.5 !text-[9px] mr-1.5">方案 {i + 1}</span>
-                              {s.text}
+                              <span className="chip-growth !py-0.5 !text-[9px] mr-1.5">{tx("方案")}{i + 1}</span>
+                              {tx(s.text)}
                             </p>
                             <div className="flex items-center justify-end">
                               <div className="flex items-center gap-1.5">
@@ -637,7 +633,7 @@ export default function ProjectCenter() {
                     ) : (
                       <div className="text-center py-6 text-ink-400">
                         <Lightbulb size={24} className="mx-auto mb-1.5 opacity-50" />
-                        <p className="text-xs">暂无解决方案，等待贡献</p>
+                        <p className="text-xs">{tx("暂无解决方案，等待贡献")}</p>
                       </div>
                     )}
                   </div>
@@ -671,7 +667,7 @@ export default function ProjectCenter() {
                         <div className="glass-card !p-4 !rounded-xl mb-1">
                           <div className="flex items-center justify-between mb-2">
                             <h4 className="text-sm font-black text-ink-800">
-                              阶段 {i + 1} · {m.name}
+                              {tx("阶段")}{i + 1} · {m.name}
                             </h4>
                             <span className={cn(
                               'text-xs font-bold tabular-nums',
@@ -712,8 +708,7 @@ export default function ProjectCenter() {
                       pushToast?.(`已展开《${selectedPlanet.title}》完整任务看板`, 'info');
                     }}
                   >
-                    <ListTodo size={16} /> 查看完整任务看板
-                  </button>
+                    <ListTodo size={16} /> {tx("查看完整任务看板")}</button>
                 </div>
               )}
             </div>
@@ -754,10 +749,10 @@ export default function ProjectCenter() {
                       <ListTodo size={12} /> FULL TASK KANBAN
                     </span>
                     <span className={cn(STATUS_CONFIG[selectedPlanet.status].chip, '!py-0.5 !text-[10px]')}>
-                      {STATUS_CONFIG[selectedPlanet.status].label}
+                      {tx(STATUS_CONFIG[selectedPlanet.status].label)}
                     </span>
                     <span className="chip-energy !py-0.5 !text-[10px]">
-                      🏆 总奖励 +{selectedPlanet.rewardCoins}⚡
+                      {tx("🏆 总奖励 +")}{selectedPlanet.rewardCoins}⚡
                     </span>
                   </div>
                   <h2 className="text-[26px] md:text-[30px] font-black tracking-tight text-ink-900 leading-tight mb-1.5">
@@ -765,10 +760,10 @@ export default function ProjectCenter() {
                   </h2>
                   <div className="flex flex-wrap items-center gap-3 text-[12px] text-ink-500 font-semibold">
                     <span className="flex items-center gap-1.5"><User size={13} className="text-mission-500" /> {selectedPlanet.groupName}</span>
-                    <span className="flex items-center gap-1.5"><Users size={13} className="text-nova-500" /> {selectedPlanet.owners.length} 位成员</span>
-                    <span className="flex items-center gap-1.5"><Clock size={13} className="text-alert-500" /> {selectedPlanet.dueInDays > 0 ? `剩 ${selectedPlanet.dueInDays} 天` : '已到截止日'}</span>
+                    <span className="flex items-center gap-1.5"><Users size={13} className="text-nova-500" /> {selectedPlanet.owners.length} {tx("位成员")}</span>
+                    <span className="flex items-center gap-1.5"><Clock size={13} className="text-alert-500" /> {selectedPlanet.dueInDays > 0 ? tx("剩 {0} 天", { 0: selectedPlanet.dueInDays }) : tx("已到截止日")}</span>
                     <span className="chip-mission !py-0.5 !text-[10px]">
-                      完成度 {doneTasks}/{totalTasks} ({Math.round(doneTasks / Math.max(1, totalTasks) * 100)}%)
+                      {tx("完成度")}{doneTasks}/{totalTasks} ({Math.round(doneTasks / Math.max(1, totalTasks) * 100)}%)
                     </span>
                   </div>
                 </div>
@@ -812,16 +807,16 @@ export default function ProjectCenter() {
                         </div>
                         <div>
                           <h3 className="font-black text-ink-800 text-[16px] leading-tight">
-                            阶段 {mi + 1} · {k.milestone.name}
+                            {tx("阶段")}{mi + 1} · {k.milestone.name}
                           </h3>
                           <div className="flex items-center gap-3 mt-1 text-[11px] text-ink-500 font-semibold">
                             <span className={cn(
                               k.tasks.every(t => completedTasks.has(t.id)) ? 'text-growth-600' :
                               k.tasks.some(t => completedTasks.has(t.id)) ? 'text-mission-600' : 'text-ink-400'
                             )}>
-                              {k.tasks.every(t => completedTasks.has(t.id)) ? '✅ 已完成' : k.tasks.some(t => completedTasks.has(t.id)) ? '🛰️ 进行中' : '⏳ 待启动'}
+                              {k.tasks.every(t => completedTasks.has(t.id)) ? tx("✅ 已完成") : k.tasks.some(t => completedTasks.has(t.id)) ? tx("🛰️ 进行中") : tx("⏳ 待启动")}
                             </span>
-                            <span>· 任务 {k.tasks.filter(t => completedTasks.has(t.id)).length}/{k.tasks.length}</span>
+                            <span>{tx("· 任务")}{k.tasks.filter(t => completedTasks.has(t.id)).length}/{k.tasks.length}</span>
                             <span className="chip-mission !py-0.5 !text-[10px]">{Math.round(k.tasks.filter(t => completedTasks.has(t.id)).length / k.tasks.length * 100)}%</span>
                           </div>
                         </div>
@@ -892,8 +887,8 @@ export default function ProjectCenter() {
                                 </div>
                                 <div className="min-w-0 flex-1">
                                   <div className="flex items-center gap-2 flex-wrap mb-1.5">
-                                    <span className={cn(tagColors[t.tag], '!py-0 !px-2 !text-[10px]')}>{t.tag}</span>
-                                    <span className={cn(statusConfig.chip, '!py-0 !px-2 !text-[10px]')}>{statusConfig.label}</span>
+                                    <span className={cn(tagColors[t.tag], '!py-0 !px-2 !text-[10px]')}>{tx(t.tag)}</span>
+                                    <span className={cn(statusConfig.chip, '!py-0 !px-2 !text-[10px]')}>{tx(statusConfig.label)}</span>
                                   </div>
                                   <h4 className={cn(
                                     'text-[13px] font-black leading-snug',
@@ -912,7 +907,7 @@ export default function ProjectCenter() {
                                 <User size={12} className="text-mission-500" /> {t.assignee}
                               </div>
                               <div className="flex items-center gap-1.5">
-                                <CalendarDays size={12} className="text-nova-500" /> 截止 {t.due}
+                                <CalendarDays size={12} className="text-nova-500" /> {tx("截止")}{t.due}
                               </div>
                             </div>
                           </motion.div>
@@ -928,36 +923,34 @@ export default function ProjectCenter() {
                     <div className="text-3xl font-black text-gradient-mission tabular-nums mb-0.5">
                       {kanbanData.reduce((n, k) => n + k.tasks.filter(t => t.status === 'todo' && !completedTasks.has(t.id)).length, 0)}
                     </div>
-                    <div className="text-[11px] text-ink-500 font-semibold">任务待启动</div>
+                    <div className="text-[11px] text-ink-500 font-semibold">{tx("任务待启动")}</div>
                   </div>
                   <div className="glass-card !rounded-2xl p-4 bg-gradient-to-br from-alert-50/70 to-energy-50/50 border border-alert-100/60">
                     <div className="text-[10px] font-bold tracking-wider text-alert-600 mb-1">IN PROGRESS</div>
                     <div className="text-3xl font-black text-gradient-energy tabular-nums mb-0.5">
                       {kanbanData.reduce((n, k) => n + k.tasks.filter(t => t.status === 'doing' && !completedTasks.has(t.id)).length, 0)}
                     </div>
-                    <div className="text-[11px] text-ink-500 font-semibold">实验/调试中</div>
+                    <div className="text-[11px] text-ink-500 font-semibold">{tx("实验/调试中")}</div>
                   </div>
                   <div className="glass-card !rounded-2xl p-4 bg-gradient-to-br from-growth-50/70 to-mission-50/50 border border-growth-100/60">
                     <div className="text-[10px] font-bold tracking-wider text-growth-600 mb-1">DONE</div>
                     <div className="text-3xl font-black text-[#22C55E] tabular-nums mb-0.5">
                       {doneTasks}
                     </div>
-                    <div className="text-[11px] text-ink-500 font-semibold">已完成任务 · 总进度 {Math.round(doneTasks / Math.max(1, totalTasks) * 100)}%</div>
+                    <div className="text-[11px] text-ink-500 font-semibold">{tx("已完成任务 · 总进度")}{Math.round(doneTasks / Math.max(1, totalTasks) * 100)}%</div>
                   </div>
                 </div>
 
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-2 pb-2">
                   <p className="text-[12px] text-ink-500 font-semibold flex items-center gap-2">
                     <Lightbulb size={14} className="text-nova-500" />
-                    小贴士：点击任务卡片可标记本地执行进度；课题能量币将在教师结题验收后统一结算。
-                  </p>
+                    {tx("小贴士：点击任务卡片可标记本地执行进度；课题能量币将在教师结题验收后统一结算。")}</p>
                   <div className="flex items-center gap-2 justify-end">
                     <button
                       onClick={() => setKanbanOpen(false)}
                       className="btn-ghost-mission !px-4 !rounded-xl text-[13px]"
                     >
-                      返回基地
-                    </button>
+                      {tx("返回基地")}</button>
                     <button
                       className="btn-mission !rounded-xl text-[13px]"
                       onClick={() => {
@@ -965,8 +958,7 @@ export default function ProjectCenter() {
                         pushToast?.(`《${selectedPlanet.title}》任务看板已同步更新 · 继续保持 🚀`, 'success');
                       }}
                     >
-                      <CheckCircle2 size={15} /> 保存并关闭
-                    </button>
+                      <CheckCircle2 size={15} /> {tx("保存并关闭")}</button>
                   </div>
                 </div>
               </div>

@@ -1,3 +1,4 @@
+import { useLocale } from '@/i18n/useLocale';
 import { useEffect, useRef, useState } from 'react';
 import { ArrowRight, BookOpen, ChevronLeft, ChevronRight, FlaskConical, Pause, Play, Trophy, Users, X } from 'lucide-react';
 
@@ -16,6 +17,7 @@ const topicText = {
 };
 
 export default function LoginInfoDialog({ topic, onClose, onEnter }: { topic: LoginInfoTopic | null; onClose: () => void; onEnter: () => void }) {
+  const { tx } = useLocale();
   const dialog = useRef<HTMLDialogElement>(null);
   const [step, setStep] = useState(0);
   const [playing, setPlaying] = useState(true);
@@ -34,17 +36,17 @@ export default function LoginInfoDialog({ topic, onClose, onEnter }: { topic: Lo
     <dialog ref={dialog} className="login-info-dialog" aria-labelledby="login-info-title" onCancel={onClose} onClose={onClose}
       onClick={(event) => { if (event.target === event.currentTarget) onClose(); }}>
       <div className="login-info-content">
-        <button type="button" className="login-dialog-close" aria-label="关闭介绍" onClick={onClose}><X size={22} /></button>
-        <h2 id="login-info-title">{topic}</h2>
+        <button type="button" className="login-dialog-close" aria-label={tx("关闭介绍")} onClick={onClose}><X size={22} /></button>
+        <h2 id="login-info-title">{tx(topic || '')}</h2>
         {topic === '产品介绍' ? <>
-          <div className="login-intro-slide" key={step}><Icon size={48} /><span>0{step + 1} / 04</span><h3>{active.title}</h3><p>{active.text}</p></div>
+          <div className="login-intro-slide" key={step}><Icon size={48} /><span>0{step + 1} / 04</span><h3>{tx(active.title)}</h3><p>{tx(active.text)}</p></div>
           <div className="login-intro-controls">
-            <button type="button" aria-label="上一段" onClick={() => setStep((value) => (value + 3) % 4)}><ChevronLeft size={20} /></button>
-            <button type="button" aria-label={playing ? '暂停介绍' : '播放介绍'} onClick={() => setPlaying((value) => !value)}>{playing ? <Pause size={20} /> : <Play size={20} />}</button>
-            <button type="button" aria-label="下一段" onClick={() => setStep((value) => (value + 1) % 4)}><ChevronRight size={20} /></button>
+            <button type="button" aria-label={tx("上一段")} onClick={() => setStep((value) => (value + 3) % 4)}><ChevronLeft size={20} /></button>
+            <button type="button" aria-label={playing ? tx("暂停介绍") : tx("播放介绍")} onClick={() => setPlaying((value) => !value)}>{playing ? <Pause size={20} /> : <Play size={20} />}</button>
+            <button type="button" aria-label={tx("下一段")} onClick={() => setStep((value) => (value + 1) % 4)}><ChevronRight size={20} /></button>
           </div>
-        </> : topic && <p>{topicText[topic]}</p>}
-        <button type="button" className="login-primary" onClick={() => { dialog.current?.close(); onEnter(); }}>开始探索<ArrowRight size={18} /></button>
+        </> : topic && <p>{tx(topicText[topic])}</p>}
+        <button type="button" className="login-primary" onClick={() => { dialog.current?.close(); onEnter(); }}>{tx("开始探索")}<ArrowRight size={18} /></button>
       </div>
     </dialog>
   );

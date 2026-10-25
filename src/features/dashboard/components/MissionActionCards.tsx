@@ -1,3 +1,4 @@
+import { useLocale } from '@/i18n/useLocale';
 import React from "react";
 import { BentoCard } from "@/design-system/components/BentoCard";
 import { Badge } from "@/design-system/components/Badge";
@@ -18,13 +19,14 @@ export const MissionActionCards: React.FC<MissionActionCardsProps> = ({
   safetyPassed,
   challengeCount,
 }) => {
+  const { tx } = useLocale();
   const cards = [
     {
       title: "知识星系探索",
       desc: "系统掌握电磁、力学与热学理论知识体系",
       icon: BookOpen,
       variant: "mission" as const,
-      badgeText: `${theoryProgress}% 主题通关`,
+      badgeText: tx("{count}% 主题通关", { count: theoryProgress }),
       badgeVariant: "mission" as const,
       rewardText: "+50 ⚡",
       path: "/theory/topics",
@@ -34,7 +36,7 @@ export const MissionActionCards: React.FC<MissionActionCardsProps> = ({
       desc: "组队开展前沿物理实验研发与课题立项",
       icon: FlaskConical,
       variant: "accent" as const,
-      badgeText: `${projectCount} 个活跃`,
+      badgeText: tx("{count} 个活跃", { count: projectCount }),
       badgeVariant: "nova" as const,
       rewardText: "+200 ⚡",
       path: "/projects",
@@ -54,7 +56,7 @@ export const MissionActionCards: React.FC<MissionActionCardsProps> = ({
       desc: "跨组发布学术挑战、参与攻防抢夺悬赏",
       icon: Swords,
       variant: "energy" as const,
-      badgeText: `${challengeCount} 场对抗`,
+      badgeText: tx("{count} 场对抗", { count: challengeCount }),
       badgeVariant: "energy" as const,
       rewardText: "+150 ⚡",
       path: "/theory/challenges",
@@ -79,7 +81,7 @@ export const MissionActionCards: React.FC<MissionActionCardsProps> = ({
             }}
             role="link"
             tabIndex={0}
-            aria-label={`进入${c.title}`}
+            aria-label={tx("进入{0}", { 0: tx(c.title) })}
             className="flex flex-col justify-between group"
           >
             <div>
@@ -88,14 +90,14 @@ export const MissionActionCards: React.FC<MissionActionCardsProps> = ({
                   <Icon size={20} />
                 </div>
                 <Badge variant={c.badgeVariant} size="sm">
-                  {c.badgeText}
+                  {tx(c.badgeText)}
                 </Badge>
               </div>
               <h3 className="font-bold text-sm text-slate-900 dark:text-slate-100 group-hover:text-mission-600 dark:group-hover:text-mission-400 transition-colors">
-                {c.title}
+                {tx(c.title)}
               </h3>
               <p className="mt-1 text-xs text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed">
-                {c.desc}
+                {tx(c.desc)}
               </p>
             </div>
 
@@ -104,7 +106,7 @@ export const MissionActionCards: React.FC<MissionActionCardsProps> = ({
                 <Zap size={12} /> {c.rewardText}
               </span>
               <span className="text-slate-400 group-hover:text-mission-500 flex items-center gap-1 group-hover:translate-x-0.5 transition-all">
-                进入 <ArrowRight size={13} />
+                {tx("进入")}<ArrowRight size={13} />
               </span>
             </div>
           </BentoCard>

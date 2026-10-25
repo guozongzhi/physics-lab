@@ -1,3 +1,4 @@
+import { useLocale } from '@/i18n/useLocale';
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import EnergyLedger from '@/components/coins/EnergyLedger';
@@ -45,6 +46,7 @@ const GROUP_COLORS = [
 ];
 
 export default function ResearchLeague() {
+  const { tx } = useLocale();
   const { groups, users, classMeta } = useGroupStore();
   const { coinTxs } = useCoinStore();
   const { classId: myClassId, role, groupId } = useAuthStore();
@@ -187,24 +189,23 @@ export default function ResearchLeague() {
               {ledgerSpan && (
                 <span className="chip-energy">
                   <Flame size={11} />
-                  流水 {ledgerSpan}
+                  {tx("流水")}{ledgerSpan}
                 </span>
               )}
             </div>
             <div className="flex flex-wrap items-end justify-between gap-6">
               <div>
                 <h1 className="text-[32px] md:text-[36px] font-extrabold text-ink-900 leading-[1.1] tracking-tight">
-                  {showLedger ? '能量币账本' : '小组能量天梯'}
-                  <span className="block text-gradient-mission mt-1 text-[18px] md:text-[22px]">科研联赛 · 每一份努力都算数</span>
+                  {showLedger ? tx("能量币账本") : tx("小组能量天梯")}
+                  <span className="block text-gradient-mission mt-1 text-[18px] md:text-[22px]">{tx("科研联赛 · 每一份努力都算数")}</span>
                 </h1>
                 <p className="mt-2 text-[14px] text-ink-500 max-w-lg">
-                  按小组能量排名争夺冠亚季军，查看各组成员头像，也可查阅每笔能量币收支。
-                </p>
+                  {tx("按小组能量排名争夺冠亚季军，查看各组成员头像，也可查阅每笔能量币收支。")}</p>
               </div>
               <div className="glass-card !shadow-none p-1.5 rounded-2xl border-mission-100/70 flex flex-wrap gap-1">
                 <button type="button" aria-pressed={showLedger} onClick={() => setSearchParams(showLedger ? {} : { view: 'ledger' })}
                   className="px-4 py-2 rounded-xl text-[13px] font-semibold bg-white/80 text-mission-700">
-                  {showLedger ? '返回小组排名' : '详细流水'}
+                  {showLedger ? tx("返回小组排名") : tx("详细流水")}
                 </button>
                 {!showLedger && TABS.map((t) => (
                   <button
@@ -217,7 +218,7 @@ export default function ResearchLeague() {
                         : 'text-ink-600 hover:bg-mission-50/60 hover:text-mission-700'
                     )}
                   >
-                    {t.label}
+                    {tx(t.label)}
                   </button>
                 ))}
               </div>
@@ -229,7 +230,7 @@ export default function ResearchLeague() {
           <div className="min-w-0 xl:col-span-8 space-y-6">
             <div className="space-y-5">
               {rankingByClass.length === 0 ? (
-                <div className="glass-card p-10 text-center text-ink-400 text-[13px]">暂无排名数据</div>
+                <div className="glass-card p-10 text-center text-ink-400 text-[13px]">{tx("暂无排名数据")}</div>
               ) : (
                 rankingByClass.map((cls) => (
                   <motion.section
@@ -245,7 +246,7 @@ export default function ResearchLeague() {
                         {cls.className}
                       </h3>
                       <span className="text-[11px] text-ink-400">
-                        {cls.rows.length} 个小组 · {tab === 'week' ? '本周' : tab === 'month' ? '本月' : '累计'}
+                        {cls.rows.length} {tx("个小组 ·")}{tab === 'week' ? tx("本周") : tab === 'month' ? tx("本月") : tx("累计")}
                       </span>
                     </div>
                     <EnergyLadder
@@ -270,9 +271,8 @@ export default function ResearchLeague() {
               <div className="flex items-center justify-between mb-4">
                 <h3 className="flex items-center gap-2 text-[15px] font-bold text-ink-800">
                   <TrendingUp size={18} className="text-mission-500" />
-                  能量成长轨迹
-                </h3>
-                <span className="text-[10px] font-mono text-ink-400">近 30 天余额</span>
+                  {tx("能量成长轨迹")}</h3>
+                <span className="text-[10px] font-mono text-ink-400">{tx("近 30 天余额")}</span>
               </div>
               <div className="h-[260px] -mx-3">
                 <ResponsiveContainer width="100%" height="100%">
@@ -368,13 +368,12 @@ export default function ResearchLeague() {
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="flex items-center gap-2 text-[15px] font-bold text-ink-800">
                     <Flame size={18} className="text-energy-500" />
-                    本周活跃小组
-                  </h3>
-                  <span className="chip-growth !py-0.5 !px-2 text-[10px]">本周 MVP</span>
+                    {tx("本周活跃小组")}</h3>
+                  <span className="chip-growth !py-0.5 !px-2 text-[10px]">{tx("本周 MVP")}</span>
                 </div>
                 <div className="space-y-3">
                   {mvp.length === 0 ? (
-                    <div className="text-center py-6 text-ink-400 text-[12px]">本周暂无能量入账</div>
+                    <div className="text-center py-6 text-ink-400 text-[12px]">{tx("本周暂无能量入账")}</div>
                   ) : mvp.map((m, i) => {
                     const members = users.filter((u) => u.groupId === m.groupId).slice(0, 5);
                     const c = GROUP_COLORS[i % GROUP_COLORS.length];
@@ -404,9 +403,9 @@ export default function ResearchLeague() {
                             </div>
                             <div className="min-w-0">
                               <div className="font-bold text-[13px] text-ink-800 truncate">
-                                {m.name}
+                                {tx(m.name)}
                               </div>
-                              <div className="text-[11px] text-ink-500 mt-0.5">本周 +{m.coins}⚡ · {m.memberCount} 人</div>
+                              <div className="text-[11px] text-ink-500 mt-0.5">{tx("本周 +")}{m.coins}⚡ · {m.memberCount} {tx("人")}</div>
                             </div>
                           </div>
                           <span className="chip-energy !py-0.5 !px-2 text-[10px] shrink-0">

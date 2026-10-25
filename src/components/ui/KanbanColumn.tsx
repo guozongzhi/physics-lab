@@ -1,3 +1,4 @@
+import { useLocale } from '@/i18n/useLocale';
 import type { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 
@@ -16,6 +17,7 @@ export default function KanbanColumn({
   items,
   className,
 }: KanbanColumnProps) {
+  const { tx } = useLocale();
   void statusKey;
   return (
     <div className={cn('kanban-col', className)}>
@@ -27,7 +29,7 @@ export default function KanbanColumn({
       >
         <div className="flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-white/90 shadow-sm" />
-          <h3 className="font-semibold text-sm tracking-wide">{title}</h3>
+          <h3 className="font-semibold text-sm tracking-wide">{tx(title)}</h3>
         </div>
         <span className="min-w-[24px] h-6 rounded-full bg-white/25 backdrop-blur-sm flex items-center justify-center text-xs font-bold px-2">
           {items.length}
@@ -42,8 +44,7 @@ export default function KanbanColumn({
           ))
         ) : (
           <div className="flex-1 flex items-center justify-center border-2 border-dashed border-physics-100 rounded-xl2 text-ink-400 text-xs min-h-[80px]">
-            暂无任务
-          </div>
+            {tx("暂无任务")}</div>
         )}
       </div>
     </div>

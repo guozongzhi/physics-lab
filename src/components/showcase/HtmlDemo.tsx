@@ -1,9 +1,11 @@
+import { useLocale } from '@/i18n/useLocale';
 import { useState } from 'react';
 import { RotateCcw, Code2, Maximize2, Minimize2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 /** Untrusted student HTML runs in an opaque origin, without application credentials. */
 export default function HtmlDemo({ html, title }: { html: string; title: string }) {
+  const { tx } = useLocale();
   const [reloadKey, setReloadKey] = useState(0);
   const [showSource, setShowSource] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
@@ -23,26 +25,24 @@ export default function HtmlDemo({ html, title }: { html: string; title: string 
           <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0" />
           <span className="font-semibold break-words min-w-0">{title}</span>
           <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-700 text-slate-300 shrink-0">
-            隔离沙箱
-          </span>
+            {tx("隔离沙箱")}</span>
         </div>
         <div className="flex flex-wrap items-center gap-2 shrink-0">
           <button
             type="button"
             onClick={() => setReloadKey((k) => k + 1)}
             className="min-h-10 px-3 py-2 rounded-lg bg-slate-700/80 hover:bg-slate-600 text-slate-100 inline-flex items-center gap-1 transition"
-            title="重置仿真运行状态"
+            title={tx("重置仿真运行状态")}
           >
             <RotateCcw size={12} />
-            重置运行
-          </button>
+            {tx("重置运行")}</button>
           <button
             type="button"
             onClick={() => setShowSource((s) => !s)}
             className="min-h-10 px-3 py-2 rounded-lg bg-slate-700/80 hover:bg-slate-600 text-slate-100 inline-flex items-center gap-1 transition"
           >
             <Code2 size={14} />
-            {showSource ? '返回演示' : '查看源码'}
+            {showSource ? tx("返回演示") : tx("查看源码")}
           </button>
           <button
             type="button"
@@ -50,7 +50,7 @@ export default function HtmlDemo({ html, title }: { html: string; title: string 
             className="min-h-10 px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white inline-flex items-center gap-1 transition"
           >
             {fullscreen ? <Minimize2 size={12} /> : <Maximize2 size={12} />}
-            {fullscreen ? '退出全屏' : '全屏演示'}
+            {fullscreen ? tx("退出全屏") : tx("全屏演示")}
           </button>
         </div>
       </div>

@@ -1,3 +1,4 @@
+import { useLocale } from '@/i18n/useLocale';
 import type { LucideIcon } from 'lucide-react';
 import { ArrowUpRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -25,6 +26,7 @@ export function PortalCard({
   featured = false,
   visualSrc,
 }: PortalCardProps) {
+  const { tx } = useLocale();
   return (
     <Link
       to={to}
@@ -33,12 +35,12 @@ export function PortalCard({
       {visualSrc && <img className="portal-card-visual" src={visualSrc} alt="" aria-hidden="true" />}
       <span className="portal-card-icon"><Icon size={22} strokeWidth={1.8} /></span>
       <span className="portal-card-copy">
-        <span className="portal-card-eyebrow">{eyebrow}</span>
+        <span className="portal-card-eyebrow">{tx(eyebrow)}</span>
         <strong className="portal-card-title">{title}</strong>
         <span className="portal-card-description">{description}</span>
       </span>
       <span className="portal-card-foot">
-        <span>{detail}</span>
+        <span>{tx(detail)}</span>
         <span className="portal-card-arrow" aria-hidden="true"><ArrowUpRight size={18} /></span>
       </span>
     </Link>

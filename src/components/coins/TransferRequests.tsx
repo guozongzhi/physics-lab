@@ -1,3 +1,4 @@
+import { useLocale } from '@/i18n/useLocale';
 import { useEffect, useState } from 'react';
 import { useCoinStore } from '@/store/coinStore';
 import { useGroupStore } from '@/store/groupStore';
@@ -8,6 +9,7 @@ import { apiEnabled } from '@/lib/apiClient';
 const statusLabel = { pending: '待老师审核', approved: '已通过 · 转账完成', rejected: '已驳回' };
 
 export default function TransferRequests({ teacher = false }: { teacher?: boolean }) {
+  const { tx } = useLocale();
   const { transfers, loadTransfers, reviewTransfer } = useCoinStore();
   const groups = useGroupStore((s) => s.groups);
   const users = useGroupStore((s) => s.users);
@@ -67,28 +69,26 @@ export default function TransferRequests({ teacher = false }: { teacher?: boolea
     <section className="glass-card rounded-2xl p-5 space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="font-semibold text-ink-900">{canReview ? '能量币转账审核' : '转账申请'}</h2>
-          <p className="text-xs text-ink-500 mt-1">{canReview
-            ? '审核通过后立即扣款到账；直接增减小组或个人能量币，请使用下方的能量币调整入口。'
-            : '仅组长可发起转账，老师审核通过后才扣款到账；待审核和已驳回的申请不影响余额。'}</p>
+          <h2 className="font-semibold text-ink-900">{canReview ? tx("能量币转账审核") : tx("转账申请")}</h2>
+          <p className="text-xs text-ink-500 mt-1">{canReview ? tx("审核通过后立即扣款到账；直接增减小组或个人能量币，请使用下方的能量币调整入口。") : tx("仅组长可发起转账，老师审核通过后才扣款到账；待审核和已驳回的申请不影响余额。")}</p>
         </div>
         <button className="btn-ghost text-sm" disabled={loading || busy !== null} onClick={refresh}>
-          {loading ? '加载中…' : '刷新申请'}
+          {loading ? tx("加载中…") : tx("刷新申请")}
         </button>
       </div>
-      {error && <p role="alert" className="text-sm text-danger-600">{error}</p>}
-      {visible.length === 0 && !error && <p className="text-sm text-ink-400">{loading ? '正在加载转账申请…' : '暂无转账申请'}</p>}
+      {error && <p role="alert" className="text-sm text-danger-600">{tx(error)}</p>}
+      {visible.length === 0 && !error && <p className="text-sm text-ink-400">{loading ? tx("正在加载转账申请…") : tx("暂无转账申请")}</p>}
       {visible.map((t) => (
         <div key={t.id} className="rounded-xl border border-ink-100 p-4 space-y-2">
           <div className="flex flex-wrap justify-between gap-2 text-sm">
-            <span className="font-semibold">{groupName(t.sourceGroupId)} → {groupName(t.targetGroupId)} · {t.amount} 能量币</span>
-            <span className={t.status === 'pending' ? 'text-energy-600' : 'text-ink-500'}>{statusLabel[t.status]}</span>
+            <span className="font-semibold">{groupName(t.sourceGroupId)} → {groupName(t.targetGroupId)} · {t.amount} {tx("能量币")}</span>
+            <span className={t.status === 'pending' ? 'text-energy-600' : 'text-ink-500'}>{tx(statusLabel[t.status])}</span>
           </div>
           <p className="text-xs text-ink-500">{new Date(t.createdAt).toLocaleString('zh-CN')}
-            {' · 发起人：'}{users.find((u) => u.id === t.requestedBy)?.name || t.requestedBy}</p>
-          {t.note && <p className="text-sm text-ink-600 break-words">转账备注：{t.note}</p>}
-          {t.reviewedAt && <p className="text-xs text-ink-500">审核时间：{new Date(t.reviewedAt).toLocaleString('zh-CN')}</p>}
-          {t.reviewNote && <p className="text-sm text-ink-600 break-words">审核意见：{t.reviewNote}</p>}
+            {tx(" · 发起人：")}{users.find((u) => u.id === t.requestedBy)?.name || t.requestedBy}</p>
+          {t.note && <p className="text-sm text-ink-600 break-words">{tx("转账备注：")}{t.note}</p>}
+          {t.reviewedAt && <p className="text-xs text-ink-500">{tx("审核时间：")}{new Date(t.reviewedAt).toLocaleString('zh-CN')}</p>}
+          {t.reviewNote && <p className="text-sm text-ink-600 break-words">{tx("审核意见：")}{t.reviewNote}</p>}
           {canReview && t.status === 'pending' && (
             <form className="flex flex-wrap gap-2" onSubmit={(event) => {
               event.preventDefault();
@@ -98,12 +98,12 @@ export default function TransferRequests({ teacher = false }: { teacher?: boolea
               const note = String(new FormData(event.currentTarget).get('note') || '');
               void review(t.id, button.value, note);
             }}>
-              <input type="text" name="note" className="input flex-1 min-w-40" aria-label="审核意见"
-                placeholder="审核意见（可选）" maxLength={200} disabled={busy !== null} />
+              <input type="text" name="note" className="input flex-1 min-w-40" aria-label={tx("审核意见")}
+                placeholder={tx("审核意见（可选）")} maxLength={200} disabled={busy !== null} />
               <button type="submit" name="decision" value="approve" className="btn-primary text-sm" disabled={busy !== null}>
-                {busy === t.id ? '处理中…' : '通过并转账'}
+                {busy === t.id ? tx("处理中…") : tx("通过并转账")}
               </button>
-              <button type="submit" name="decision" value="reject" className="btn-ghost text-sm" disabled={busy !== null}>驳回</button>
+              <button type="submit" name="decision" value="reject" className="btn-ghost text-sm" disabled={busy !== null}>{tx("驳回")}</button>
             </form>
           )}
         </div>

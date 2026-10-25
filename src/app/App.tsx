@@ -1,3 +1,4 @@
+import { useLocale } from '@/i18n/useLocale';
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import {
   BrowserRouter, Navigate, Outlet, Route, Routes, useLocation, useNavigate,
@@ -62,6 +63,7 @@ function DashboardRoleGate() {
 }
 
 function NotFound() {
+  const { tx } = useLocale();
   const navigate = useNavigate();
   return (
     <div className="min-h-[60vh] flex items-center justify-center p-6">
@@ -70,13 +72,13 @@ function NotFound() {
           <AlertTriangle className="w-12 h-12 text-danger-500" strokeWidth={1.8} />
         </div>
         <div className="font-mono text-6xl font-black text-mission-200 mb-2 tracking-tight">404</div>
-        <h2 className="text-2xl font-extrabold text-ink-800 mb-2">坐标偏离航道</h2>
-        <p className="text-ink-500 mb-6">你访问的研究舱可能已被迁移或不存在。</p>
+        <h2 className="text-2xl font-extrabold text-ink-800 mb-2">{tx("坐标偏离航道")}</h2>
+        <p className="text-ink-500 mb-6">{tx("你访问的研究舱可能已被迁移或不存在。")}</p>
         <div className="flex items-center justify-center gap-3">
           <button className="btn-mission" onClick={() => navigate('/dashboard')}>
-            <Home className="w-4 h-4" /> 返回指挥中心
+            <Home className="w-4 h-4" /> {tx("返回指挥中心")}
           </button>
-          <button className="btn-ghost-mission" onClick={() => navigate(-1)}>返回上一站</button>
+          <button className="btn-ghost-mission" onClick={() => navigate(-1)}>{tx("返回上一站")}</button>
         </div>
       </div>
     </div>
@@ -84,6 +86,7 @@ function NotFound() {
 }
 
 export default function App() {
+  const { tx } = useLocale();
   const initAuth = useAuthStore((s) => s.init);
   const role = useAuthStore((s) => s.role);
   const userId = useAuthStore((s) => s.userId);
@@ -116,10 +119,10 @@ export default function App() {
       <div className="min-h-screen flex items-center justify-center bg-mission-50 p-6">
         <div className="glass-card max-w-md w-full p-8 text-center">
           <h1 className="font-serif text-xl font-bold text-mission-800 mb-3">
-            {bootstrapState === 'loading' ? '正在加载研究数据…' : '研究数据加载失败'}
+            {tx(bootstrapState === 'loading' ? '正在加载研究数据…' : '研究数据加载失败')}
           </h1>
           {bootstrapState === 'error' && (
-            <button className="btn-mission" onClick={reloadBusinessData}>重新加载</button>
+            <button className="btn-mission" onClick={reloadBusinessData}>{tx("重新加载")}</button>
           )}
         </div>
       </div>
@@ -129,7 +132,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/login" element={<Suspense fallback={<div role="status">页面加载中…</div>}><Login /></Suspense>} />
+        <Route path="/login" element={<Suspense fallback={<div role="status">{tx("页面加载中…")}</div>}><Login /></Suspense>} />
         <Route path="/" element={<AppShell />}>
           <Route index element={<Navigate to="/dashboard" replace />} />
           <Route path="dashboard" element={<DashboardRoleGate />} />

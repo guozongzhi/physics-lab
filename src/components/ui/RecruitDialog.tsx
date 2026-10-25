@@ -1,3 +1,4 @@
+import { useLocale } from '@/i18n/useLocale';
 import { useState } from 'react';
 import { Megaphone } from 'lucide-react';
 import { useUIStore } from '@/store/uiStore';
@@ -22,6 +23,7 @@ export default function RecruitDialog({
   projectId: string;
   projectTitle: string;
 }) {
+  const { tx } = useLocale();
   const pushToast = useUIStore((s) => s.pushToast);
   const createRecruitment = useProjectStore((s) => s.createRecruitment);
   const ownerGroupId = useProjectStore(
@@ -72,24 +74,21 @@ export default function RecruitDialog({
       }
       footer={
         <>
-          <button className="btn-ghost flex-1" onClick={onClose}>取消</button>
-          <button className="btn-energy flex-1" onClick={submit} disabled={saving || insufficient}>{saving ? '发布中…' : '发布招募'}</button>
+          <button className="btn-ghost flex-1" onClick={onClose}>{tx("取消")}</button>
+          <button className="btn-energy flex-1" onClick={submit} disabled={saving || insufficient}>{saving ? tx("发布中…") : tx("发布招募")}</button>
         </>
       }
     >
       <div className="space-y-3">
-        <div><label className="label">招募标题</label><input data-dialog-autofocus className="input" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="例如：数据分析助手" /></div>
-        <div><label className="label">任务描述</label><textarea className="input min-h-[80px] resize-y" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="需要完成的工作与交付物..." /></div>
-        <div><label className="label">技能要求（用逗号或空格分隔）</label><input className="input" value={form.skills} onChange={(e) => setForm({ ...form, skills: e.target.value })} placeholder="Python, 数据分析, Excel" /></div>
+        <div><label className="label">{tx("招募标题")}</label><input data-dialog-autofocus className="input" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder={tx("例如：数据分析助手")} /></div>
+        <div><label className="label">{tx("任务描述")}</label><textarea className="input min-h-[80px] resize-y" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder={tx("需要完成的工作与交付物...")} /></div>
+        <div><label className="label">{tx("技能要求（用逗号或空格分隔）")}</label><input className="input" value={form.skills} onChange={(e) => setForm({ ...form, skills: e.target.value })} placeholder={tx("Python, 数据分析, Excel")} /></div>
         <div className="grid grid-cols-2 gap-3">
-          <div><label className="label">酬劳（能量币）</label><input type="number" min={1} className="input" value={form.reward} onChange={(e) => setForm({ ...form, reward: Number(e.target.value) || 0 })} /></div>
-          <div><label className="label">截止天数</label><input type="number" min={1} className="input" value={form.daysLeft} onChange={(e) => setForm({ ...form, daysLeft: Math.max(1, Number(e.target.value) || 1) })} /></div>
+          <div><label className="label">{tx("酬劳（能量币）")}</label><input type="number" min={1} className="input" value={form.reward} onChange={(e) => setForm({ ...form, reward: Number(e.target.value) || 0 })} /></div>
+          <div><label className="label">{tx("截止天数")}</label><input type="number" min={1} className="input" value={form.daysLeft} onChange={(e) => setForm({ ...form, daysLeft: Math.max(1, Number(e.target.value) || 1) })} /></div>
         </div>
         <p className={`text-[12px] ${insufficient ? 'text-danger-600' : 'text-ink-500'}`}>
-          本组余额 {balance} ⚡。酬劳作为押金在发布时立即扣除，
-          {insufficient
-            ? `当前差额 ${form.reward - balance} ⚡，请先调低酬劳或让老师发放能量币。`
-            : `发布后余额 ${balance - form.reward} ⚡；任务失败或未完成的部分会退回本组。`}
+          {tx("本组余额")}{balance} {tx("⚡。酬劳作为押金在发布时立即扣除，")}{insufficient ? tx("当前差额 {0} ⚡，请先调低酬劳或让老师发放能量币。", { 0: form.reward - balance }) : tx("发布后余额 {0} ⚡；任务失败或未完成的部分会退回本组。", { 0: balance - form.reward })}
         </p>
       </div>
     </Dialog>

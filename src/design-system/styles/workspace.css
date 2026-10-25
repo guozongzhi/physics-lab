@@ -134,3 +134,78 @@
   .mission-stage .mission-header .text-energy-600 { display: none; }
   .mission-stage .mission-header .mission-brand-mark { width: 32px; height: 32px; }
 }
+
+/* A compact icon rail frees horizontal space without hiding navigation. */
+.mission-nav-fold {
+  min-height: 40px;
+  margin-bottom: 10px;
+  padding: 8px 12px 14px;
+  color: #bcd3f4;
+  border-bottom: 1px solid #a5cdff25;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.mission-nav-fold:hover { color: white; }
+.workspace-language-switch {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  gap: 6px;
+  min-width: 60px;
+  min-height: 36px;
+  padding: 7px 10px;
+  border: 1px solid #a5cdff45;
+  border-radius: 12px;
+  color: #e2efff;
+  background: #12345b80;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.workspace-language-switch:hover { background: #235087; }
+.workspace-language-switch:focus-visible,
+.mission-nav-fold:focus-visible { outline: 2px solid #83e6ff; outline-offset: 3px; }
+@media (min-width: 768px) {
+  .mission-stage .mission-nav { transition: width 220ms ease, transform 220ms ease; }
+  .mission-stage .mission-content { transition: margin-left 220ms ease; }
+  .mission-stage[data-nav-collapsed='true'] .mission-nav { width: 72px; padding-inline: 8px; }
+  .mission-stage[data-nav-collapsed='true'] .mission-content { margin-left: 88px; }
+  .mission-stage[data-nav-collapsed='true'] .mission-nav-copy,
+  .mission-stage[data-nav-collapsed='true'] .mission-nav-active-dot { display: none; }
+  .mission-stage[data-nav-collapsed='true'] .mission-nav-item { justify-content: center; min-height: 44px; padding: 12px 0; }
+  .mission-stage[data-nav-collapsed='true'] .mission-nav-fold { justify-content: center; padding-inline: 0; }
+  .mission-stage[data-nav-collapsed='true'] .mission-nav-links { padding-right: 0; }
+  html[lang='en'] .mission-nav-copy > div { white-space: normal; overflow-wrap: anywhere; line-height: 1.35; }
+}
+html[lang='en'] :is(.mission-brand-title, .login-brand strong) { letter-spacing: -.02em; }
+html[lang='en'] .login-hero-panel h1 { font-size: clamp(32px, 4vw, 62px); line-height: 1.12; }
+html[lang='en'] .login-hero-description { font-size: clamp(15px, 1.5vw, 19px); line-height: 1.65; }
+html[lang='en'] .login-journey { flex-wrap: wrap; }
+html[lang='en'] .login-kicker { letter-spacing: .08em; }
+@media (max-width: 767px) {
+  .mission-stage .mission-header { padding-inline: 12px; gap: 8px; }
+  .mission-stage .mission-header > div { gap: 8px; min-width: 0; }
+  .mission-stage .workspace-language-switch { min-width: 38px; min-height: 36px; padding-inline: 7px; }
+  .mission-stage .workspace-language-switch svg { display: none; }
+  .mission-stage .mission-brand-title { max-width: 110px; overflow: hidden; text-overflow: ellipsis; }
+  .mission-stage .mission-header .mission-profile-button { flex-shrink: 0; }
+  .login-header .login-language { margin-left: auto; }
+  .login-header .workspace-language-switch { min-width: 42px; padding-inline: 8px; }
+  .login-header .workspace-language-switch svg { display: none; }
+  html[lang='en'] .login-brand strong { max-width: 165px; font-size: 13px; line-height: 1.25; }
+  html[lang='en'] .login-brand span { max-width: 165px; font-size: 10px; line-height: 1.25; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mission-stage .mission-nav, .mission-stage .mission-content { transition: none; }
+}
+
+/* English headings need more horizontal space than their Chinese counterparts. */
+html[lang='en'] .login-orbit-labels { display: none; }
+html[lang='en'] .login-hero-panel h1 { max-width: 660px; font-size: clamp(32px, 3.5vw, 56px); }
+
+html[lang='en'] :is(.student-learning-subtitle, .student-project-subtitle, .student-safety-subtitle) { display: none; }
+
+@media (max-width: 767px) {
+  .mission-stage .mission-nav { top: 64px; height: calc(100dvh - 64px); }
+}

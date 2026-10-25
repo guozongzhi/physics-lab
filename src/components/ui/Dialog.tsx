@@ -1,3 +1,4 @@
+import { useLocale } from '@/i18n/useLocale';
 import { ReactNode, useEffect, useId, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
@@ -22,6 +23,7 @@ const sizeMap = {
 };
 
 export default function Dialog({ open, onClose, title, children, footer, size = 'md', className }: DialogProps) {
+  const { tx } = useLocale();
   const panelRef = useRef<HTMLDivElement>(null);
   const titleId = useId();
   const closeRef = useRef(onClose);
@@ -78,7 +80,7 @@ export default function Dialog({ open, onClose, title, children, footer, size = 
             role="dialog"
             aria-modal="true"
             aria-labelledby={title !== undefined ? titleId : undefined}
-            aria-label={title === undefined ? '操作窗口' : undefined}
+            aria-label={title === undefined ? tx("操作窗口") : undefined}
             tabIndex={-1}
             initial={{ opacity: 0, y: 12, scale: 0.97 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -92,11 +94,11 @@ export default function Dialog({ open, onClose, title, children, footer, size = 
           >
             {title !== undefined && (
               <div className="flex items-center justify-between px-5 py-4 border-b border-physics-50">
-                <div id={titleId} className="font-serif text-lg font-semibold text-physics-800">{title}</div>
+                <div id={titleId} className="font-serif text-lg font-semibold text-physics-800">{typeof title === 'string' ? tx(title) : title}</div>
                 <button
                   onClick={onClose}
                   className="text-ink-400 hover:text-ink-700 rounded-lg p-1.5 hover:bg-ink-50 transition"
-                  aria-label="关闭"
+                  aria-label={tx("关闭")}
                 >
                   <X size={18} />
                 </button>

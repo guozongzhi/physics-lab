@@ -1,3 +1,4 @@
+import { useLocale } from '@/i18n/useLocale';
 import React from "react";
 import type { User, Group } from '@/types';
 import { BentoCard } from "@/design-system/components/BentoCard";
@@ -43,6 +44,7 @@ export const CommanderHeader: React.FC<CommanderHeaderProps> = ({
   onOpenChangePwd,
   onDismissPwdHint,
 }) => {
+  const { tx } = useLocale();
   return (
     <div className="space-y-4">
       {/* 初始密码安全警示 */}
@@ -52,19 +54,17 @@ export const CommanderHeader: React.FC<CommanderHeaderProps> = ({
             <span className="p-1 rounded-md bg-alert-500/20 text-alert-600 dark:text-alert-400 font-bold">
               !
             </span>
-            <span>当前正在使用初始默认密码，为确保科研成果数据安全，建议尽快修改。</span>
+            <span>{tx("当前正在使用初始默认密码，为确保科研成果数据安全，建议尽快修改。")}</span>
           </div>
           <div className="flex items-center gap-2">
             <Button size="sm" variant="outline" onClick={onOpenChangePwd}>
-              立即修改
-            </Button>
+              {tx("立即修改")}</Button>
             <button
               type="button"
               onClick={onDismissPwdHint}
               className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xs px-1"
             >
-              稍后
-            </button>
+              {tx("稍后")}</button>
           </div>
         </div>
       )}
@@ -80,38 +80,35 @@ export const CommanderHeader: React.FC<CommanderHeaderProps> = ({
               <img
                 src={user?.avatar || avatarFallback}
                 onError={applyAvatarFallback}
-                alt={user?.name || '研究员头像'}
+                alt={user?.name || tx("研究员头像")}
                 className="w-full h-full object-cover"
               />
             </div>
             <div className="space-y-1.5">
               <div className="flex flex-wrap items-center gap-2">
                 <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
-                  {user?.name || "未知研究员"}
+                  {user?.name || tx("未知研究员")}
                 </h1>
                 <Badge variant="mission" size="sm">
-                  LV.{level} 研究员
-                </Badge>
+                  LV.{level} {tx("研究员")}</Badge>
                 {group ? (
                   <Badge variant="nova" size="sm">
                     {group.name}
                   </Badge>
                 ) : (
                   <Badge variant="alert" size="sm">
-                    待分配小组
-                  </Badge>
+                    {tx("待分配小组")}</Badge>
                 )}
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-2">
-                <span>班级编号：{user?.classId || "未指定"}</span>
+                <span>{tx("班级编号：{classId}", { classId: user?.classId || tx("未指定") })}</span>
                 <span>•</span>
                 <button
                   type="button"
                   onClick={onOpenClassmates}
                   className="text-mission-600 dark:text-mission-400 hover:underline inline-flex items-center gap-1 font-medium"
                 >
-                  <Users size={12} /> 查看班级名册
-                </button>
+                  <Users size={12} /> {tx("查看班级名册")}</button>
               </p>
             </div>
           </div>
@@ -121,27 +118,26 @@ export const CommanderHeader: React.FC<CommanderHeaderProps> = ({
             <div>
               <div className="text-xs text-slate-500 dark:text-slate-400 mb-1 flex items-center gap-1">
                 <Zap size={13} className="text-energy-500" />
-                <span>小组储备能量</span>
+                <span>{tx("小组储备能量")}</span>
               </div>
               <div className="text-2xl font-extrabold text-slate-900 dark:text-slate-50">
                 {myCoins} <span className="text-xs font-normal text-energy-600">⚡</span>
               </div>
               <div className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
-                距升级还需 {upgradeNeed} ⚡
+                {tx("距升级还需 {count} ⚡", { count: upgradeNeed })}
               </div>
             </div>
 
             <div>
               <div className="text-xs text-slate-500 dark:text-slate-400 mb-1 flex items-center gap-1">
                 <Sparkles size={13} className="text-growth-500" />
-                <span>学习路径进度</span>
+                <span>{tx("学习路径进度")}</span>
               </div>
               <div className="text-2xl font-extrabold text-slate-900 dark:text-slate-50">
                 {pathProgress}%
               </div>
               <div className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
-                已达标 {completedSteps}/{totalSteps} 阶段
-              </div>
+                {tx("已完成 {done}/{total} 阶段", { done: completedSteps, total: totalSteps })}</div>
             </div>
           </div>
         </div>
@@ -149,8 +145,8 @@ export const CommanderHeader: React.FC<CommanderHeaderProps> = ({
         {/* 等级进度标尺 */}
         <div className="student-commander-ruler mt-5 pt-4 border-t border-slate-200/60 dark:border-slate-800/60">
           <div className="flex justify-between text-xs text-slate-500 dark:text-slate-400 mb-1.5 font-medium">
-            <span>当前段位：LV.{level}</span>
-            <span>距 LV.{level + 1} 尚存 {100 - levelProgress}% 跨度</span>
+            <span>{tx("当前段位：LV.")}{level}</span>
+            <span>{tx("距 LV.{level} 尚存 {remaining}% 跨度", { level: level + 1, remaining: 100 - levelProgress })}</span>
           </div>
           <div className="w-full h-2 rounded-full bg-slate-200/80 dark:bg-slate-800 overflow-hidden">
             <div
@@ -160,22 +156,22 @@ export const CommanderHeader: React.FC<CommanderHeaderProps> = ({
           </div>
         </div>
         </div>
-        <aside aria-label="小组天梯简榜" className="student-header-ladder min-w-0 xl:pl-5">
+        <aside aria-label={tx("小组天梯简榜")} className="student-header-ladder min-w-0 xl:pl-5">
           <div className="commander-ladder-panel">
             <div className="commander-ladder-heading">
-              <h2><span className="commander-ladder-emblem"><Trophy size={13} /></span>小组天梯</h2>
-              <button type="button" onClick={onOpenLeaderboard}>完整榜单<ArrowUpRight size={12} /></button>
+              <h2><span className="commander-ladder-emblem"><Trophy size={13} /></span>{tx("小组天梯")}</h2>
+              <button type="button" onClick={onOpenLeaderboard}>{tx("完整榜单")}<ArrowUpRight size={12} /></button>
             </div>
-            {rankings.length ? <ol className="commander-ladder-list" aria-label="小组排名">
+            {rankings.length ? <ol className="commander-ladder-list" aria-label={tx("小组排名")}>
               {rankings.map((team) => <li key={team.id} className={`commander-ladder-team${team.id === group?.id ? ' is-mine' : ''}`} aria-current={team.id === group?.id ? 'true' : undefined}>
                 <span className={`commander-ladder-medal place-${Math.min(team.rank, 4)}`}>{team.rank}</span>
                 <span className="commander-ladder-detail">
                   <span className="commander-ladder-name" title={team.name}>{team.name}</span>
                   <span className="commander-ladder-track" aria-hidden="true"><span style={{ width: `${Math.max(0, Math.min(100, team.coins / Math.max(1, rankings[0]?.coins || 0) * 100))}%` }} /></span>
                 </span>
-                <span className="commander-ladder-coins">{team.coins.toLocaleString('zh-CN')}<span aria-label="能量币" className="commander-ladder-coin">ϟ</span></span>
+                <span className="commander-ladder-coins">{team.coins.toLocaleString('zh-CN')}<span aria-label={tx("能量币")} className="commander-ladder-coin">ϟ</span></span>
               </li>)}
-            </ol> : <p className="py-3 text-xs text-slate-400">暂无小组排名</p>}
+            </ol> : <p className="py-3 text-xs text-slate-400">{tx("暂无小组排名")}</p>}
           </div>
         </aside>
         </div>

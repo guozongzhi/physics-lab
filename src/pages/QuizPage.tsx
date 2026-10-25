@@ -1,3 +1,4 @@
+import { useLocale } from '@/i18n/useLocale';
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTheoryStore } from '@/store/theoryStore';
@@ -50,6 +51,7 @@ function isAnswerCorrect(q: Question, userAnswer: Question['answer'] | undefined
 }
 
 export default function QuizPage(props: QuizPageProps) {
+  const { tx } = useLocale();
   const { mode } = props;
   const routerParams = useParams<{ sessionId?: string; id?: string }>();
   const navigate = useNavigate();
@@ -310,9 +312,9 @@ export default function QuizPage(props: QuizPageProps) {
       return (
         <div className="container mx-auto py-16 text-center">
           <AlertTriangle size={48} className="mx-auto text-danger-400 mb-4" />
-          <p className="text-ink-700 font-semibold mb-2">{loadError}</p>
+          <p className="text-ink-700 font-semibold mb-2">{tx(loadError)}</p>
           <button className="btn-outline mt-2" onClick={() => navigate(mode === 'challenge' ? '/theory/challenges' : '/theory/topics')}>
-            {mode === 'challenge' ? '返回挑战列表' : '返回学习中心'}
+            {mode === 'challenge' ? tx("返回挑战列表") : tx("返回学习中心")}
           </button>
         </div>
       );
@@ -320,7 +322,7 @@ export default function QuizPage(props: QuizPageProps) {
     return (
       <div className="container mx-auto py-16 text-center">
         <Brain size={48} className="mx-auto text-ink-400 mb-4" />
-        <p className="text-ink-600">正在加载题目...</p>
+        <p className="text-ink-600">{tx("正在加载题目...")}</p>
       </div>
     );
   }
@@ -337,31 +339,29 @@ export default function QuizPage(props: QuizPageProps) {
         <div className="flex-1">
             <div className="flex items-center gap-2 flex-wrap mb-1">
               <h1 className="font-serif text-xl md:text-2xl font-bold text-ink-900">
-                {mode === 'challenge' ? (challengeTitle || meta.title) : meta.title}
+                {mode === 'challenge' ? (challengeTitle || tx(meta.title)) : tx(meta.title)}
               </h1>
-              <span className={cn('chip', meta.chip)}>{mode === 'quiz' ? '智能检测' : '小组挑战'}</span>
+              <span className={cn('chip', meta.chip)}>{mode === 'quiz' ? tx("智能检测") : tx("小组挑战")}</span>
             </div>
             <div className="flex items-center gap-3 flex-wrap text-sm text-ink-600">
               <span className="flex items-center gap-1">
                 <BookOpen size={14} />
-                主题：{topicTitle || '—'}
+                {tx("主题：")}{topicTitle || '—'}
               </span>
               <span className="flex items-center gap-1">
                 <Brain size={14} />
-                共 {questions.length} 题 · {meta.passScore} 分通过
-              </span>
+                {tx("共")}{questions.length} {tx("题 ·")}{meta.passScore} {tx("分通过")}</span>
               {mode === 'challenge' && reward > 0 && (
                 <span className="flex items-center gap-1 text-energy-600 font-semibold">
                   <Zap size={14} />
-                  最高奖励 {reward} 能量币
-                </span>
+                  {tx("最高奖励")}{reward} {tx("能量币")}</span>
               )}
             </div>
           </div>
           {!submitted && (
             <div className="flex items-center gap-4">
               <div className="text-right">
-                <div className="text-xs text-ink-500 mb-0.5">已答题数</div>
+                <div className="text-xs text-ink-500 mb-0.5">{tx("已答题数")}</div>
                 <div className="font-mono font-bold text-xl text-mission-700">
                   {answeredCount} <span className="text-sm text-ink-500 font-normal">/ {questions.length}</span>
                 </div>
@@ -383,8 +383,7 @@ export default function QuizPage(props: QuizPageProps) {
             <div className="card-base p-4 h-fit lg:sticky lg:top-4">
               <div className="text-xs text-ink-600 mb-3 flex items-center gap-1.5 font-medium">
               <Sparkles size={14} className="text-energy-500" />
-              答题卡 · 点击题号跳转
-            </div>
+              {tx("答题卡 · 点击题号跳转")}</div>
               <div className="grid grid-cols-5 sm:grid-cols-10 lg:grid-cols-5 gap-2">
                 {questions.map((q, i) => {
                   const done = answers[q.id] !== undefined;
@@ -411,11 +410,11 @@ export default function QuizPage(props: QuizPageProps) {
               <div className="mt-4 pt-4 border-t border-mission-100 space-y-1.5 text-xs">
                 <div className="flex items-center gap-2">
                   <span className="w-3.5 h-3.5 rounded bg-growth-100 ring-1 ring-growth-300" />
-                  <span className="text-ink-700">已答题 <strong className="text-growth-700">{answeredCount}</strong></span>
+                  <span className="text-ink-700">{tx("已答题")}<strong className="text-growth-700">{answeredCount}</strong></span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="w-3.5 h-3.5 rounded bg-ink-100" />
-                  <span className="text-ink-700">未答题 <strong className="text-ink-800">{questions.length - answeredCount}</strong></span>
+                  <span className="text-ink-700">{tx("未答题")}<strong className="text-ink-800">{questions.length - answeredCount}</strong></span>
                 </div>
               </div>
 
@@ -427,7 +426,7 @@ export default function QuizPage(props: QuizPageProps) {
                 )}
               >
                 <Send size={15} />
-                {submitting ? '正在交卷…' : '交卷'}
+                {submitting ? tx("正在交卷…") : tx("交卷")}
               </button>
             </div>
 
@@ -451,18 +450,18 @@ export default function QuizPage(props: QuizPageProps) {
                             'chip',
                             q.type === 'single' ? 'chip-mission' : q.type === 'multiple' ? 'chip-energy' : 'chip-growth'
                           )}>
-                            {q.type === 'single' ? '单选题' : q.type === 'multiple' ? '多选题' : '判断题'}
+                            {q.type === 'single' ? tx("单选题") : q.type === 'multiple' ? tx("多选题") : tx("判断题")}
                           </span>
                           <span className="chip chip-mission">
                             <Brain size={12} />
                             {q.knowledgePoint}
                           </span>
                           <span className="chip chip-ink">
-                            难度 {'★'.repeat(q.difficulty)}{'☆'.repeat(3 - q.difficulty)}
+                            {tx("难度")}{'★'.repeat(q.difficulty)}{'☆'.repeat(3 - q.difficulty)}
                           </span>
                         </div>
                       </div>
-                      <span className="text-xs text-ink-500">第 {currentQ + 1} / {questions.length} 题</span>
+                      <span className="text-xs text-ink-500">{tx("第")}{currentQ + 1} / {questions.length} {tx("题")}</span>
                     </div>
 
                     <div className="text-lg md:text-xl font-semibold text-ink-900 mb-7 leading-relaxed">
@@ -551,8 +550,7 @@ export default function QuizPage(props: QuizPageProps) {
                         className="btn-outline"
                       >
                         <ChevronLeft size={16} />
-                        上一题
-                      </button>
+                        {tx("上一题")}</button>
                       {currentQ < questions.length - 1 ? (
                         <button
                           onClick={() => setCurrentQ((v) => v + 1)}
@@ -561,8 +559,7 @@ export default function QuizPage(props: QuizPageProps) {
                             meta.gradient
                           )}
                         >
-                          下一题
-                          <ChevronRight size={16} />
+                          {tx("下一题")}<ChevronRight size={16} />
                         </button>
                       ) : (
                         <button
@@ -573,8 +570,7 @@ export default function QuizPage(props: QuizPageProps) {
                           )}
                         >
                           <Send size={16} />
-                          提交试卷
-                        </button>
+                          {tx("提交试卷")}</button>
                       )}
                     </div>
                   </div>
@@ -612,14 +608,14 @@ export default function QuizPage(props: QuizPageProps) {
                     submitted.passed ? 'text-growth-700' : 'text-danger-600'
                   )}>
                     {submitted.score}
-                    <span className="text-xl font-semibold text-ink-500 ml-1">分</span>
+                    <span className="text-xl font-semibold text-ink-500 ml-1">{tx("分")}</span>
                   </div>
                   <div className={cn(
                     'text-sm mt-1 font-semibold flex items-center gap-1.5',
                     submitted.passed ? 'text-growth-700' : 'text-danger-600'
                   )}>
                     {submitted.passed ? <Trophy size={16} /> : <AlertTriangle size={16} />}
-                    {submitted.passed ? '通过！' : '未通过'}
+                    {submitted.passed ? tx("通过！") : tx("未通过")}
                   </div>
                 </div>
               </div>
@@ -629,31 +625,24 @@ export default function QuizPage(props: QuizPageProps) {
                   'font-serif text-3xl md:text-4xl font-bold mb-3',
                   submitted.passed ? 'text-lab-700' : 'text-risk-700'
                 )}>
-                  {submitted.passed
-                    ? mode === 'challenge' ? '挑战完成！' : '检测通过！'
-                    : '继续加油！'}
+                  {submitted.passed ? mode === 'challenge' ? tx("挑战完成！") : tx("检测通过！") : tx("继续加油！")}
                 </h2>
                 <div className="flex flex-wrap gap-3 justify-center md:justify-start mb-5">
                   <div className="chip chip-growth text-sm px-3 py-1.5">
                     <CheckCircle2 size={14} />
-                    答对 {submitted.correctCount} / {questions.length}
+                    {tx("答对")}{submitted.correctCount} / {questions.length}
                   </div>
                   <div className="chip chip-mission text-sm px-3 py-1.5">
-                    正确率 <strong>{submitted.score}%</strong>
+                    {tx("正确率")}<strong>{submitted.score}%</strong>
                   </div>
                   {submitted.earnedCoins !== undefined && (
                     <div className="chip chip-energy text-sm px-3 py-1.5">
                       <Zap size={14} />
-                      获得 {submitted.earnedCoins} 能量币
-                    </div>
+                      {tx("获得")}{submitted.earnedCoins} {tx("能量币")}</div>
                   )}
                 </div>
                 <p className="text-ink-700 leading-relaxed max-w-lg">
-                  {submitted.passed
-                    ? mode === 'quiz'
-                      ? '你已掌握本主题大部分核心知识点，可以挑战更高阶的出题对决了！'
-                      : '出色的表现！你已为本小组赢得了荣誉与能量币奖励。'
-                    : '别灰心，我们整理了你的知识盲区，先去强化练习，再试一次会更好。'}
+                  {submitted.passed ? mode === 'quiz' ? tx("你已掌握本主题大部分核心知识点，可以挑战更高阶的出题对决了！") : tx("出色的表现！你已为本小组赢得了荣誉与能量币奖励。") : tx("别灰心，我们整理了你的知识盲区，先去强化练习，再试一次会更好。")}
                 </p>
               </div>
             </div>
@@ -662,8 +651,7 @@ export default function QuizPage(props: QuizPageProps) {
               <div className="mb-8 p-5 rounded-xl2 bg-danger-50 ring-1 ring-danger-200">
                 <h3 className="font-serif font-semibold text-danger-800 mb-3 flex items-center gap-2">
                   <Brain size={18} />
-                  知识盲区（答错题目覆盖的知识点，建议优先强化）
-                </h3>
+                  {tx("知识盲区（答错题目覆盖的知识点，建议优先强化）")}</h3>
                 <div className="flex flex-wrap gap-2">
                   {submitted.blindPoints.map((bp) => (
                     <span key={bp} className="chip chip-danger">
@@ -682,15 +670,14 @@ export default function QuizPage(props: QuizPageProps) {
                   className="btn-outline py-3.5"
                 >
                   <BookOpen size={18} />
-                  重新学习 + 强化练习
-                </button>
+                  {tx("重新学习 + 强化练习")}</button>
               )}
               <button
                 onClick={restart}
                 className="btn-mission py-3.5 inline-flex items-center justify-center gap-2"
               >
                 <RotateCcw size={18} />
-                {submitted.passed ? '再练一次巩固' : '重新检测'}
+                {submitted.passed ? tx("再练一次巩固") : tx("重新检测")}
               </button>
               {submitted.passed && mode === 'quiz' && (
                 <button
@@ -698,8 +685,7 @@ export default function QuizPage(props: QuizPageProps) {
                   className="md:col-span-2 btn-lab py-3.5"
                 >
                   <Swords size={18} />
-                  去出题挑战其他小组
-                </button>
+                  {tx("去出题挑战其他小组")}</button>
               )}
             </div>
           </motion.div>
