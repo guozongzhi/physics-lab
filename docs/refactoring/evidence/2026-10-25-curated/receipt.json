@@ -1,0 +1,32 @@
+[
+  {
+    "id": "showcase_4438f76c50c7",
+    "title": "亥姆霍兹线圈 · 三维结构",
+    "category": "model",
+    "contentSha256": "dee9940b86562efe93a5eee0de72c81ab24dab5e79c42afb659deea4a7aeff4e",
+    "coverSha256": "022b992cfb3c1bf102fc625e382dd501ea960b990712e054b2873dcb4e4b3a4d",
+    "authorUserId": "admin",
+    "groupId": "",
+    "status": "approved"
+  },
+  {
+    "id": "showcase_9f6b3e73fe3e",
+    "title": "回旋加速器 · D形电极剖视",
+    "category": "model",
+    "contentSha256": "ba3d6af59918f892eb7f3a26e4ac7d2b9a799d7796fa305a863c9efb039d1249",
+    "coverSha256": "ff358975c38d79fc9d70bdc9925b12e2703dd4b8f2cefe69a5c3e351286761ce",
+    "authorUserId": "admin",
+    "groupId": "",
+    "status": "approved"
+  },
+  {
+    "id": "showcase_cde900a99271",
+    "title": "让振动留下轨迹 · 阻尼实验室",
+    "category": "html",
+    "contentSha256": "d44ae924112040be8f409f87685f3bb8d3202704a578fbd18e8c0ed28c3eb203",
+    "coverSha256": "c95ca14190e2fd26013257e1846d8aa8473d83dac74a38ac00848ac7877d38b8",
+    "authorUserId": "admin",
+    "groupId": "",
+    "status": "approved"
+  }
+]

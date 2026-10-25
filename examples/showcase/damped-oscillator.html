@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>让振动留下轨迹 · 阻尼实验室</title>
+<style>
+:root{color-scheme:dark;--blue:#60a5fa;--cyan:#67e8f9;--muted:#9aacc8}*{box-sizing:border-box}body{margin:0;background:#050c1d;color:#eef5ff;font:14px/1.65 system-ui,-apple-system,"Segoe UI",sans-serif}main{max-width:1200px;margin:auto;padding:28px}header{display:flex;justify-content:space-between;gap:20px;align-items:center}.kicker{color:var(--cyan);font-size:11px;letter-spacing:.2em}h1{font-size:clamp(24px,4vw,38px);letter-spacing:-.04em;margin:8px 0}h2{font-size:15px;margin:0}p{margin:0;color:var(--muted)}.badge{border:1px solid #2c4870;border-radius:30px;color:#a9d3ff;padding:7px 14px;white-space:nowrap;font-size:11px}.layout{display:grid;grid-template-columns:minmax(0,1fr) 268px;gap:18px;margin:24px 0 18px}.panel{background:linear-gradient(140deg,#101f3a,#0a1429);border:1px solid #263b59;border-radius:20px;overflow:hidden;min-width:0}.caption{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:16px 20px;border-bottom:1px solid #24344e}.caption span{font:11px ui-monospace,monospace;color:#8da6cd}canvas{display:block;width:100%;height:auto}.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border-top:1px solid #24344e;padding:16px 6px;gap:6px;text-align:center;font-size:11px;color:var(--muted)}output{display:block;color:#edf5ff;font:600 clamp(16px,2.3vw,23px) ui-monospace,monospace;margin-top:4px}.accent{color:var(--cyan)}.controls{padding:22px;display:flex;flex-direction:column;gap:20px}.control>span{display:flex;justify-content:space-between;gap:10px;margin-bottom:8px}.control b{color:var(--cyan);font-variant-numeric:tabular-nums}input{width:100%;accent-color:#60a5fa;cursor:pointer}.presets{display:grid;grid-template-columns:1fr 1fr;gap:7px}button{font:inherit;color:#dbeafe;background:#152641;border:1px solid #355276;border-radius:10px;padding:9px;cursor:pointer;min-height:40px}button:hover{background:#22426b}button[aria-pressed=true]{border-color:#60a5fa;background:#163f75}.primary{background:#2563eb;border-color:#4b88fa;color:white;font-weight:600}.primary:hover{background:#3478ed}.actions{display:flex;gap:8px}.actions button{flex:1}.plots{display:grid;grid-template-columns:1fr 1fr;gap:18px}.plot-note{padding:0 18px 13px;font-size:11px;color:var(--muted)}.notes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:18px}.notes article{padding:18px;border:1px solid #213653;background:#0c182c;border-radius:16px}.notes h2{color:#9dceff;font-size:14px;margin-bottom:8px}.notes p{font-size:12px}footer{color:#7488a8;font-size:11px;margin-top:18px}:focus-visible{outline:3px solid #7dd3fc;outline-offset:4px}@media(max-width:760px){main{padding:16px}.layout{grid-template-columns:1fr}.controls{gap:16px}.controls .presets{grid-template-columns:repeat(4,1fr)}header{align-items:flex-start}.badge{display:none}}@media(max-width:480px){.plots,.notes{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,1fr);row-gap:14px}.controls .presets{grid-template-columns:1fr 1fr}.caption{padding:12px 14px}h1{font-size:26px}}
+</style>
+</head>
+<body><main>
+<header><div><div class="kicker">PHYSICS ATELIER / 03 · MECHANICS</div><h1>让振动留下轨迹</h1><p>从一根弹簧，读懂振幅、能量与相空间。</p></div><span class="badge">admin · 平台公共演示</span></header>
+<div class="layout">
+<section class="panel"><div class="caption"><h2>弹簧振子 · 动态实验台</h2><span id="status" role="status">准备就绪</span></div><canvas id="scene" width="960" height="340" role="img" aria-label="弹簧振子位置动态示意"></canvas><div class="stats"><div>实验时间 / s<output id="timeOut">0.00</output></div><div>位移 / m<output id="positionOut">0.400</output></div><div>机械能 / J<output id="energyOut" class="accent">1.440</output></div><div>阻尼比 ζ<output id="ratioOut">0.094</output></div></div></section>
+<section class="panel controls" aria-label="实验控制台"><h2>实验控制台</h2><label class="control"><span>劲度系数 k<b id="kValue"></b></span><input id="stiffness" aria-label="劲度系数" type="range" min="5" max="40" step="1" value="18"></label><label class="control"><span>阻尼系数 c<b id="cValue"></b></span><input id="damping" aria-label="阻尼系数" type="range" min="0" max="20" step="0.01" value="0.8"></label><label class="control"><span>初始位移 A<b id="aValue"></b></span><input id="amplitude" aria-label="初始位移" type="range" min="0.1" max="0.6" step="0.01" value="0.4"></label><div><p style="font-size:11px;margin-bottom:8px">对比四种运动状态</p><div class="presets"><button data-mode="free">无阻尼</button><button data-mode="under">欠阻尼</button><button data-mode="critical">临界阻尼</button><button data-mode="over">过阻尼</button></div></div><div class="actions"><button id="play" class="primary">开始实验</button><button id="reset">恢复默认</button></div><p style="font-size:11px">质量 m = 1 kg，初速度为 0。修改参数会重新计时；每轮观察 12 秒。</p></section>
+</div>
+<div class="plots"><section class="panel"><div class="caption"><h2>相空间轨迹</h2><span>POSITION × VELOCITY</span></div><canvas id="phase" width="600" height="330" role="img" aria-label="位移与速度的相空间轨迹"></canvas><p class="plot-note">横轴 x/A，纵轴 v/(Aω₀)；浅色为完整轨迹，亮色为已走过的路径。</p></section><section class="panel"><div class="caption"><h2>位移随时间变化</h2><span>DISPLACEMENT × TIME</span></div><canvas id="wave" width="600" height="330" role="img" aria-label="位移随时间变化曲线"></canvas><p class="plot-note">横轴时间 0–12 s，纵轴位移 x/A；虚线标出当前时刻。</p></section></div>
+<div class="notes"><article><h2>01 / 守恒与耗散</h2><p>mẍ + cẋ + kx = 0。机械能 E = ½mv² + ½kx²，dE/dt = −cv²；c = 0 时能量守恒。</p></article><article><h2>02 / 为什么是螺旋？</h2><p>欠阻尼振子一边往复、一边失去能量，相空间轨迹向原点收缩。无阻尼轨迹则为封闭曲线。</p></article><article><h2>03 / 试着找到分界线</h2><p>ζ = c/(2√mk)。ζ = 1 为临界阻尼；ζ &gt; 1 时不再往复。比较它们回到平衡位置的过程。</p></article></div>
+<footer>教学模型：理想线性弹簧与线性黏性阻尼；使用运动方程解析解，绘图比例作示意，不包含摩擦死区或弹簧非线性。模型数据不代表真实实验测量。</footer>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+// SI units. Exact solution for x(0)=A, v(0)=0 and m=1 kg.
+function stateAt(t,k,c,A){
+  const a=c/2,D=a*a-k;
+  if(Math.abs(D)<1e-8){const e=Math.exp(-a*t);return {x:A*e*(1+a*t),v:-A*k*t*e};}
+  if(D<0){const w=Math.sqrt(-D),e=Math.exp(-a*t);return {x:A*e*(Math.cos(w*t)+a/w*Math.sin(w*t)),v:-A*e*k/w*Math.sin(w*t)};}
+  // expm1 avoids subtracting nearly equal exponentials close to critical damping.
+  const s=Math.sqrt(D),r1=-k/(a+s),e=Math.exp(r1*t),q=-Math.expm1(-2*s*t)/(2*s);
+  return {x:A*e*(1-r1*q),v:-A*k*e*q};
+}
+let k=18,c=.8,A=.4,t=0,running=false,last=0;
+const blue='#60a5fa',cyan='#67e8f9';
+function path(ctx,points,color,width=2){ctx.beginPath();points.forEach(([x,y],i)=>i?ctx.lineTo(x,y):ctx.moveTo(x,y));ctx.strokeStyle=color;ctx.lineWidth=width;ctx.stroke();}
+function dot(ctx,x,y){ctx.shadowColor=cyan;ctx.shadowBlur=16;ctx.fillStyle=cyan;ctx.beginPath();ctx.arc(x,y,5,0,2*Math.PI);ctx.fill();ctx.shadowBlur=0;}
+function grid(ctx,w,h){ctx.clearRect(0,0,w,h);ctx.strokeStyle='#20314a';ctx.lineWidth=1;for(let x=50;x<w-20;x+=50){ctx.beginPath();ctx.moveTo(x,20);ctx.lineTo(x,h-35);ctx.stroke();}for(let y=30;y<h-20;y+=50){ctx.beginPath();ctx.moveTo(40,y);ctx.lineTo(w-20,y);ctx.stroke();}ctx.font='13px system-ui';ctx.fillStyle='#8ba2c5';}
+function draw(){
+  const st=stateAt(t,k,c,A),z=c/(2*Math.sqrt(k));
+  $('timeOut').textContent=t.toFixed(2);$('positionOut').textContent=st.x.toFixed(3);$('energyOut').textContent=(.5*st.v*st.v+.5*k*st.x*st.x).toFixed(3);$('ratioOut').textContent=z.toFixed(3);
+  $('kValue').textContent=k.toFixed(0)+' N/m';$('cValue').textContent=c.toFixed(2)+' N·s/m';$('aValue').textContent=A.toFixed(2)+' m';
+  const mode=c===0?'无阻尼':Math.abs(z-1)<.001?'临界阻尼':z<1?'欠阻尼':'过阻尼';
+  $('status').textContent=mode+' · '+(running?'实验运行中':t>=12?'本轮完成':t>0?'已暂停':'准备就绪');$('play').textContent=running?'暂停实验':t>=12?'再做一次':t>0?'继续实验':'开始实验';
+  document.querySelectorAll('[data-mode]').forEach(b=>b.setAttribute('aria-pressed',String(({free:'无阻尼',under:'欠阻尼',critical:'临界阻尼',over:'过阻尼'})[b.dataset.mode]===mode)));
+  const ctx=$('scene').getContext('2d');grid(ctx,960,340);const bx=610+st.x/0.6*200;
+  ctx.fillStyle='#2a4266';ctx.fillRect(86,70,18,160);ctx.fillRect(86,230,760,5);ctx.setLineDash([5,7]);path(ctx,[[610,60],[610,240]],'#6483ab',1);ctx.setLineDash([]);
+  let pts=[[104,152],[136,152]];const end=bx-44;for(let i=0;i<24;i++)pts.push([136+(end-152)*i/23,152+(i%2?18:-18)]);pts.push([end,152]);path(ctx,pts,cyan,3);
+  const g=ctx.createLinearGradient(bx-44,100,bx+44,205);g.addColorStop(0,'#60a5fa');g.addColorStop(1,'#1d4ed8');ctx.fillStyle=g;ctx.beginPath();ctx.roundRect(bx-44,108,88,104,14);ctx.fill();ctx.fillStyle='#e9f5ff';ctx.font='bold 20px system-ui';ctx.textAlign='center';ctx.fillText('m = 1 kg',bx,167);ctx.font='14px system-ui';ctx.fillStyle='#9bb5dc';ctx.fillText('平衡位置',610,275);ctx.fillText('固定端',96,275);ctx.fillStyle=cyan;ctx.fillText('x = '+st.x.toFixed(3)+' m',bx,87);ctx.textAlign='left';
+  const phase=$('phase').getContext('2d'),wave=$('wave').getContext('2d');grid(phase,600,330);grid(wave,600,330);
+  path(phase,[[55,155],[565,155]],'#4c6488',1);path(phase,[[310,30],[310,280]],'#4c6488',1);
+  const toPhase=s=>[310+s.x/A*220,155-s.v/(A*Math.sqrt(k))*112],toWave=(s,ts)=>[55+ts/12*510,155-s.x/A*112];
+  const p=[],w=[],visitedP=[],visitedW=[];for(let i=0;i<=480;i++){const ts=i/40,s=stateAt(ts,k,c,A);p.push(toPhase(s));w.push(toWave(s,ts));if(ts<=t){visitedP.push(toPhase(s));visitedW.push(toWave(s,ts));}}
+  path(phase,p,'#284564',2);path(wave,w,'#284564',2);path(phase,visitedP,cyan,2.8);path(wave,visitedW,blue,2.8);const pp=toPhase(st),wp=toWave(st,t);dot(phase,...pp);dot(wave,...wp);wave.setLineDash([4,6]);path(wave,[[wp[0],25],[wp[0],280]],'#86a8d2',1);wave.setLineDash([]);
+  phase.fillText('−1',75,305);phase.fillText('0',305,305);phase.fillText('+1',525,305);phase.fillText('v / Aω₀',14,20);wave.fillText('x / A',14,20);for(let sec=0;sec<=12;sec+=3)wave.fillText(sec+'s',48+sec/12*510,305);
+}
+function restart(){t=0;last=0;draw();}
+['stiffness','damping','amplitude'].forEach(id=>$(id).addEventListener('input',()=>{k=+$('stiffness').value;c=+$('damping').value;A=+$('amplitude').value;restart();}));
+document.querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>{const values={free:0,under:.8,critical:2*Math.sqrt(k),over:Math.min(20,3*Math.sqrt(k))};c=values[b.dataset.mode];$('damping').value=c;restart();});
+$('play').onclick=()=>{if(t>=12)t=0;running=!running;last=0;draw();};
+$('reset').onclick=()=>{k=18;c=.8;A=.4;running=false;$('stiffness').value=k;$('damping').value=c;$('amplitude').value=A;restart();};
+function tick(now){if(running){if(last)t=Math.min(12,t+Math.min(.05,(now-last)/1000));if(t>=12)running=false;draw();}last=now;requestAnimationFrame(tick);}
+draw();requestAnimationFrame(tick);
+</script></body></html>

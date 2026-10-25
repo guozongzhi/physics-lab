@@ -1,0 +1,23 @@
+[
+  {
+    "title": "亥姆霍兹线圈 · 三维结构",
+    "category": "model",
+    "file": "helmholtz.obj",
+    "cover": "covers/helmholtz.png",
+    "description": "由本项目线圈示例精修而成。可旋转、缩放并切换线框，观察同轴双线圈、绕组、支架和中心探头。线圈中心间距等于平均半径（d=R）。教学结构示意，不提供磁场数值仿真，也不作为制造图纸。"
+  },
+  {
+    "title": "回旋加速器 · D形电极剖视",
+    "category": "model",
+    "file": "cyclotron.obj",
+    "cover": "covers/cyclotron.png",
+    "description": "由本项目回旋加速器示例精修而成。开放顶盖的双D形电极展示空腔、中央加速间隙与离子源，可旋转、缩放和查看线框。电极不是磁极；模型未包含外部磁极、真空外壳或真实粒子轨迹计算，仅用于结构教学。"
+  },
+  {
+    "title": "让振动留下轨迹 · 阻尼实验室",
+    "category": "html",
+    "file": "damped-oscillator.html",
+    "cover": "covers/damped-oscillator.png",
+    "description": "由本项目弹簧振子测试示例完善而成。调节劲度系数、阻尼与初始位移，对比无阻尼、欠阻尼、临界和过阻尼；联动显示振子、相空间、位移曲线与机械能。采用m=1 kg线性阻尼模型的解析解，支持暂停、继续和复位。教学模型，不代表实测数据。"
+  }
+]
