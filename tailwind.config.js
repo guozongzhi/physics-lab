@@ -1,5 +1,47 @@
 /** @type {import('tailwindcss').Config} */
 
+const missionScale = {
+  50: '#EEF4FF',
+  100: '#DCE7FF',
+  200: '#B9CCFF',
+  300: '#8FAEFF',
+  400: '#6D91FF',
+  500: '#4F7CFF',
+  600: '#3B63E0',
+  700: '#2E4EB2',
+  800: '#243E8A',
+  900: '#1A2D65',
+  950: '#0F1B3D',
+};
+
+const growthScale = {
+  50: '#ECFDF3',
+  100: '#D1FADF',
+  200: '#A6F4C0',
+  300: '#6CE9A6',
+  400: '#32D583',
+  500: '#22C55E',
+  600: '#12B76A',
+  700: '#039855',
+  800: '#027A48',
+  900: '#05603A',
+  950: '#022C22',
+};
+
+const dangerScale = {
+  50: '#FEF3F2',
+  100: '#FEE4E2',
+  200: '#FECDCA',
+  300: '#FDA29B',
+  400: '#F97066',
+  500: '#F04438',
+  600: '#D92D20',
+  700: '#B42318',
+  800: '#912018',
+  900: '#7A271A',
+  950: '#450A0A',
+};
+
 export default {
   darkMode: "class",
   content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
@@ -13,18 +55,8 @@ export default {
     },
     extend: {
       colors: {
-        mission: {
-          50: '#EEF4FF',
-          100: '#DCE7FF',
-          200: '#B9CCFF',
-          300: '#8FAEFF',
-          400: '#6D91FF',
-          500: '#4F7CFF',
-          600: '#3B63E0',
-          700: '#2E4EB2',
-          800: '#243E8A',
-          900: '#1A2D65',
-        },
+        mission: missionScale,
+        physics: missionScale,
         energy: {
           50: '#FFF3E8',
           100: '#FFE4CA',
@@ -36,19 +68,10 @@ export default {
           700: '#BF5815',
           800: '#99440D',
           900: '#733208',
+          950: '#451A03',
         },
-        growth: {
-          50: '#ECFDF3',
-          100: '#D1FADF',
-          200: '#A6F4C0',
-          300: '#6CE9A6',
-          400: '#32D583',
-          500: '#22C55E',
-          600: '#12B76A',
-          700: '#039855',
-          800: '#027A48',
-          900: '#05603A',
-        },
+        growth: growthScale,
+        lab: growthScale,
         nova: {
           50: '#F3EEFF',
           100: '#E9DCFF',
@@ -60,6 +83,7 @@ export default {
           700: '#6941C6',
           800: '#53389E',
           900: '#42307D',
+          950: '#2E1065',
         },
         alert: {
           50: '#FFFBEA',
@@ -72,19 +96,10 @@ export default {
           700: '#DC6803',
           800: '#B54708',
           900: '#93370D',
+          950: '#451A03',
         },
-        danger: {
-          50: '#FEF3F2',
-          100: '#FEE4E2',
-          200: '#FECDCA',
-          300: '#FDA29B',
-          400: '#F97066',
-          500: '#F04438',
-          600: '#D92D20',
-          700: '#B42318',
-          800: '#912018',
-          900: '#7A271A',
-        },
+        danger: dangerScale,
+        risk: dangerScale,
         ink: {
           50: '#F8FAFC',
           100: '#F1F5F9',
@@ -96,6 +111,7 @@ export default {
           700: '#334155',
           800: '#1E293B',
           900: '#0F172A',
+          950: '#020617',
         },
       },
       fontFamily: {
@@ -105,12 +121,14 @@ export default {
       },
       borderRadius: {
         lg2: '16px',
+        xl2: '18px',
         xl3: '20px',
         xl4: '28px',
       },
       boxShadow: {
         soft: '0 1px 2px rgba(15,23,42,0.04), 0 8px 24px rgba(79,124,255,0.06)',
         glass: '0 1px 0 rgba(255,255,255,0.8) inset, 0 8px 32px rgba(15,23,42,0.06)',
+        cardLifted: '0 12px 36px rgba(15,23,42,0.10), 0 2px 6px rgba(15,23,42,0.05)',
         glowMission: '0 0 0 1px rgba(79,124,255,0.2), 0 12px 40px rgba(79,124,255,0.18)',
         glowEnergy: '0 0 0 1px rgba(255,138,52,0.25), 0 12px 40px rgba(255,138,52,0.22)',
       },
@@ -120,11 +138,14 @@ export default {
       },
       backgroundImage: {
         "grad-mission": "linear-gradient(135deg,#4F7CFF 0%,#6D91FF 55%,#8FAEFF 100%)",
+        "grad-physics": "linear-gradient(135deg,#4F7CFF 0%,#6D91FF 55%,#8FAEFF 100%)",
         "grad-energy": "linear-gradient(135deg,#FF8A34 0%,#FFA760 55%,#FFC695 100%)",
         "grad-growth": "linear-gradient(135deg,#22C55E 0%,#32D583 50%,#6CE9A6 100%)",
+        "grad-lab": "linear-gradient(135deg,#22C55E 0%,#32D583 50%,#6CE9A6 100%)",
         "grad-nova": "linear-gradient(135deg,#8B5CF6 0%,#9E77ED 55%,#B692F6 100%)",
         "grad-alert": "linear-gradient(135deg,#F59E0B 0%,#FACD64 55%,#FDE68A 100%)",
         "grad-danger": "linear-gradient(135deg,#F04438 0%,#F97066 55%,#FDA29B 100%)",
+        "grad-risk": "linear-gradient(135deg,#F04438 0%,#F97066 55%,#FDA29B 100%)",
         "grad-ink": "linear-gradient(135deg,#F8FAFC 0%,#F1F5F9 100%)",
       },
       keyframes: {

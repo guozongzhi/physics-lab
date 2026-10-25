@@ -226,6 +226,19 @@ class ShowcaseItem(Base):
     # 选了等于白选、tab 也永远筛不出东西。存量作品回填为 photo。
     category: Mapped[str] = mapped_column(String, default="photo", index=True)
 
+    @property
+    def media_kind(self) -> str:
+        raw = (self.html_content or "").strip()
+        if not raw:
+            return "none"
+        if raw.startswith("<!--VIDEO_SRC-->"):
+            return "video"
+        if raw.startswith("<!--PAPER_MD-->"):
+            return "paper"
+        if raw.startswith("<!--MODEL_3D:"):
+            return "model3d"
+        return "html"
+
 
 class SafetyExamAttempt(Base):
     """服务端保存题目快照与判分状态，客户端只收到无答案的题目。"""

@@ -26,11 +26,13 @@ import { useTheoryStore } from '../store/theoryStore';
 import { useSafetyStore } from '../store/safetyStore';
 import { coinsApi } from './apiService';
 import { reviveDates } from './reviveDates';
-import type { QuizSession } from '../types';
+import type { CoinTransaction, Group, QuizSession } from '../types';
 
 let loaded = false;
 let loadingPromise: Promise<void> | null = null;
 let generation = 0;
+let groupsRefreshVersion = 0;
+let coinsRefreshVersion = 0;
 
 export function isBootstrapped(): boolean {
   return loaded;
@@ -163,5 +165,34 @@ export async function bootstrapFromApi(force = false): Promise<void> {
     await currentPromise;
   } finally {
     if (loadingPromise === currentPromise) loadingPromise = null;
+  }
+}
+
+/**
+ * 按需轻量刷新指定业务域（供主控看板定时轮询使用），将最新数据写回对应 Zustand store。
+ */
+export async function refreshDomainsFromApi(
+  domains: Array<'groups' | 'coins'> = ['groups', 'coins']
+): Promise<void> {
+  if (!apiEnabled) return;
+  const myGeneration = generation;
+  const wantGroups = domains.includes('groups');
+  const wantCoins = domains.includes('coins');
+  const groupsVersion = wantGroups ? ++groupsRefreshVersion : groupsRefreshVersion;
+  const coinsVersion = wantCoins ? ++coinsRefreshVersion : coinsRefreshVersion;
+  const [rGroups, rCoinTxs] = await Promise.allSettled([
+    wantGroups ? groupsApi.list() : Promise.resolve<Group[] | null>(null),
+    wantCoins ? coinsApi.transactions() : Promise.resolve<CoinTransaction[] | null>(null),
+  ]);
+  if (myGeneration !== generation) return;
+  if (wantGroups && groupsVersion === groupsRefreshVersion && rGroups.status === 'fulfilled' && rGroups.value != null) {
+    useGroupStore.setState({ groups: rGroups.value });
+  }
+  if (wantCoins && coinsVersion === coinsRefreshVersion && rCoinTxs.status === 'fulfilled' && rCoinTxs.value != null) {
+    useCoinStore.setState({
+      coinTxs: reviveDates(rCoinTxs.value, ['createdAt']).sort(
+        (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+      ),
+    });
   }
 }

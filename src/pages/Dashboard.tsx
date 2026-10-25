@@ -11,10 +11,12 @@ import { useTheoryStore } from '../store/theoryStore';
 import { useProjectStore } from '../store/projectStore';
 import { useCoinStore } from '../store/coinStore';
 import ChangePasswordModal from '../components/ui/ChangePasswordModal';
-import { safetyApi, groupsApi, coinsApi, SafetyRecord } from '@/lib/apiService';
+import Dialog from '../components/ui/Dialog';
+import { safetyApi, SafetyRecord } from '@/lib/apiService';
 import { apiEnabled, getToken } from '@/lib/apiClient';
-import type { Project, ProjectStatus } from '@/types';
-import { X, UserPlus, AlertTriangle, Megaphone, ArrowRight, BookOpen, FlaskConical, Zap } from 'lucide-react';
+import { refreshDomainsFromApi } from '@/lib/bootstrap';
+import type { ProjectStatus } from '@/types';
+import { UserPlus, ArrowRight, BookOpen, FlaskConical, Zap } from 'lucide-react';
 import { CommanderHeader } from '@/features/dashboard/components/CommanderHeader';
 import { MissionActionCards } from '@/features/dashboard/components/MissionActionCards';
 import { ActiveProjectBento } from '@/features/dashboard/components/ActiveProjectBento';
@@ -26,17 +28,17 @@ import { BentoCard } from '@/design-system/components/BentoCard';
 import { PortalCard } from '@/design-system/components/PortalCard';
 
 const LEARNING_PATH_CONFIG = [
-  { id: 'ai_learn', name: 'AI学习', badge: false },
-  { id: 'knowledge_organize', name: '知识整理', badge: false },
-  { id: 'ai_test', name: 'AI检测', badge: false },
-  { id: 'intensive_training', name: '强化训练', badge: false },
-  { id: 'pass_80', name: '80%通过', badge: true },
-  { id: 'create_quiz', name: '创作题库', badge: false },
-  { id: 'challenge_other', name: '挑战其他小组', badge: false },
-  { id: 'earn_energy', name: '获得能量', badge: false },
-  { id: 'project_dev', name: '项目研发', badge: false },
-  { id: 'experiment', name: '实验', badge: false },
-  { id: 'showcase', name: '成果展示', badge: false },
+  { id: 'ai_learn', name: 'AI学习', badge: false, to: '/theory/topics' },
+  { id: 'knowledge_organize', name: '知识整理', badge: false, to: '/theory/topics' },
+  { id: 'ai_test', name: 'AI检测', badge: false, to: '/theory/topics' },
+  { id: 'intensive_training', name: '强化训练', badge: false, to: '/theory/topics' },
+  { id: 'pass_80', name: '80%通过', badge: true, to: '/theory/topics' },
+  { id: 'create_quiz', name: '创作题库', badge: false, to: '/theory/topics' },
+  { id: 'challenge_other', name: '挑战其他小组', badge: false, to: '/theory/challenges' },
+  { id: 'earn_energy', name: '获得能量', badge: false, to: '/coins' },
+  { id: 'project_dev', name: '项目研发', badge: false, to: '/projects' },
+  { id: 'experiment', name: '实验', badge: false, to: '/projects' },
+  { id: 'showcase', name: '成果展示', badge: false, to: '/showcase' },
 ];
 
 export default function Dashboard() {
@@ -91,7 +93,7 @@ export default function Dashboard() {
   );
   const { quizSessions, challenges } = useTheoryStore();
   const theoryProgress = topicCompletion(quizSessions, userId, mockTopics.map((topic) => topic.id), apiEnabled).percent;
-  const { projects, showcaseItems, createProject, updateProject, deleteProject, createRecruitment } = useProjectStore();
+  const { projects, showcaseItems, createProject } = useProjectStore();
   const { coinTxs } = useCoinStore();
 
   // 自助加入小组本地状态
@@ -122,11 +124,9 @@ export default function Dashboard() {
   const currentUser = userId ? getUserById(userId) || null : null;
   const myGroup = groupId ? groups.find((g) => g.id === groupId) || null : null;
 
-  // 项目表单相关状态
+  // 新项目立项表单状态
   const [formOpen, setFormOpen] = useState(false);
-  const [editing, setEditing] = useState<Project | null>(null);
   const [saving, setSaving] = useState(false);
-  const [deleteTarget, setDeleteTarget] = useState<Project | null>(null);
   const [pForm, setPForm] = useState<{
     title: string;
     topic: string;
@@ -150,7 +150,6 @@ export default function Dashboard() {
   });
 
   const openCreateProject = () => {
-    setEditing(null);
     setPForm({
       title: '',
       topic: '',
@@ -172,82 +171,25 @@ export default function Dashboard() {
     }
     setSaving(true);
     try {
-      if (editing) {
-        await updateProject(editing.id, {
-          title: pForm.title.trim(),
-          topic: pForm.topic.trim(),
-          ownerGroupId: pForm.ownerGroupId || editing.ownerGroupId,
-          status: pForm.status,
-          dueDate: pForm.dueDate ? new Date(pForm.dueDate) : editing.dueDate,
-          rewardCoins: Number(pForm.rewardCoins) || 0,
-          techPoints: pForm.techPoints,
-          difficulties: pForm.difficulties,
-          progress: Math.min(100, Math.max(0, pForm.progress)),
-        });
-        pushToast('项目已更新', 'success');
-      } else {
-        await createProject({
-          title: pForm.title.trim(),
-          topic: pForm.topic.trim(),
-          ownerGroupId: pForm.ownerGroupId || groupId || 'g1',
-          status: pForm.status,
-          dueDate: pForm.dueDate ? new Date(pForm.dueDate) : new Date(Date.now() + 14 * 86400000),
-          rewardCoins: Number(pForm.rewardCoins) || 50,
-          techPoints: pForm.techPoints,
-          difficulties: pForm.difficulties,
-          equipmentList: [],
-          startDate: new Date(),
-          progress: Math.min(100, Math.max(0, pForm.progress)),
-        });
-        pushToast('新项目立项成功！', 'success');
-      }
+      await createProject({
+        title: pForm.title.trim(),
+        topic: pForm.topic.trim(),
+        ownerGroupId: pForm.ownerGroupId || groupId || 'g1',
+        status: pForm.status,
+        dueDate: pForm.dueDate ? new Date(pForm.dueDate) : new Date(Date.now() + 14 * 86400000),
+        rewardCoins: Number(pForm.rewardCoins) || 50,
+        techPoints: pForm.techPoints,
+        difficulties: pForm.difficulties,
+        equipmentList: [],
+        startDate: new Date(),
+        progress: Math.min(100, Math.max(0, pForm.progress)),
+      });
+      pushToast('新项目立项成功！', 'success');
       setFormOpen(false);
     } catch (err: unknown) {
       pushToast((err instanceof Error ? err.message : undefined) || '保存失败', 'error');
     } finally {
       setSaving(false);
-    }
-  };
-
-  const confirmDelete = async () => {
-    if (!deleteTarget) return;
-    try {
-      await deleteProject(deleteTarget.id);
-      pushToast(`项目「${deleteTarget.title}」已删除`, 'success');
-      setDeleteTarget(null);
-    } catch (err: unknown) {
-      pushToast((err instanceof Error ? err.message : undefined) || '删除失败', 'error');
-    }
-  };
-
-  // 招募相关状态
-  const [recOpen, setRecOpen] = useState(false);
-  const [recProject] = useState<Project | null>(null);
-  const [recSaving, setRecSaving] = useState(false);
-  const [recForm, setRecForm] = useState({ title: '', description: '', skills: '', reward: 30, daysLeft: 7 });
-
-  const submitRecruit = async () => {
-    if (!recProject || !recForm.title.trim()) {
-      pushToast('请填写招募标题', 'error');
-      return;
-    }
-    setRecSaving(true);
-    try {
-      const skillsArr = recForm.skills.split(/[,，\s]+/).map((s) => s.trim()).filter(Boolean);
-      await createRecruitment({
-        projectId: recProject.id,
-        title: recForm.title.trim(),
-        description: recForm.description.trim(),
-        skills: skillsArr.length ? skillsArr : ['物理建模'],
-        reward: Number(recForm.reward) || 30,
-        deadline: new Date(Date.now() + (Number(recForm.daysLeft) || 7) * 86400000),
-      });
-      pushToast('招募公告已发布！', 'success');
-      setRecOpen(false);
-    } catch (err: unknown) {
-      pushToast((err instanceof Error ? err.message : undefined) || '发布招募失败', 'error');
-    } finally {
-      setRecSaving(false);
     }
   };
 
@@ -332,16 +274,14 @@ export default function Dashboard() {
     { label: '班级科研人数', value: classStudents.length, suffix: '人' },
     { label: '编制课题组', value: classGroups.length, suffix: '组' },
     { label: '已攻坚结题', value: classProjects.filter((p) => p.status === 'done').length, suffix: '个' },
-    { label: '安全规程合格率', value: classProjects.length ? `${Math.round((classProjects.filter((p) => Object.keys(p.safetyPassed || {}).length > 0).length / classProjects.length) * 100)}` : '100', suffix: '%' },
+    { label: '安全规程合格率', value: classProjects.length ? `${Math.round((classProjects.filter((p) => Object.keys(p.safetyPassed || {}).length > 0).length / classProjects.length) * 100)}` : '0', suffix: '%' },
   ];
 
-  // 30秒轻量轮询
+  // 30秒轻量轮询并同步更新 store
   useEffect(() => {
     if (!apiEnabled || !getToken()) return;
-    const tick = async () => {
-      try {
-        await Promise.all([groupsApi.list(), coinsApi.transactions()]);
-      } catch { /* 轮询失败时等待下次重试 */ }
+    const tick = () => {
+      void refreshDomainsFromApi(['groups', 'coins']).catch(() => { /* 轮询失败时等待下次重试 */ });
     };
     const timer = setInterval(tick, 30000);
     return () => {
@@ -454,10 +394,10 @@ export default function Dashboard() {
                 visualSrc={myProjects[0]?.title.includes('电动机') ? '/images/electric-motor-hero.webp' : undefined}
               />
               <PortalCard
-                to="/theory/topics"
+                to={LEARNING_PATH_CONFIG.find((cfg) => cfg.id === pathSteps.find((step) => !step.done)?.id)?.to || '/theory/topics'}
                 eyebrow="学习路径 · 下一步"
-                title={pathSteps.find((step) => !step.done)?.name || '继续探索知识星系'}
-                description="在知识星系中完成下一个阶段，积累物理研究能力。"
+                title={pathSteps.find((step) => !step.done)?.name || '继续探索学习中枢'}
+                description="完成当前阶段目标，逐步解锁完整物理研究闭环。"
                 icon={BookOpen}
                 tone="violet"
                 detail={`已完成 ${completedSteps}/${LEARNING_PATH_CONFIG.length} 阶段`}
@@ -491,114 +431,60 @@ export default function Dashboard() {
       )}
 
       {/* 同班同学弹窗 */}
-      {showClassmates && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4" onClick={() => setShowClassmates(false)}>
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 w-full max-w-lg shadow-2xl max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800 mb-4">
-              <h3 className="font-bold text-base text-slate-900 dark:text-slate-100">
-                同班同学研究员名册 ({classmates.length} 人)
-              </h3>
-              <button type="button" onClick={() => setShowClassmates(false)} className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"><X size={18} /></button>
-            </div>
-            {classmates.length === 0 ? (
-              <div className="py-8 text-center text-xs text-slate-400">本班暂无其他研究员档案</div>
-            ) : (
-              <div className="grid grid-cols-2 gap-2.5">
-                {classmates.map((c) => (
-                  <div key={c.id} className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 flex items-center justify-between text-xs">
-                    <span className="font-semibold text-slate-800 dark:text-slate-200">{c.name}</span>
-                    <span className="text-[10px] text-slate-400">{groups.find((g) => g.id === c.groupId)?.name || '未分机组'}</span>
-                  </div>
-                ))}
+      <Dialog
+        open={showClassmates}
+        onClose={() => setShowClassmates(false)}
+        title={`同班同学研究员名册 (${classmates.length} 人)`}
+        size="md"
+      >
+        {classmates.length === 0 ? (
+          <div className="py-8 text-center text-xs text-slate-400">本班暂无其他研究员档案</div>
+        ) : (
+          <div className="grid grid-cols-2 gap-2.5">
+            {classmates.map((c) => (
+              <div key={c.id} className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 flex items-center justify-between text-xs">
+                <span className="font-semibold text-slate-800 dark:text-slate-200">{c.name}</span>
+                <span className="text-[10px] text-slate-400">{groups.find((g) => g.id === c.groupId)?.name || '未分组'}</span>
               </div>
-            )}
+            ))}
           </div>
-        </div>
-      )}
+        )}
+      </Dialog>
 
-      {/* 立项/编辑项目弹窗 */}
-      {formOpen && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4" onClick={() => setFormOpen(false)}>
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 w-full max-w-lg shadow-2xl max-h-[85vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-bold text-base text-slate-900 dark:text-slate-100">
-                {editing ? '编辑科研课题' : '发起新课题研发立项'}
-              </h3>
-              <button type="button" onClick={() => setFormOpen(false)} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"><X size={18} /></button>
+      {/* 立项弹窗 */}
+      <Dialog
+        open={formOpen}
+        onClose={() => setFormOpen(false)}
+        title="发起新课题研发立项"
+        size="md"
+      >
+        <div className="space-y-3 text-xs">
+          <div>
+            <label className="block font-medium mb-1 text-slate-700 dark:text-slate-300">项目名称</label>
+            <input data-dialog-autofocus className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100" value={pForm.title} onChange={(e) => setPForm({ ...pForm, title: e.target.value })} placeholder="例如：法拉第电磁感应演示系统" />
+          </div>
+          <div>
+            <label className="block font-medium mb-1 text-slate-700 dark:text-slate-300">课题方向</label>
+            <input className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100" value={pForm.topic} onChange={(e) => setPForm({ ...pForm, topic: e.target.value })} placeholder="例如：电磁学 / 经典力学" />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block font-medium mb-1 text-slate-700 dark:text-slate-300">初始进度 %</label>
+              <input type="number" min={0} max={100} className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100" value={pForm.progress} onChange={(e) => setPForm({ ...pForm, progress: Number(e.target.value) || 0 })} />
             </div>
-            <div className="space-y-3 text-xs">
-              <div>
-                <label className="block font-medium mb-1 text-slate-700 dark:text-slate-300">项目名称</label>
-                <input className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100" value={pForm.title} onChange={(e) => setPForm({ ...pForm, title: e.target.value })} placeholder="例如：法拉第电磁感应演示系统" />
-              </div>
-              <div>
-                <label className="block font-medium mb-1 text-slate-700 dark:text-slate-300">课题方向</label>
-                <input className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100" value={pForm.topic} onChange={(e) => setPForm({ ...pForm, topic: e.target.value })} placeholder="例如：电磁学 / 经典力学" />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block font-medium mb-1 text-slate-700 dark:text-slate-300">初始进度 %</label>
-                  <input type="number" min={0} max={100} className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100" value={pForm.progress} onChange={(e) => setPForm({ ...pForm, progress: Number(e.target.value) || 0 })} />
-                </div>
-                <div>
-                  <label className="block font-medium mb-1 text-slate-700 dark:text-slate-300">激励能量币 ⚡</label>
-                  <input type="number" min={0} className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100" value={pForm.rewardCoins} onChange={(e) => setPForm({ ...pForm, rewardCoins: Number(e.target.value) || 0 })} />
-                </div>
-              </div>
-            </div>
-            <div className="flex gap-2 mt-6">
-              <Button variant="ghost" className="flex-1" onClick={() => setFormOpen(false)}>取消</Button>
-              <Button variant="primary" className="flex-1" isLoading={saving} onClick={submitProject}>
-                {editing ? '保存修改' : '确认立项'}
-              </Button>
+            <div>
+              <label className="block font-medium mb-1 text-slate-700 dark:text-slate-300">激励能量币 ⚡</label>
+              <input type="number" min={0} className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100" value={pForm.rewardCoins} onChange={(e) => setPForm({ ...pForm, rewardCoins: Number(e.target.value) || 0 })} />
             </div>
           </div>
         </div>
-      )}
-
-      {/* 删除确认 */}
-      {deleteTarget && (
-        <div className="fixed inset-0 z-[210] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4" onClick={() => setDeleteTarget(null)}>
-          <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 w-full max-w-sm shadow-xl" onClick={(e) => e.stopPropagation()}>
-            <h3 className="font-bold text-base text-slate-900 dark:text-slate-100 flex items-center gap-2 mb-2">
-              <AlertTriangle size={18} className="text-danger-500" /> 删除项目
-            </h3>
-            <p className="text-xs text-slate-500 mb-5">确定删除「{deleteTarget.title}」？此操作不可逆。</p>
-            <div className="flex gap-2">
-              <Button variant="ghost" className="flex-1" onClick={() => setDeleteTarget(null)}>取消</Button>
-              <Button variant="danger" className="flex-1" onClick={confirmDelete}>确认删除</Button>
-            </div>
-          </div>
+        <div className="flex gap-2 mt-6">
+          <Button variant="ghost" className="flex-1" onClick={() => setFormOpen(false)}>取消</Button>
+          <Button variant="primary" className="flex-1" isLoading={saving} onClick={submitProject}>
+            确认立项
+          </Button>
         </div>
-      )}
-
-      {/* 发布招募 */}
-      {recOpen && recProject && (
-        <div className="fixed inset-0 z-[210] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4" onClick={() => setRecOpen(false)}>
-          <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 w-full max-w-lg shadow-xl" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-bold text-base text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                <Megaphone size={18} className="text-energy-500" /> 发布科研招募
-              </h3>
-              <button type="button" onClick={() => setRecOpen(false)} className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"><X size={18} /></button>
-            </div>
-            <div className="space-y-3 text-xs">
-              <div>
-                <label className="block font-medium mb-1 text-slate-700 dark:text-slate-300">招募标题</label>
-                <input className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100" value={recForm.title} onChange={(e) => setRecForm({ ...recForm, title: e.target.value })} placeholder="例如：需要一名能处理仿真数据的研究员" />
-              </div>
-              <div>
-                <label className="block font-medium mb-1 text-slate-700 dark:text-slate-300">酬劳（能量币）</label>
-                <input type="number" min={1} className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100" value={recForm.reward} onChange={(e) => setRecForm({ ...recForm, reward: Number(e.target.value) || 0 })} />
-              </div>
-            </div>
-            <div className="flex gap-2 mt-6">
-              <Button variant="ghost" className="flex-1" onClick={() => setRecOpen(false)}>取消</Button>
-              <Button variant="energy" className="flex-1" isLoading={recSaving} onClick={submitRecruit}>确认发布</Button>
-            </div>
-          </div>
-        </div>
-      )}
+      </Dialog>
 
       {changePwdOpen && <ChangePasswordModal onClose={() => setChangePwdOpen(false)} />}
     </div>

@@ -3,7 +3,7 @@ import type { Project } from '@/types';
 import { BentoCard } from "@/design-system/components/BentoCard";
 import { Badge } from "@/design-system/components/Badge";
 import { Button } from "@/design-system/components/Button";
-import { FlaskConical, Plus, ArrowRight, ShieldCheck, Clock } from "lucide-react";
+import { FlaskConical, Plus, ArrowRight, ShieldCheck, ShieldAlert, Clock } from "lucide-react";
 
 interface ActiveProjectBentoProps {
   projects: Project[];
@@ -124,10 +124,21 @@ export const ActiveProjectBento: React.FC<ActiveProjectBentoProps> = ({
                 <span className="text-slate-400">常规教具</span>
               )}
 
-              <div className="ml-auto flex items-center gap-1 text-growth-600 dark:text-growth-400 font-medium">
-                <ShieldCheck size={14} />
-                <span>安全规程已就绪</span>
-              </div>
+              {Object.values(currentProject.safetyPassed || {}).some(Boolean) ? (
+                <div className="ml-auto flex items-center gap-1 text-growth-600 dark:text-growth-400 font-medium">
+                  <ShieldCheck size={14} />
+                  <span>安全规程已就绪</span>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => onNavigate("/safety-lab")}
+                  className="ml-auto flex items-center gap-1 text-alert-600 dark:text-alert-400 hover:underline font-medium"
+                >
+                  <ShieldAlert size={14} />
+                  <span>待完成安全准入 →</span>
+                </button>
+              )}
             </div>
           </div>
         )}

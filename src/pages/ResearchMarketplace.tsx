@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { Briefcase, Search, Clock, Zap, Users, TrendingDown, TrendingUp, CheckCircle2, XCircle, Award, Send, Megaphone, SlidersHorizontal, Home, Globe } from 'lucide-react';
 import AvatarStack from '@/components/ui/AvatarStack';
 import RecruitDialog from '@/components/ui/RecruitDialog';
+import Dialog from '@/components/ui/Dialog';
 import { useGroupStore } from '@/store/groupStore';
 import { useAuthStore } from '@/store/authStore';
 import { useProjectStore } from '@/store/projectStore';
@@ -58,11 +59,31 @@ function useTicker(target: number, duration = 800) {
 export default function ResearchMarketplace() {
   const { groups, users } = useGroupStore();
   const { groupId: currentGroupId, userId, role } = useAuthStore();
-  const { recruitments, projects, placeBid } = useProjectStore();
+  const { recruitments, projects, placeBid, assignRecruitment, resolveRecruitment } = useProjectStore();
   const pushToast = useUIStore((s) => s.pushToast);
   const myGroupProject = useMemo(() => projects.find((p) => p.ownerGroupId === currentGroupId), [projects, currentGroupId]);
   const isLeader = role === 'teacher' || role === 'admin' || (currentGroupId ? users.find((u) => u.id === userId)?.role === 'leader' : false);
   const [recruitOpen, setRecruitOpen] = useState(false);
+  const [manageRecId, setManageRecId] = useState<string | null>(null);
+  const [manageBusy, setManageBusy] = useState(false);
+  const handleManage = async (recId: string, action: 'assign' | 'success' | 'partial' | 'fail', assigneeId?: string) => {
+    if (manageBusy) return;
+    setManageBusy(true);
+    try {
+      if (action === 'assign' && assigneeId) {
+        await assignRecruitment(recId, assigneeId);
+        pushToast('已选定中标协作者', 'success');
+      } else if (action !== 'assign') {
+        await resolveRecruitment(recId, action);
+        pushToast('裁决已保存，实际报酬请查看裁决结果', 'success');
+        setManageRecId(null);
+      }
+    } catch (error) {
+      pushToast(error instanceof Error ? error.message : '操作失败，请重试', 'error');
+    } finally {
+      setManageBusy(false);
+    }
+  };
   const [search, setSearch] = useState('');
   const [activeSkills, setActiveSkills] = useState<string[]>([]);
   const [sort, setSort] = useState<SortKey>('reward');
@@ -84,8 +105,17 @@ export default function ResearchMarketplace() {
         .map((r) => {
           const myBid = r.bids?.find((b) => b.userId === userId);
           const project = projects.find((p) => p.id === r.projectId);
-          const status = r.status === 'done' ? 'done' : r.status === 'assigned' && r.assigneeUserId === userId ? ('won' as const) : ('bidding' as const);
-          const progress = r.status === 'done' ? 100 : r.status === 'assigned' ? 60 : 10;
+          const status: BidState['status'] =
+            r.status === 'done' || r.status === 'failed'
+              ? r.assigneeUserId === userId
+                ? 'done'
+                : 'rejected'
+              : r.status === 'assigned'
+                ? r.assigneeUserId === userId
+                  ? 'won'
+                  : 'rejected'
+                : 'bidding';
+          const progress = status === 'done' ? 100 : status === 'won' ? 60 : status === 'rejected' ? 0 : 10;
           return {
             recId: r.id,
             projectName: project?.title || '',
@@ -93,8 +123,8 @@ export default function ResearchMarketplace() {
             reward: r.reward,
             status,
             progress,
-            result: r.result,
-            pay: r.actualPay,
+            result: r.assigneeUserId === userId ? r.result : undefined,
+            pay: r.assigneeUserId === userId ? r.actualPay : undefined,
           };
         }),
     [recruitments, projects, userId]
@@ -459,8 +489,11 @@ export default function ResearchMarketplace() {
                           {formatDeadline(p.deadline)}
                         </span>
                       </div>
-                      <button className="btn-mission w-full !py-2 !px-3 text-[12px]" onClick={() => pushToast(`已进入裁决流程 · ${p.title} · 请查看投标列表并选择中标者 🏆`, 'info')}>
-                        裁决中标者
+                      <button
+                        className="btn-mission w-full !py-2 !px-3 text-[12px]"
+                        onClick={() => setManageRecId(p.id)}
+                      >
+                        {p.status === 'done' || p.status === 'failed' ? '查看裁决结果' : p.status === 'assigned' ? '验收并裁决报酬' : '选定中标者'}
                       </button>
                     </div>
                   );
@@ -472,6 +505,96 @@ export default function ResearchMarketplace() {
       </div>
 
       <RecruitDialog open={recruitOpen} onClose={() => setRecruitOpen(false)} projectId={myGroupProject?.id || ''} projectTitle={myGroupProject?.title || ''} />
+
+      {(() => {
+        const managedRec = manageRecId ? recruitments.find((r) => r.id === manageRecId) : null;
+        if (!managedRec) return null;
+        const assignee = managedRec.assigneeUserId ? usersByIdMap.get(managedRec.assigneeUserId) : undefined;
+        return (
+          <Dialog
+            open={Boolean(managedRec)}
+            onClose={() => { if (!manageBusy) setManageRecId(null); }}
+            title={`招募管理 · ${managedRec.title}`}
+            size="md"
+          >
+            <div className="space-y-4">
+              <div className="p-3.5 rounded-xl bg-ink-50/80 border border-ink-100 flex items-center justify-between text-xs">
+                <span className="text-ink-600">悬赏报酬：<strong className="text-energy-600">{managedRec.reward} ⚡</strong></span>
+                <span className="text-ink-500">当前状态：<strong>{managedRec.status === 'open' ? '竞标中' : managedRec.status === 'assigned' ? '协作进行中' : '已结项'}</strong></span>
+              </div>
+
+              {managedRec.status === 'open' && (
+                <div className="space-y-2.5">
+                  <div className="text-xs font-bold text-ink-700">投标申请人 ({managedRec.bids?.length || 0})</div>
+                  {(!managedRec.bids || managedRec.bids.length === 0) ? (
+                    <div className="py-6 text-center text-xs text-ink-400">暂无同学投标，请等待其他小组成员申请</div>
+                  ) : (
+                    managedRec.bids.map((b) => {
+                      const applicant = usersByIdMap.get(b.userId);
+                      return (
+                        <div key={b.userId} className="p-3 rounded-xl border border-ink-100 flex items-center justify-between gap-3">
+                          <div className="min-w-0">
+                            <div className="text-sm font-bold text-ink-800">{applicant?.name || b.userId}</div>
+                            <div className="text-xs text-ink-500 truncate">{b.skillDesc || '申请参与协作'} · 预计投入 {b.hours || 1}h</div>
+                          </div>
+                          <button
+                            type="button"
+                            className="btn-mission !py-1.5 !px-3 !text-xs shrink-0"
+                            disabled={manageBusy}
+                            onClick={() => void handleManage(managedRec.id, 'assign', b.userId)}
+                          >
+                            选为中标人
+                          </button>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              )}
+
+              {managedRec.status === 'assigned' && (
+                <div className="space-y-3">
+                  <div className="p-3.5 rounded-xl bg-mission-50/70 border border-mission-200/60 text-xs text-ink-700">
+                    中标协作者：<strong>{assignee?.name || managedRec.assigneeUserId}</strong>。请根据其实际协作成果裁决并发放能量币：
+                  </div>
+                  <div className="grid grid-cols-3 gap-2.5">
+                    <button
+                      type="button"
+                      className="btn-growth !py-2.5 !px-3 !text-xs"
+                      disabled={manageBusy}
+                      onClick={() => void handleManage(managedRec.id, 'success')}
+                    >
+                      全额通过 (+{managedRec.reward}⚡)
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-energy !py-2.5 !px-3 !text-xs"
+                      disabled={manageBusy}
+                      onClick={() => void handleManage(managedRec.id, 'partial')}
+                    >
+                      部分完成 (+{Math.floor(managedRec.reward / 2)}⚡)
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-ghost border border-danger-200 text-danger-600 !py-2.5 !px-3 !text-xs"
+                      disabled={manageBusy}
+                      onClick={() => void handleManage(managedRec.id, 'fail')}
+                    >
+                      未达标 (0⚡)
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {(managedRec.status === 'done' || managedRec.status === 'failed') && (
+                <div className="p-4 rounded-xl bg-growth-50/60 border border-growth-200 text-xs text-growth-800">
+                  该招募已完成裁决（中标人：{assignee?.name || managedRec.assigneeUserId || '无'}，发放报酬：{managedRec.actualPay ?? 0} ⚡）。
+                </div>
+              )}
+            </div>
+          </Dialog>
+        );
+      })()}
     </>
   );
 }
@@ -507,6 +630,9 @@ function RecCard({ r, idx, groups, usersByIdMap, groupUsersById, pushToast, user
   const urgent = deadlineIsUrgent(deadlineTs);
   // 招募窗口关闭时不能接新活（已中标的那条仍可在通讯页结算）
   const recruitOpen = useGroupStore((s) => windowState(s.classMeta).recruit);
+  const hasBid = Boolean(userId && rec.bids?.some((b) => b.userId === userId));
+  const isExpired = deadlineTs <= Date.now();
+  const canBid = recruitOpen && !hasBid && rec.status === 'open' && !isExpired;
 
   return (
     <motion.article
@@ -557,7 +683,7 @@ function RecCard({ r, idx, groups, usersByIdMap, groupUsersById, pushToast, user
         </div>
         <button
           className="btn-mission w-full !py-2.5 !px-3 text-[13px] disabled:opacity-50 disabled:cursor-not-allowed"
-          disabled={!recruitOpen}
+          disabled={!canBid}
           onClick={() => {
             const bidUserId = userId;
             if (!bidUserId) {
@@ -568,12 +694,23 @@ function RecCard({ r, idx, groups, usersByIdMap, groupUsersById, pushToast, user
               pushToast(windowClosedMessage('recruit'), 'warning');
               return;
             }
-            placeBid(rec.id, { userId: bidUserId, skillDesc: '', hours: 1 });
+            const defaultSkill = rec.skills.length > 0 ? `擅长 ${rec.skills.join(' / ')}` : '申请参与协作';
+            placeBid(rec.id, { userId: bidUserId, skillDesc: defaultSkill, hours: 2 });
             pushToast(`已提交投标申请 · ${rec.title} · 等待项目组审核 ⚡`, 'success');
           }}
         >
           <Send size={14} />
-          {recruitOpen ? '立即投标' : '招募窗口已关闭'}
+          {hasBid
+            ? '已提交投标'
+            : rec.status === 'done'
+              ? '已结项'
+              : rec.status === 'assigned'
+                ? '已选定中标人'
+                : isExpired
+                  ? '已截止'
+                  : recruitOpen
+                    ? '立即投标'
+                    : '招募窗口已关闭'}
         </button>
       </div>
     </motion.article>

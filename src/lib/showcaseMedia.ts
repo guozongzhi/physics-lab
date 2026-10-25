@@ -107,11 +107,30 @@ export function encodeShowcaseMedia(payload: ShowcaseMediaPayload): string {
   }
 }
 
+export type MediaKind = ShowcaseMediaPayload['kind'];
+
+export function resolveMediaKind(
+  rawHtml?: string | null,
+  summaryKind?: string | null
+): MediaKind {
+  if (
+    summaryKind === 'html' ||
+    summaryKind === 'video' ||
+    summaryKind === 'paper' ||
+    summaryKind === 'model3d' ||
+    summaryKind === 'none'
+  ) {
+    return summaryKind;
+  }
+  return parseShowcaseMedia(rawHtml).kind;
+}
+
 export function getMediaBadgeLabel(
-  rawHtml?: string | null
+  rawHtml?: string | null,
+  summaryKind?: string | null
 ): string | null {
-  const parsed = parseShowcaseMedia(rawHtml);
-  switch (parsed.kind) {
+  const kind = resolveMediaKind(rawHtml, summaryKind);
+  switch (kind) {
     case 'video':
       return '实验视频 · 可播放';
     case 'paper':

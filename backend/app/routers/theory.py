@@ -7,7 +7,7 @@ from .. import services
 from ..database import get_db
 from ..deps import get_current_user, window_guard
 from ..models import Challenge, ClassMeta, Group, Question, Topic, User
-from ..schemas import ChallengeCreate, ChallengeOut, ChallengeSubmit, QuestionOut, TopicOut
+from ..schemas import ChallengeCreate, ChallengeOut, ChallengeSubmit, ChallengeSubmitOut, QuestionOut, TopicOut
 
 from ..question_views import question_dict, public_question
 
@@ -122,7 +122,7 @@ def accept_challenge(challenge_id: str, db: Session = Depends(get_db), _: User =
     return [public_question(question_dict(q)) for q in db.query(Question).filter(Question.topic_id == challenge.topic_id).limit(10).all()]
 
 
-@router.post("/challenges/{challenge_id}/submit", response_model=ChallengeOut)
+@router.post("/challenges/{challenge_id}/submit", response_model=ChallengeSubmitOut)
 def submit_challenge(
     challenge_id: str,
     payload: ChallengeSubmit,
@@ -157,11 +157,17 @@ def submit_challenge(
     if not qs:
         qs = db.query(Question).filter(Question.topic_id == challenge.topic_id).limit(10).all()
 
-    correct = 0
+    question_results = []
     for q in qs:
         ua = payload.answers.get(q.id)
-        if ua is not None and services.is_answer_correct(question_dict(q), ua):
-            correct += 1
+        question_results.append({
+            "qid": q.id,
+            "correct": ua is not None and services.is_answer_correct(question_dict(q), ua),
+            "correct_ans": q.answer,
+            "user_ans": ua,
+            "knowledge_point": q.knowledge_point,
+        })
+    correct = sum(item["correct"] for item in question_results)
     total = len(qs) or 1
     accuracy = correct / total
 
@@ -176,4 +182,5 @@ def submit_challenge(
     challenge.submissions = list(challenge.submissions) + [submission]
     db.commit()
     db.refresh(challenge)
-    return challenge
+    return ChallengeSubmitOut(**ChallengeOut.model_validate(challenge).model_dump(),
+                              question_results=question_results)

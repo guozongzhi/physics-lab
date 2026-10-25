@@ -12,6 +12,7 @@ import { Lock } from 'lucide-react';
 import { authApi } from '@/lib/apiService';
 import { useUIStore } from '@/store/uiStore';
 import { useAuthStore } from '@/store/authStore';
+import Dialog from '@/components/ui/Dialog';
 
 export default function ChangePasswordModal({ onClose }: { onClose: () => void }) {
   const pushToast = useUIStore((s) => s.pushToast);
@@ -57,52 +58,53 @@ export default function ChangePasswordModal({ onClose }: { onClose: () => void }
   };
 
   return (
-    <div
-      className="fixed inset-0 z-[200] flex items-center justify-center bg-ink-900/40 backdrop-blur-sm p-4"
-      onClick={onClose}
-    >
-      <div
-        className="glass-card w-full max-w-sm p-6 rounded-[24px] shadow-soft relative"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <h3 className="font-extrabold text-ink-800 text-[18px] mb-1 flex items-center gap-2">
+    <Dialog
+      open
+      onClose={onClose}
+      size="sm"
+      title={
+        <span className="flex items-center gap-2">
           <Lock size={18} className="text-mission-500" />
           修改密码
-        </h3>
-        <p className="text-[12px] text-ink-500 mb-4">修改后请用新密码登录</p>
-        <div className="space-y-3">
-          <input
-            type="password"
-            placeholder="原密码"
-            className="input"
-            value={oldPwd}
-            onChange={(e) => setOldPwd(e.target.value)}
-          />
-          <input
-            type="password"
-            placeholder="新密码（至少 6 位）"
-            className="input"
-            value={newPwd}
-            onChange={(e) => setNewPwd(e.target.value)}
-          />
-          <input
-            type="password"
-            placeholder="确认新密码"
-            className="input"
-            value={confirmPwd}
-            onChange={(e) => setConfirmPwd(e.target.value)}
-          />
-          {err && <p className="text-[12px] text-danger-600">{err}</p>}
-        </div>
-        <div className="flex gap-2 mt-5">
+        </span>
+      }
+      footer={
+        <>
           <button className="btn-ghost flex-1" onClick={onClose}>
             取消
           </button>
           <button className="btn-mission flex-1" onClick={submit} disabled={busy}>
             {busy ? '提交中…' : '确认修改'}
           </button>
-        </div>
+        </>
+      }
+    >
+      <p className="text-[12px] text-ink-500 mb-4">修改后请用新密码登录</p>
+      <div className="space-y-3">
+        <input
+          data-dialog-autofocus
+          type="password"
+          placeholder="原密码"
+          className="input"
+          value={oldPwd}
+          onChange={(e) => setOldPwd(e.target.value)}
+        />
+        <input
+          type="password"
+          placeholder="新密码（至少 6 位）"
+          className="input"
+          value={newPwd}
+          onChange={(e) => setNewPwd(e.target.value)}
+        />
+        <input
+          type="password"
+          placeholder="确认新密码"
+          className="input"
+          value={confirmPwd}
+          onChange={(e) => setConfirmPwd(e.target.value)}
+        />
+        {err && <p className="text-[12px] text-danger-600">{err}</p>}
       </div>
-    </div>
+    </Dialog>
   );
 }

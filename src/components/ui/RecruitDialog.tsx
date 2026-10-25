@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Megaphone, X } from 'lucide-react';
+import { Megaphone } from 'lucide-react';
 import { useUIStore } from '@/store/uiStore';
 import { useProjectStore } from '@/store/projectStore';
 import { useGroupStore } from '@/store/groupStore';
+import Dialog from '@/components/ui/Dialog';
 
 /**
  * 组长发布招募对话框：为某个项目发布跨组招募（组长/教师可用）。
@@ -59,37 +60,38 @@ export default function RecruitDialog({
     } finally { setSaving(false); }
   };
 
-  if (!open) return null;
-
   return (
-    <div className="fixed inset-0 z-[210] flex items-center justify-center bg-ink-900/40 backdrop-blur-sm p-4" onClick={onClose}>
-      <div className="bg-white rounded-2xl p-6 w-full max-w-lg shadow-xl max-h-[85vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="font-bold text-lg text-ink-800 flex items-center gap-2">
-            <Megaphone size={18} className="text-energy-500" />发布招募 · {projectTitle}
-          </h3>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-ink-100 transition-colors"><X size={20} /></button>
-        </div>
-        <div className="space-y-3">
-          <div><label className="label">招募标题</label><input className="input" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="例如：数据分析助手" /></div>
-          <div><label className="label">任务描述</label><textarea className="input min-h-[80px] resize-y" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="需要完成的工作与交付物..." /></div>
-          <div><label className="label">技能要求（用逗号或空格分隔）</label><input className="input" value={form.skills} onChange={(e) => setForm({ ...form, skills: e.target.value })} placeholder="Python, 数据分析, Excel" /></div>
-          <div className="grid grid-cols-2 gap-3">
-            <div><label className="label">酬劳（能量币）</label><input type="number" min={1} className="input" value={form.reward} onChange={(e) => setForm({ ...form, reward: Number(e.target.value) || 0 })} /></div>
-            <div><label className="label">截止天数</label><input type="number" min={1} className="input" value={form.daysLeft} onChange={(e) => setForm({ ...form, daysLeft: Math.max(1, Number(e.target.value) || 1) })} /></div>
-          </div>
-          <p className={`text-[12px] ${insufficient ? 'text-danger-600' : 'text-ink-500'}`}>
-            本组余额 {balance} ⚡。酬劳作为押金在发布时立即扣除，
-            {insufficient
-              ? `当前差额 ${form.reward - balance} ⚡，请先调低酬劳或让老师发放能量币。`
-              : `发布后余额 ${balance - form.reward} ⚡；任务失败或未完成的部分会退回本组。`}
-          </p>
-        </div>
-        <div className="flex gap-2 mt-6">
+    <Dialog
+      open={open}
+      onClose={onClose}
+      size="lg"
+      title={
+        <span className="flex items-center gap-2">
+          <Megaphone size={18} className="text-energy-500" />发布招募 · {projectTitle}
+        </span>
+      }
+      footer={
+        <>
           <button className="btn-ghost flex-1" onClick={onClose}>取消</button>
           <button className="btn-energy flex-1" onClick={submit} disabled={saving || insufficient}>{saving ? '发布中…' : '发布招募'}</button>
+        </>
+      }
+    >
+      <div className="space-y-3">
+        <div><label className="label">招募标题</label><input data-dialog-autofocus className="input" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="例如：数据分析助手" /></div>
+        <div><label className="label">任务描述</label><textarea className="input min-h-[80px] resize-y" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="需要完成的工作与交付物..." /></div>
+        <div><label className="label">技能要求（用逗号或空格分隔）</label><input className="input" value={form.skills} onChange={(e) => setForm({ ...form, skills: e.target.value })} placeholder="Python, 数据分析, Excel" /></div>
+        <div className="grid grid-cols-2 gap-3">
+          <div><label className="label">酬劳（能量币）</label><input type="number" min={1} className="input" value={form.reward} onChange={(e) => setForm({ ...form, reward: Number(e.target.value) || 0 })} /></div>
+          <div><label className="label">截止天数</label><input type="number" min={1} className="input" value={form.daysLeft} onChange={(e) => setForm({ ...form, daysLeft: Math.max(1, Number(e.target.value) || 1) })} /></div>
         </div>
+        <p className={`text-[12px] ${insufficient ? 'text-danger-600' : 'text-ink-500'}`}>
+          本组余额 {balance} ⚡。酬劳作为押金在发布时立即扣除，
+          {insufficient
+            ? `当前差额 ${form.reward - balance} ⚡，请先调低酬劳或让老师发放能量币。`
+            : `发布后余额 ${balance - form.reward} ⚡；任务失败或未完成的部分会退回本组。`}
+        </p>
       </div>
-    </div>
+    </Dialog>
   );
 }

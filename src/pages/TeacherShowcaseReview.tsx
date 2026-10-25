@@ -262,7 +262,7 @@ export default function TeacherShowcaseReview() {
             const meta = STATUS_META[item.status];
             const media = parseShowcaseMedia(item.htmlContent);
             const mediaKind = item.contentLoaded === false ? item.mediaKind : media.kind;
-            const mediaBadge = getMediaBadgeLabel(item.htmlContent);
+            const mediaBadge = getMediaBadgeLabel(item.htmlContent, mediaKind);
             const linkedProject = item.projectId
               ? projects.find((p) => p.id === item.projectId)
               : undefined;
@@ -427,12 +427,6 @@ export default function TeacherShowcaseReview() {
               <div className="min-w-0">
                 <p className="text-[12px] text-ink-500 truncate">{approveTarget.title}</p>
               </div>
-              <button
-                onClick={() => setApproveTarget(null)}
-                className="ml-auto w-8 h-8 rounded-lg hover:bg-ink-100 flex items-center justify-center text-ink-400"
-              >
-                <X size={16} />
-              </button>
             </div>
 
             <p className="text-[12.5px] text-ink-600 mb-3">
@@ -452,7 +446,7 @@ export default function TeacherShowcaseReview() {
               className="input w-full mb-5"
             />
             <div className="flex gap-2">
-              <button className="btn-ghost flex-1" onClick={() => setApproveTarget(null)}>
+              <button className="btn-ghost flex-1" onClick={() => { setApproveTarget(null); setActionError(''); }}>
                 取消
               </button>
               <button
@@ -481,12 +475,6 @@ export default function TeacherShowcaseReview() {
               <div className="min-w-0">
                 <p className="text-[12px] text-ink-500 truncate">{rejectTarget.title}</p>
               </div>
-              <button
-                onClick={() => setRejectTarget(null)}
-                className="ml-auto w-8 h-8 rounded-lg hover:bg-ink-100 flex items-center justify-center text-ink-400"
-              >
-                <X size={16} />
-              </button>
             </div>
 
             <label className="text-[12px] font-bold text-ink-600 mb-1.5 block">
@@ -501,7 +489,7 @@ export default function TeacherShowcaseReview() {
               className="input w-full mb-5 resize-none"
             />
             <div className="flex gap-2">
-              <button className="btn-ghost flex-1" onClick={() => setRejectTarget(null)}>
+              <button className="btn-ghost flex-1" onClick={() => { setRejectTarget(null); setActionError(''); }}>
                 取消
               </button>
               <button
@@ -531,12 +519,6 @@ export default function TeacherShowcaseReview() {
                   {editTarget.authorUserId || groupNameOf(editTarget.groupId)}
                 </p>
               </div>
-              <button
-                onClick={() => setEditTarget(null)}
-                className="ml-auto w-8 h-8 rounded-lg hover:bg-ink-100 flex items-center justify-center text-ink-400"
-              >
-                <X size={16} />
-              </button>
             </div>
 
             <label className="text-[12px] font-bold text-ink-600 mb-1.5 block">
@@ -640,7 +622,7 @@ export default function TeacherShowcaseReview() {
             </p>
 
             <div className="flex gap-2">
-              <button className="btn-ghost flex-1" onClick={() => setEditTarget(null)}>
+              <button className="btn-ghost flex-1" onClick={() => { setEditTarget(null); setActionError(''); }}>
                 取消
               </button>
               <button
@@ -669,12 +651,6 @@ export default function TeacherShowcaseReview() {
               <div className="min-w-0">
                 <p className="text-[12px] text-ink-500 truncate">{deleteTarget.title}</p>
               </div>
-              <button
-                onClick={() => setDeleteTarget(null)}
-                className="ml-auto w-8 h-8 rounded-lg hover:bg-ink-100 flex items-center justify-center text-ink-400"
-              >
-                <X size={16} />
-              </button>
             </div>
 
             <p className="text-[12.5px] text-ink-600 leading-relaxed mb-2">
@@ -689,7 +665,7 @@ export default function TeacherShowcaseReview() {
             <p className="text-[12px] text-ink-400 mb-5">此操作不可撤销。</p>
 
             <div className="flex gap-2">
-              <button className="btn-ghost flex-1" onClick={() => setDeleteTarget(null)}>
+              <button className="btn-ghost flex-1" onClick={() => { setDeleteTarget(null); setActionError(''); }}>
                 取消
               </button>
               <button

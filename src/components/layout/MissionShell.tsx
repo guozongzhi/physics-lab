@@ -1,13 +1,15 @@
 import type { LucideIcon } from 'lucide-react';
 import { applyAvatarFallback, avatarFallback } from '@/lib/imageFallback';
 import type { ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { useEffect, useRef, useState } from 'react';
-import { LayoutDashboard, BookOpen, Sparkles, FolderKanban, ShieldCheck, ShoppingCart, Trophy, Medal, Users, UsersRound, Rocket, Bell, LogOut, Zap, Info, CheckCircle2, AlertTriangle, X, Camera, Gauge, ClipboardList, Shield, Menu, FileCheck, KeyRound, UserRound, ChevronRight, Search, ArrowRight } from 'lucide-react';
+import { LayoutDashboard, BookOpen, Sparkles, FolderKanban, ShieldCheck, ShoppingCart, Trophy, Swords, Medal, Users, UsersRound, Rocket, Bell, LogOut, Zap, Info, CheckCircle2, AlertTriangle, X, Camera, Gauge, ClipboardList, Shield, Menu, FileCheck, KeyRound, UserRound, ChevronRight, Search, ArrowRight, Sun, Moon } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { useGroupStore } from '@/store/groupStore';
 import { useUIStore } from '@/store/uiStore';
+import { useTheme } from '@/hooks/useTheme';
 import { cn } from '@/lib/utils';
 import { apiEnabled } from '@/lib/apiClient';
 import { usersApi } from '@/lib/apiService';
@@ -58,9 +60,9 @@ interface NavItem {
 
 const STUDENT_NAV_ITEMS: NavItem[] = [
   { id: 'dashboard', label: '主控看板', subLabel: '综合态势', icon: LayoutDashboard, to: '/dashboard' },
-  { id: 'learning', label: '知识星系', subLabel: '理论体系', icon: BookOpen, to: '/theory/topics' },
-  { id: 'galaxy', label: '关卡挑战', subLabel: '答题竞技', icon: Sparkles, to: '/theory/challenge' },
-  { id: 'challenges', label: '知识擂台', subLabel: '挑战发布', icon: Trophy, to: '/theory/challenges' },
+  { id: 'learning', label: '学习中枢', subLabel: 'AI 导师与练习', icon: BookOpen, to: '/theory/topics' },
+  { id: 'galaxy', label: '知识星系', subLabel: '星图自评', icon: Sparkles, to: '/theory/challenge' },
+  { id: 'challenges', label: '知识擂台', subLabel: '挑战发布', icon: Swords, to: '/theory/challenges' },
   { id: 'project', label: '课题中心', subLabel: '实验研发', icon: FolderKanban, to: '/projects' },
   { id: 'safety', label: '安全准入', subLabel: '实验资质', icon: ShieldCheck, to: '/safety-lab' },
   { id: 'team', label: '我的小组', subLabel: '团队协同', icon: UsersRound, to: '/my-team' },
@@ -70,6 +72,19 @@ const STUDENT_NAV_ITEMS: NavItem[] = [
   { id: 'achievement', label: '成果殿堂', subLabel: '结题展示', icon: Medal, to: '/showcase' },
   { id: 'profile', label: '个人档案', subLabel: '学习成果', icon: UserRound, to: '/profile' },
 ];
+
+function isNavItemActive(pathname: string, itemTo: string): boolean {
+  if (/^\/theory\/challenge\/[^/]+\/accept/.test(pathname)) {
+    return itemTo === '/theory/challenges';
+  }
+  if (pathname.startsWith('/theory/quiz/')) {
+    return itemTo === '/theory/topics';
+  }
+  if (pathname.startsWith('/safety-exam/')) {
+    return itemTo === '/safety-lab';
+  }
+  return pathname === itemTo || (itemTo !== '/dashboard' && pathname.startsWith(`${itemTo}/`));
+}
 
 const TEACHER_NAV_ITEMS: NavItem[] = [
   { id: 't-overview', label: '指挥总览', subLabel: '全局数据', icon: Gauge, to: '/teacher/overview' },
@@ -92,6 +107,7 @@ function MissionHeader({ onOpenNav, onOpenSearch }: { onOpenNav: () => void; onO
   const getUserById = useGroupStore((s) => s.getUserById);
   const groups = useGroupStore((s) => s.groups);
   const pushToast = useUIStore((s) => s.pushToast);
+  const { isDark, toggleTheme } = useTheme();
 
   const [accountProfile, setAccountProfile] = useState<{ id: string; name: string; avatar: string } | null>(null);
   useEffect(() => {
@@ -262,6 +278,17 @@ function MissionHeader({ onOpenNav, onOpenSearch }: { onOpenNav: () => void; onO
                       <KeyRound size={14} /> 修改密码
                     </button>
 
+                    <button
+                      onClick={() => {
+                        toggleTheme();
+                        setUserMenuOpen(false);
+                      }}
+                      className="w-full text-left px-3 py-2 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-2"
+                    >
+                      {isDark ? <Sun size={14} /> : <Moon size={14} />}
+                      {isDark ? '切换浅色模式' : '切换深色模式'}
+                    </button>
+
                     <div className="border-t border-slate-100 dark:border-slate-800 mt-1 pt-1">
                       <button
                         onClick={() => {
@@ -283,71 +310,70 @@ function MissionHeader({ onOpenNav, onOpenSearch }: { onOpenNav: () => void; onO
       </header>
 
       {/* 头像弹窗 */}
-      {showAvatarModal && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 w-full max-w-sm shadow-2xl border border-slate-200 dark:border-slate-800">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-bold text-base text-slate-900 dark:text-slate-100">选择个性头像</h3>
-              <button onClick={() => setShowAvatarModal(false)} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"><X size={18} /></button>
-            </div>
-            <div className="grid grid-cols-4 gap-2.5 mb-5">
-              {AVATAR_OPTIONS.map((avatar, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => setSelectedAvatar(avatar)}
-                  className={cn(
-                    'relative rounded-xl overflow-hidden border-2 transition-all aspect-square',
-                    selectedAvatar === avatar
-                      ? 'border-mission-500 ring-2 ring-mission-200 scale-105'
-                      : 'border-transparent hover:border-mission-200'
-                  )}
-                >
-                  <img src={avatar} onError={applyAvatarFallback} alt={`头像 ${idx + 1}`} className="w-full h-full object-cover" />
-                  {selectedAvatar === avatar && (
-                    <div className="absolute inset-0 bg-mission-500/20 flex items-center justify-center">
-                      <CheckCircle2 size={18} className="text-mission-500" />
-                    </div>
-                  )}
-                </button>
-              ))}
-            </div>
-
-            <div className="mb-5">
-              <label className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer transition-colors">
-                <Camera size={14} />
-                {compressing ? '正在处理…' : '上传自定义照片'}
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={(e) => {
-                    void handleAvatarFile(e.target.files?.[0]);
-                    e.target.value = '';
-                  }}
-                />
-              </label>
-              {avatarErr && (
-                <p className="mt-2 text-xs text-danger-600 flex items-center gap-1">
-                  <AlertTriangle size={12} /> {avatarErr}
-                </p>
+      <Dialog
+        open={showAvatarModal}
+        onClose={() => setShowAvatarModal(false)}
+        title="选择个性头像"
+        size="sm"
+      >
+        <div className="grid grid-cols-4 gap-2.5 mb-5">
+          {AVATAR_OPTIONS.map((avatar, idx) => (
+            <button
+              key={idx}
+              type="button"
+              onClick={() => setSelectedAvatar(avatar)}
+              className={cn(
+                'relative rounded-xl overflow-hidden border-2 transition-all aspect-square',
+                selectedAvatar === avatar
+                  ? 'border-mission-500 ring-2 ring-mission-200 scale-105'
+                  : 'border-transparent hover:border-mission-200'
               )}
-            </div>
-
-            <div className="flex gap-2">
-              <button onClick={() => setShowAvatarModal(false)} className="flex-1 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800">
-                取消
-              </button>
-              <button
-                onClick={handleAvatarChange}
-                disabled={!selectedAvatar || compressing}
-                className="flex-1 py-2 text-xs rounded-xl bg-mission-600 text-white font-medium hover:bg-mission-500 disabled:opacity-50"
-              >
-                确认更换
-              </button>
-            </div>
-          </div>
+            >
+              <img src={avatar} onError={applyAvatarFallback} alt={`头像 ${idx + 1}`} className="w-full h-full object-cover" />
+              {selectedAvatar === avatar && (
+                <div className="absolute inset-0 bg-mission-500/20 flex items-center justify-center">
+                  <CheckCircle2 size={18} className="text-mission-500" />
+                </div>
+              )}
+            </button>
+          ))}
         </div>
-      )}
+
+        <div className="mb-5">
+          <label className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer transition-colors">
+            <Camera size={14} />
+            {compressing ? '正在处理…' : '上传自定义照片'}
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                void handleAvatarFile(e.target.files?.[0]);
+                e.target.value = '';
+              }}
+            />
+          </label>
+          {avatarErr && (
+            <p className="mt-2 text-xs text-danger-600 flex items-center gap-1">
+              <AlertTriangle size={12} /> {avatarErr}
+            </p>
+          )}
+        </div>
+
+        <div className="flex gap-2">
+          <button type="button" onClick={() => setShowAvatarModal(false)} className="flex-1 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800">
+            取消
+          </button>
+          <button
+            type="button"
+            onClick={handleAvatarChange}
+            disabled={!selectedAvatar || compressing}
+            className="flex-1 py-2 text-xs rounded-xl bg-mission-600 text-white font-medium hover:bg-mission-500 disabled:opacity-50"
+          >
+            确认更换
+          </button>
+        </div>
+      </Dialog>
 
       {showChangePwdModal && <ChangePasswordModal onClose={() => setShowChangePwdModal(false)} />}
     </>
@@ -370,13 +396,13 @@ function NavRail({ open, onClose }: { open: boolean; onClose: () => void }) {
     const previousFocus = document.activeElement as HTMLElement | null;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-    const frame = requestAnimationFrame(() => railRef.current?.querySelector<HTMLButtonElement>('button')?.focus());
+    const frame = requestAnimationFrame(() => railRef.current?.querySelector<HTMLElement>('button, a[href]')?.focus());
     const onKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape') { event.preventDefault(); closeRef.current(); }
       if (event.key === 'Tab') {
-        const buttons = railRef.current?.querySelectorAll<HTMLButtonElement>('button');
-        const first = buttons?.[0];
-        const last = buttons?.[buttons.length - 1];
+        const focusables = railRef.current?.querySelectorAll<HTMLElement>('button, a[href]');
+        const first = focusables?.[0];
+        const last = focusables?.[focusables.length - 1];
         if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
         else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
       }
@@ -390,7 +416,6 @@ function NavRail({ open, onClose }: { open: boolean; onClose: () => void }) {
     };
   }, [open, mobile]);
   const location = useLocation();
-  const navigate = useNavigate();
   const { role } = useAuthStore();
 
   const baseItems: NavItem[] =
@@ -423,21 +448,19 @@ function NavRail({ open, onClose }: { open: boolean; onClose: () => void }) {
           open ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
         )}
       >
-        <button tabIndex={mobile && !open ? -1 : undefined} onClick={onClose} aria-label="关闭导航菜单" className="mission-nav-close hidden md:hidden items-center justify-between text-white pb-4 px-3">
+        <button tabIndex={mobile && !open ? -1 : undefined} onClick={onClose} aria-label="关闭导航菜单" className="mission-nav-close flex md:hidden items-center justify-between text-white pb-4 px-3">
           <span>研究导航</span><X size={20} />
         </button>
         <div className="space-y-1 flex-1 overflow-y-auto pr-1">
           {allItems.map((item) => {
             const Icon = item.icon;
-            const active = location.pathname === item.to || (item.to !== '/dashboard' && location.pathname.startsWith(`${item.to}/`));
+            const active = isNavItemActive(location.pathname, item.to);
             return (
-              <button
+              <Link
                 key={item.id}
+                to={item.to}
                 tabIndex={mobile && !open ? -1 : undefined}
-                onClick={() => {
-                  navigate(item.to);
-                  onClose();
-                }}
+                onClick={onClose}
                 className={cn(
                   'mission-nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all relative text-left',
                   active
@@ -459,7 +482,7 @@ function NavRail({ open, onClose }: { open: boolean; onClose: () => void }) {
                 {active && (
                   <div className="w-1.5 h-1.5 rounded-full bg-mission-500 shrink-0" />
                 )}
-              </button>
+              </Link>
             );
           })}
         </div>
@@ -468,12 +491,97 @@ function NavRail({ open, onClose }: { open: boolean; onClose: () => void }) {
   );
 }
 
+function toastAppearance(type: string) {
+  const Icon =
+    type === 'success' ? CheckCircle2 : type === 'error' || type === 'warning' ? AlertTriangle : Info;
+  const iconClass =
+    type === 'success'
+      ? 'text-growth-600 dark:text-growth-400'
+      : type === 'error'
+        ? 'text-danger-600 dark:text-danger-400'
+        : type === 'warning'
+          ? 'text-alert-600 dark:text-alert-400'
+          : 'text-mission-600 dark:text-mission-400';
+  return { Icon, iconClass };
+}
+
 function ToastStack() {
   const { toasts, removeToast, clearToasts } = useUIStore();
   const [isOpen, setIsOpen] = useState(false);
+  const [dismissedIds, setDismissedIds] = useState<string[]>([]);
+  const timersRef = useRef<Map<string, number>>(new Map());
+
+  useEffect(() => {
+    const timers = timersRef.current;
+    const currentIds = new Set(toasts.map((t) => t.id));
+    for (const [id, timer] of timers.entries()) {
+      if (!currentIds.has(id)) {
+        window.clearTimeout(timer);
+        timers.delete(id);
+      }
+    }
+    setDismissedIds((prev) => (prev.some((id) => !currentIds.has(id)) ? prev.filter((id) => currentIds.has(id)) : prev));
+
+    for (const t of toasts) {
+      if (!timers.has(t.id) && !dismissedIds.includes(t.id)) {
+        const timer = window.setTimeout(() => {
+          timers.delete(t.id);
+          setDismissedIds((prev) => (prev.includes(t.id) ? prev : [...prev, t.id]));
+        }, 4000);
+        timers.set(t.id, timer);
+      }
+    }
+  }, [toasts, dismissedIds]);
+
+  useEffect(() => {
+    const timers = timersRef.current;
+    return () => {
+      for (const timer of timers.values()) {
+        window.clearTimeout(timer);
+      }
+      timers.clear();
+    };
+  }, []);
+
+  const liveBanners = toasts.filter((t) => !dismissedIds.includes(t.id)).slice(-3);
 
   return (
     <>
+      {createPortal(<div className="toast-container" role="status" aria-live="polite" aria-atomic="false">
+        <AnimatePresence>
+          {liveBanners.map((t) => {
+            const { Icon, iconClass } = toastAppearance(t.type);
+            return (
+              <motion.div
+                key={t.id}
+                initial={{ opacity: 0, y: -8, scale: 0.96 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -8, scale: 0.96 }}
+                className="toast-item text-xs"
+              >
+                <Icon size={16} className={cn(iconClass, 'shrink-0 mt-0.5')} />
+                <span className="flex-1 text-slate-800 dark:text-slate-100 leading-snug font-medium">{t.msg}</span>
+                <button
+                  type="button"
+                  aria-label="关闭提示"
+                  onClick={() => {
+                    const timer = timersRef.current.get(t.id);
+                    if (timer) {
+                      window.clearTimeout(timer);
+                      timersRef.current.delete(t.id);
+                    }
+                    setDismissedIds((prev) => (prev.includes(t.id) ? prev : [...prev, t.id]));
+                  }}
+                  className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 shrink-0"
+                >
+                  <X size={14} />
+                </button>
+              </motion.div>
+            );
+          })}
+        </AnimatePresence>
+      </div>, document.body)}
+
       <button
         onClick={() => setIsOpen(!isOpen)}
         aria-label="查看通知"
@@ -510,15 +618,18 @@ function ToastStack() {
                 {toasts.length === 0 ? (
                   <div className="py-8 text-center text-slate-400 text-xs">暂无未读消息通知</div>
                 ) : (
-                  toasts.map((t) => (
-                    <div key={t.id} className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 flex items-start justify-between gap-2">
-                      <div className="flex items-start gap-2">
-                        <Info size={14} className="text-mission-500 shrink-0 mt-0.5" />
-                        <span className="text-slate-700 dark:text-slate-300 leading-snug">{t.msg}</span>
+                  toasts.map((t) => {
+                    const { Icon, iconClass } = toastAppearance(t.type);
+                    return (
+                      <div key={t.id} className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 flex items-start justify-between gap-2">
+                        <div className="flex items-start gap-2">
+                          <Icon size={14} className={cn(iconClass, 'shrink-0 mt-0.5')} />
+                          <span className="text-slate-700 dark:text-slate-300 leading-snug">{t.msg}</span>
+                        </div>
+                        <button onClick={() => removeToast(t.id)} className="text-slate-400 hover:text-slate-600"><X size={12} /></button>
                       </div>
-                      <button onClick={() => removeToast(t.id)} className="text-slate-400 hover:text-slate-600"><X size={12} /></button>
-                    </div>
-                  ))
+                    );
+                  })
                 )}
               </div>
             </motion.div>
@@ -550,7 +661,7 @@ export default function MissionShell({ children, requireAuth = true }: MissionSh
   const homePath = role === 'teacher' ? '/teacher/overview' : role === 'admin' ? '/admin' : '/dashboard';
   const homeLabel = role === 'teacher' ? '指挥总览' : role === 'admin' ? '教师账号' : '主控看板';
   const navItems = role === 'admin' ? [...TEACHER_NAV_ITEMS, ...ADMIN_NAV_ITEMS] : role === 'teacher' ? TEACHER_NAV_ITEMS : STUDENT_NAV_ITEMS;
-  const pageLabel = navItems.find((item) => location.pathname === item.to || location.pathname.startsWith(`${item.to}/`))?.label;
+  const pageLabel = navItems.find((item) => isNavItemActive(location.pathname, item.to))?.label;
 
   useEffect(() => {
     init();

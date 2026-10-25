@@ -24,6 +24,8 @@ import type { SafetyCategory } from '@/types';
 import ReactMarkdown from 'react-markdown';
 import { safetyNotices } from '@/data/safetyContent';
 import { useSafetyStore } from '@/store/safetyStore';
+import { useProjectStore } from '@/store/projectStore';
+import { useAuthStore } from '@/store/authStore';
 import { cn } from '@/lib/utils';
 
 interface SafetyDomain {
@@ -136,7 +138,29 @@ export default function SafetyLab() {
 
   const passedCount = domains.filter((d) => d.status === 'passed').length;
   const pendingCount = domains.filter((d) => d.status === 'pending' || d.status === 'review').length;
-  const frozenCount = 1;
+  const groupId = useAuthStore((s) => s.groupId);
+  const projects = useProjectStore((s) => s.projects);
+  const scopedProjects = useMemo(
+    () => (groupId ? projects.filter((p) => p.ownerGroupId === groupId) : projects),
+    [projects, groupId]
+  );
+  const frozenCount = useMemo(
+    () => scopedProjects.filter((p) => p.status === 'frozen').length,
+    [scopedProjects]
+  );
+  const totalProjectRef = Math.max(scopedProjects.length, 1);
+
+  useEffect(() => {
+    if (!activeTip && !reviewCategory) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setActiveTip(null);
+        setReviewCategory(null);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [activeTip, reviewCategory]);
 
   return (
     <div className="w-full space-y-6">
@@ -154,7 +178,7 @@ export default function SafetyLab() {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
               onClick={(e) => e.stopPropagation()}
-              className="glass-card !p-0 rounded-[24px] w-full max-w-2xl overflow-hidden shadow-2xl"
+              className="workspace-dialog-panel glass-card !p-0 rounded-[24px] w-full max-w-2xl overflow-hidden shadow-2xl"
             >
               <div className={cn(
                 'p-6 bg-gradient-to-r relative overflow-hidden',
@@ -265,7 +289,7 @@ export default function SafetyLab() {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
               transition={{ duration: 0.25 }}
-              className="glass-card w-full max-w-2xl max-h-[88vh] rounded-[26px] overflow-hidden flex flex-col"
+              className="workspace-dialog-panel glass-card w-full max-w-2xl max-h-[88vh] rounded-[26px] overflow-hidden flex flex-col"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="p-5 border-b border-ink-100/80 flex items-center gap-3 shrink-0">
@@ -360,7 +384,7 @@ export default function SafetyLab() {
             {[
               { label: '已通过认证', value: passedCount, total: SAFETY_DOMAINS.length, icon: CheckCircle2, color: 'growth', grad: 'from-growth-400 via-growth-500 to-growth-600' },
               { label: '待参加考核', value: pendingCount, total: SAFETY_DOMAINS.length, icon: PlayCircle, color: 'energy', grad: 'from-energy-400 via-alert-500 to-energy-600' },
-              { label: '已冻结项目', value: frozenCount, total: 10, icon: AlertTriangle, color: 'nova', grad: 'from-nova-400 via-nova-500 to-nova-600' },
+              { label: '已冻结项目', value: frozenCount, total: totalProjectRef, icon: AlertTriangle, color: 'nova', grad: 'from-nova-400 via-nova-500 to-nova-600' },
             ].map((stat, idx) => {
               const Icon = stat.icon;
               return (
@@ -463,6 +487,11 @@ export default function SafetyLab() {
                           <CheckCircle2 size={11} /> 已通过
                         </div>
                       )}
+                      {domain.status === 'review' && (
+                        <div className="chip-alert !py-1 !text-[11px]">
+                          <AlertTriangle size={11} /> 待重考
+                        </div>
+                      )}
                       {domain.status === 'pending' && (
                         <div className="chip-alert !py-1 !text-[11px]">
                           <AlertTriangle size={11} /> 待考核
@@ -497,6 +526,16 @@ export default function SafetyLab() {
                           </div>
                           <button className="btn-mission !py-2 !px-3.5 !text-[11px] !rounded-xl" onClick={() => { pushToast(`开始《${domain.name}》重学巩固 · 共 ${domain.totalQuestions} 题`, 'info'); navigate(`/safety-exam/${domain.category}`); }}>
                             <RotateCcw size={12} /> 重学巩固
+                          </button>
+                        </>
+                      )}
+                      {domain.status === 'review' && (
+                        <>
+                          <button className="btn-energy flex-1 !py-2.5 !text-xs !rounded-xl" onClick={() => { pushToast(`重新参加《${domain.name}》安全考核`, 'info'); navigate(`/safety-exam/${domain.category}`); }}>
+                            <RotateCcw size={13} /> 重新考核
+                          </button>
+                          <button className="btn-ghost !text-xs !rounded-xl !px-3.5 border border-mission-200 text-mission-600" onClick={() => setReviewCategory(domain.category)}>
+                            复习材料
                           </button>
                         </>
                       )}
@@ -605,15 +644,15 @@ export default function SafetyLab() {
                       <button
                         className={cn(
                           'w-full !py-3 !text-sm !rounded-xl relative group',
-                          locked ? 'btn-ghost cursor-not-allowed' : 'btn-energy'
+                          expired ? 'btn-ghost cursor-not-allowed' : done ? 'btn-ghost border border-growth-200 text-growth-700' : 'btn-energy'
                         )}
-                        disabled={locked}
+                        disabled={expired}
                         onClick={() => navigate(`/safety-exam/${exam.category}?assignment=${exam.id}`)}
                       >
                         {!locked && <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition" />}
                         <Zap size={15} className={cn('relative', !locked && 'fill-white/30')} />
                         <span className="relative">
-                          {done ? '已通过 · 可重考' : expired ? '已截止' : 'START EXAM · 开始考核'}
+                          {expired ? '已截止' : done ? '已通过 · 可重考' : 'START EXAM · 开始考核'}
                         </span>
                       </button>
                     </motion.div>

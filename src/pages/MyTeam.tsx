@@ -1,5 +1,5 @@
 import { applyAvatarFallback } from '@/lib/imageFallback';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { UsersRound, Crown, Zap, Trophy, FolderKanban, UserPlus, Sparkles, TrendingUp } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
@@ -7,6 +7,7 @@ import { useAuthStore } from '@/store/authStore';
 import { useGroupStore } from '@/store/groupStore';
 import { useProjectStore } from '@/store/projectStore';
 import { useCoinStore } from '@/store/coinStore';
+import { useUIStore } from '@/store/uiStore';
 import { computeEarnedByUser } from '@/lib/earnedCoins';
 
 /**
@@ -19,10 +20,40 @@ import { computeEarnedByUser } from '@/lib/earnedCoins';
 export default function MyTeam() {
   const groupId = useAuthStore((s) => s.groupId);
   const userId = useAuthStore((s) => s.userId);
+  const classId = useAuthStore((s) => s.classId);
+  const setGroupId = useAuthStore((s) => s.setGroupId);
   const groups = useGroupStore((s) => s.groups);
   const users = useGroupStore((s) => s.users);
+  const joinGroup = useGroupStore((s) => s.joinGroup);
   const projects = useProjectStore((s) => s.projects);
   const coinTxs = useCoinStore((s) => s.coinTxs);
+  const pushToast = useUIStore((s) => s.pushToast);
+
+  const [pendingGroupId, setPendingGroupId] = useState('');
+  const [joining, setJoining] = useState(false);
+
+  const joinableGroups = useMemo(
+    () => (classId ? groups.filter((g) => g.classId === classId) : groups),
+    [groups, classId]
+  );
+
+  const handleJoinGroup = async () => {
+    if (!userId || !pendingGroupId) {
+      pushToast('请先选择要加入的研究小组', 'warning');
+      return;
+    }
+    setJoining(true);
+    try {
+      await joinGroup(userId, pendingGroupId);
+      setGroupId(pendingGroupId);
+      const target = groups.find((g) => g.id === pendingGroupId);
+      pushToast(`已成功加入小组「${target?.name || ''}」`, 'success');
+    } catch (err: unknown) {
+      pushToast((err instanceof Error ? err.message : undefined) || '加入失败，请稍后重试', 'error');
+    } finally {
+      setJoining(false);
+    }
+  };
 
   const myGroup = useMemo(
     () => (groupId ? groups.find((g) => g.id === groupId) : undefined),
@@ -69,9 +100,13 @@ export default function MyTeam() {
   );
 
   const avgCoins = members.length ? Math.round((myGroup?.totalCoins || 0) / members.length) : 0;
-  const myContribution = myGroup && userId ? myGroup.contributionRatio?.[userId] : undefined;
+  const myMember = useMemo(() => members.find((m) => m.id === userId), [members, userId]);
+  const myContribution =
+    myMember && personalTotal > 0
+      ? Math.round((Math.max(0, myMember.personalCoins || 0) / personalTotal) * 100)
+      : undefined;
 
-  // ---- 未加入小组：给出去哪儿解决的指引，而不是空白页 ----
+  // ---- 未加入小组：提供本班小组自助加入或指引 ----
   if (!myGroup) {
     return (
       <div className="space-y-6">
@@ -87,8 +122,31 @@ export default function MyTeam() {
           <h1 className="mt-4 text-[22px] font-extrabold text-ink-900">你还没有加入研究小组</h1>
           <p className="mt-2 text-[13.5px] text-ink-500 max-w-md mx-auto leading-relaxed">
             研究小组是完成项目、参与挑战和获得能量币的单位。
-            请联系老师或组长把你加入小组，加入后这里会显示全部组员。
+            你可以直接选择本班小组加入，或联系老师协助分配。
           </p>
+          {joinableGroups.length > 0 && (
+            <div className="mt-6 flex flex-wrap items-center justify-center gap-3 max-w-md mx-auto">
+              <select
+                value={pendingGroupId}
+                onChange={(e) => setPendingGroupId(e.target.value)}
+                aria-label="选择要加入的研究小组"
+                className="text-xs py-2.5 px-3.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100"
+              >
+                <option value="">选择要加入的研究小组…</option>
+                {joinableGroups.map((g) => (
+                  <option key={g.id} value={g.id}>{g.name}</option>
+                ))}
+              </select>
+              <button
+                type="button"
+                disabled={!pendingGroupId || joining}
+                onClick={() => void handleJoinGroup()}
+                className="px-4 py-2.5 rounded-xl bg-mission-600 hover:bg-mission-700 disabled:opacity-50 text-white text-xs font-bold transition-colors"
+              >
+                {joining ? '加入中…' : '立即加入小组'}
+              </button>
+            </div>
+          )}
         </motion.section>
       </div>
     );

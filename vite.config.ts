@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react'
 import tsconfigPaths from "vite-tsconfig-paths";
 
 // https://vite.dev/config/
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   // SPA 使用根路径部署：深层路由刷新时静态资源仍从 /assets 加载。
   base: '/',
   build: {
@@ -24,11 +24,9 @@ export default defineConfig({
   plugins: [
     react({
       babel: {
-        plugins: [
-          'react-dev-locator',
-        ],
+        plugins: mode === 'development' ? ['react-dev-locator'] : [],
       },
     }),
     tsconfigPaths()
   ],
-})
+}))

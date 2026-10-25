@@ -71,6 +71,32 @@ def test_challenge_questions_do_not_reveal_answers(client, auth):
     assert all(q.get("answer") is None for q in questions)
 
 
+def test_submit_returns_authoritative_results_without_exposing_them_in_lists(client, auth, db):
+    db.add_all([
+        Question(id="q-multi", type="multiple", stem="多选", options=["A", "B", "C"],
+                 answer=[0, 2], topic_id="t-1", knowledge_point="多选知识点", difficulty=1),
+        Question(id="q-judge", type="judge", stem="判断", options=["正确", "错误"],
+                 answer=False, topic_id="t-1", knowledge_point="判断知识点", difficulty=1),
+    ])
+    db.commit()
+    challenge = _create(client, auth, ["q-1", "q-multi", "q-judge"]).json()
+    sid = challenge["id"]
+    response = client.post(f"/api/challenges/{sid}/submit", headers=auth("u-3"),
+                           json={"answers": {"q-1": 0, "q-multi": [2, 0], "q-judge": False}})
+    assert response.status_code == 200, response.text
+    results = {q["qid"]: q for q in response.json()["questionResults"]}
+    assert results["q-1"]["correct"] is False
+    assert results["q-1"]["correctAns"] == 2
+    assert results["q-multi"]["correct"] is True
+    assert results["q-judge"]["correct"] is True
+    assert results["q-judge"]["userAns"] is False
+    listed = client.get("/api/challenges", headers=auth("u-1")).json()
+    assert all("questionResults" not in c for c in listed)
+    assert all("questionResults" not in s for c in listed for s in c["submissions"])
+    assert all(q.get("answer") is None for q in client.get(
+        f"/api/challenges/{sid}/questions", headers=auth("u-1")).json())
+
+
 def test_reward_follows_rate_changes(client, auth):
     _set_rates(client, auth, 1, 1, 1)
     assert _create(client, auth, ["q-1", "q-2"]).json()["reward"] == 2

@@ -120,7 +120,7 @@ export const AuditAndAlertBento: React.FC<AuditAndAlertBentoProps> = ({
         <div className="mt-3 pt-2.5 border-t border-slate-100 dark:border-slate-800/80">
           <button
             type="button"
-            onClick={() => onNavigate("/projects")}
+            onClick={() => onNavigate("/teacher/projects")}
             className="text-[11px] text-mission-600 dark:text-mission-400 hover:underline flex items-center gap-1 font-medium"
           >
             处理异常项目 <ArrowRight size={12} />
@@ -172,10 +172,10 @@ export const AuditAndAlertBento: React.FC<AuditAndAlertBentoProps> = ({
         <div className="mt-3 pt-2.5 border-t border-slate-100 dark:border-slate-800/80">
           <button
             type="button"
-            onClick={() => onNavigate("/projects")}
+            onClick={() => onNavigate("/teacher/projects")}
             className="text-[11px] text-mission-600 dark:text-mission-400 hover:underline flex items-center gap-1 font-medium"
           >
-            查看招募市场 <ArrowRight size={12} />
+            查看课题与招募 <ArrowRight size={12} />
           </button>
         </div>
       </BentoCard>

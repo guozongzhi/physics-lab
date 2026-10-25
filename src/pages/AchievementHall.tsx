@@ -697,7 +697,7 @@ export default function AchievementHall() {
                       const gi = Math.max(0, (parseInt(card.groupId.split('-')[1]) || 1) - 1);
                       const loved = isCardLoved(card);
                       const isMine = !!groupId && card.groupId === groupId;
-                      const mediaBadge = card.mediaKind === 'html' ? 'HTML · 交互作品' : getMediaBadgeLabel(card.htmlContent);
+                      const mediaBadge = card.mediaKind === 'html' ? 'HTML · 交互作品' : getMediaBadgeLabel(card.htmlContent, card.mediaKind);
                       const groupChipColor = card.authorUserId
                         ? 'chip-mission'
                         : [
@@ -1534,7 +1534,7 @@ export default function AchievementHall() {
               role="dialog"
               aria-modal="true"
               aria-label={lightbox.title}
-              className="relative w-full max-w-5xl max-h-[90vh] overflow-y-auto rounded-[24px] bg-white shadow-2xl"
+              className="workspace-dialog-panel relative w-full max-w-5xl max-h-[90vh] overflow-y-auto rounded-[24px] bg-white shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
               <button

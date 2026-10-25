@@ -351,6 +351,19 @@ class ChallengeOut(CamelModel):
     submissions: list[dict[str, Any]]
 
 
+class ChallengeQuestionResult(CamelModel):
+    qid: str
+    correct: bool
+    correct_ans: Any
+    user_ans: Any
+    knowledge_point: str
+
+
+class ChallengeSubmitOut(ChallengeOut):
+    # 仅交卷响应携带解析，不写入公开挑战列表或 submissions。
+    question_results: list[ChallengeQuestionResult] = Field(default_factory=list)
+
+
 # ---------- Project ----------
 class EquipmentItem(BaseModel):
     name: str

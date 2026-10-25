@@ -42,11 +42,11 @@ interface ProjectState {
   markProjectDone: (id: string) => void;
   createRecruitment: (partial: PartialRecruitment) => Recruitment;
   placeBid: (recruitmentId: string, bid: Omit<RecruitmentBid, 'bidAt'>) => void;
-  assignRecruitment: (recruitmentId: string, userId: string) => void;
+  assignRecruitment: (recruitmentId: string, userId: string) => Promise<void>;
   resolveRecruitment: (
     recruitmentId: string,
     result: 'success' | 'partial' | 'fail'
-  ) => void;
+  ) => Promise<void>;
   markSafetyPass: (projectId: string, userId: string) => void;
   addShowcaseItem: (item: PartialShowcaseItem) => ShowcaseItem;
   /**
@@ -326,7 +326,15 @@ export const useProjectStore = create<ProjectState>((set, get) => {
       );
     },
 
-    assignRecruitment: (recruitmentId, userId) => {
+    assignRecruitment: async (recruitmentId, userId) => {
+      if (apiEnabled) {
+        const updated = await recruitmentsApi.assign(recruitmentId, userId);
+        const { projects, recruitments, showcaseItems } = get();
+        const next = recruitments.map((r) => r.id === recruitmentId ? reviveRecruitmentDates([updated])[0] : r);
+        persist(projects, next, showcaseItems);
+        set({ recruitments: next });
+        return;
+      }
       const { projects, recruitments, showcaseItems } = get();
       const next: Recruitment[] = recruitments.map((r) =>
         r.id === recruitmentId
@@ -335,15 +343,26 @@ export const useProjectStore = create<ProjectState>((set, get) => {
       );
       persist(projects, next, showcaseItems);
       set({ recruitments: next });
-      syncToApi(() => recruitmentsApi.assign(recruitmentId, userId), 'recruitments.assign');
     },
 
-    resolveRecruitment: (recruitmentId, result) => {
+    resolveRecruitment: async (recruitmentId, result) => {
+      if (apiEnabled) {
+        const updated = await recruitmentsApi.resolve(recruitmentId, result);
+        const { projects, recruitments, showcaseItems } = get();
+        const next = recruitments.map((r) => r.id === recruitmentId ? reviveRecruitmentDates([updated])[0] : r);
+        persist(projects, next, showcaseItems);
+        set({ recruitments: next });
+        // 结算已成功，余额刷新失败不能要求用户再次结算。
+        await refetchAfterSettlement().catch(() => {
+          useUIStore.getState().pushToast('裁决已保存，余额暂未刷新，请稍后刷新页面', 'warning');
+        });
+        return;
+      }
       const { projects, recruitments, showcaseItems } = get();
       const target = recruitments.find((r) => r.id === recruitmentId);
       let paid = 0;
       if (target) {
-        // 本地乐观结算；后端 resolve 端点内部完成正式记账。
+        // 离线演示模式才在本地结算。
         const proj = get().projects.find((p) => p.id === target.projectId);
         paid = useCoinStore.getState().settleRecruitment(target, result, proj?.ownerGroupId).assigneePay;
       }
@@ -360,10 +379,6 @@ export const useProjectStore = create<ProjectState>((set, get) => {
       });
       persist(projects, next, showcaseItems);
       set({ recruitments: next });
-      syncToApi(async () => {
-        await recruitmentsApi.resolve(recruitmentId, result);
-        await refetchAfterSettlement();
-      }, 'recruitments.resolve');
     },
 
     markSafetyPass: (projectId, userId) => {
@@ -475,7 +490,13 @@ export const useProjectStore = create<ProjectState>((set, get) => {
         void showcaseApi.toggleLove(showcaseId).then((raw) => {
           if (getToken() !== token) return;
           const [saved] = reviveShowcaseDates([raw]);
-          set((state) => ({ showcaseItems: state.showcaseItems.map((item) => item.id === showcaseId ? saved : item) }));
+          set((state) => ({
+            showcaseItems: state.showcaseItems.map((item) =>
+              item.id === showcaseId
+                ? { ...item, loves: saved.loves, lovedBy: saved.lovedBy }
+                : item
+            ),
+          }));
         }).catch((error) => useUIStore.getState().pushToast(error instanceof Error ? error.message : '点赞失败，请重试', 'error')).finally(() => pendingLoves.delete(key));
         return;
       }

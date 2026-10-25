@@ -73,21 +73,36 @@ export default function TeacherOverview() {
   const [insightClass, setInsightClass] = useState('all');
   const groupIdToClass = useMemo(() => new Map(groups.map((g) => [g.id, g.classId || ''])), [groups]);
 
-  // 1. KPI 数据计算
-  const totalStudents = users.length;
-  const totalGroups = groups.length;
-  const activeProjects = projects.filter((p) => ['progress', 'review', 'planning'].includes(p.status)).length;
-  const doneProjects = projects.filter((p) => p.status === 'done').length;
+  // 1. KPI 数据计算（随 insightClass 筛选同步收敛）
+  const scopedUsers = useMemo(
+    () => (insightClass === 'all' ? users : users.filter((u) => u.classId === insightClass)),
+    [users, insightClass]
+  );
+  const scopedGroups = useMemo(
+    () => (insightClass === 'all' ? groups : groups.filter((g) => g.classId === insightClass)),
+    [groups, insightClass]
+  );
+  const scopedProjects = useMemo(
+    () =>
+      insightClass === 'all'
+        ? projects
+        : projects.filter((p) => groupIdToClass.get(p.ownerGroupId) === insightClass),
+    [projects, groupIdToClass, insightClass]
+  );
+  const totalStudents = scopedUsers.length;
+  const totalGroups = scopedGroups.length;
+  const activeProjects = scopedProjects.filter((p) => ['progress', 'review', 'planning'].includes(p.status)).length;
+  const doneProjects = scopedProjects.filter((p) => p.status === 'done').length;
   const frozenProjects = useMemo(
     () =>
-      projects
+      scopedProjects
         .filter((p) => p.status === 'frozen')
         .map((p) => ({
           id: p.id,
           name: p.title,
           groupName: groups.find((g) => g.id === p.ownerGroupId)?.name ?? '未知小组',
         })),
-    [projects, groups]
+    [scopedProjects, groups]
   );
 
   // 待审核题目
@@ -112,16 +127,16 @@ export default function TeacherOverview() {
     for (const tx of coinTxs) {
       if (!(insightClass === 'all' || groupIdToClass.get(tx.groupId) === insightClass)) continue;
       const d = new Date(tx.createdAt);
-      const k = `${d.getMonth() + 1}/${d.getDate()}`;
+      const k = `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
       byDay[k] = (byDay[k] || 0) + tx.delta;
     }
-    const label = (m: number, dd: number) => `${m}/${dd}`;
     const days: { date: string; value: number }[] = [];
     const start = new Date();
     start.setDate(start.getDate() - 29);
     for (let i = 0; i < 30; i++) {
       const d = new Date(start.getTime() + i * 86400000);
-      days.push({ date: label(d.getMonth() + 1, d.getDate()), value: byDay[label(d.getMonth() + 1, d.getDate())] || 0 });
+      const key = `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+      days.push({ date: `${d.getMonth() + 1}/${d.getDate()}`, value: byDay[key] || 0 });
     }
     return days;
   }, [coinTxs, groupIdToClass, insightClass]);
@@ -186,11 +201,16 @@ export default function TeacherOverview() {
       .sort((a, b) => a.className.localeCompare(b.className));
   }, [barData, classesById]);
 
-  // 6. 超期招募提醒
+  // 6. 超期招募提醒（随 insightClass 筛选同步收敛）
   const overdueRecruits = useMemo(() => {
     const now = Date.now();
     return recruitments
-      .filter((r) => r.status === 'open' && new Date(r.deadline).getTime() < now)
+      .filter((r) => {
+        if (r.status !== 'open' || new Date(r.deadline).getTime() >= now) return false;
+        if (insightClass === 'all') return true;
+        const project = projects.find((p) => p.id === r.projectId);
+        return project ? groupIdToClass.get(project.ownerGroupId) === insightClass : false;
+      })
       .map((r) => {
         const project = projects.find((p) => p.id === r.projectId);
         const groupName = groups.find((g) => g.id === project?.ownerGroupId)?.name ?? '未知小组';
@@ -203,40 +223,42 @@ export default function TeacherOverview() {
         };
       })
       .sort((a, b) => b.overdueDays - a.overdueDays);
-  }, [recruitments, projects, groups]);
+  }, [recruitments, projects, groups, insightClass, groupIdToClass]);
 
-  // 7. 能量流水台账
-  const recentTxs = useMemo(
+  // 7. 能量流水台账（展示与导出同口径按 insightClass 过滤）
+  const scopedCoinTxs = useMemo(
     () =>
       [...coinTxs]
-        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-        .slice(0, 20)
-        .map((tx) => ({
-          ...tx,
-          timeLabel: formatTxTime(tx.createdAt),
-          groupName: groups.find((g) => g.id === tx.groupId)?.name ?? '已解散小组',
-        })),
-    [coinTxs, groups]
+        .filter((tx) => insightClass === 'all' || groupIdToClass.get(tx.groupId) === insightClass)
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
+    [coinTxs, insightClass, groupIdToClass]
+  );
+
+  const recentTxs = useMemo(
+    () =>
+      scopedCoinTxs.slice(0, 20).map((tx) => ({
+        ...tx,
+        timeLabel: formatTxTime(tx.createdAt),
+        groupName: groups.find((g) => g.id === tx.groupId)?.name ?? '已解散小组',
+      })),
+    [scopedCoinTxs, groups]
   );
 
   const ledgerCsvRows = useMemo(
     () =>
-      [...coinTxs]
-        .filter((tx) => insightClass === 'all' || groupIdToClass.get(tx.groupId) === insightClass)
-        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-        .map((tx) => {
-          const d = new Date(tx.createdAt);
-          const p = (n: number) => String(n).padStart(2, '0');
-          return {
-            时间: `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`,
-            小组: groups.find((g) => g.id === tx.groupId)?.name ?? '已解散小组',
-            来源: tx.source,
-            能量变动: tx.delta,
-            余额: tx.balanceAfter,
-            备注: tx.note,
-          };
-        }),
-    [coinTxs, groups, insightClass, groupIdToClass]
+      scopedCoinTxs.map((tx) => {
+        const d = new Date(tx.createdAt);
+        const p = (n: number) => String(n).padStart(2, '0');
+        return {
+          时间: `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`,
+          小组: groups.find((g) => g.id === tx.groupId)?.name ?? '已解散小组',
+          来源: tx.source,
+          能量变动: tx.delta,
+          余额: tx.balanceAfter,
+          备注: tx.note,
+        };
+      }),
+    [scopedCoinTxs, groups]
   );
 
   return (

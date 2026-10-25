@@ -123,12 +123,42 @@ export default function ProjectCenter() {
   const [sortBy, setSortBy] = useState<'due' | 'reward'>('due');
   const [missionTab, setMissionTab] = useState<MissionTab>('overview');
   const [kanbanOpen, setKanbanOpen] = useState(false);
-  const [completedTasks, setCompletedTasks] = useState<Set<string>>(new Set(['t-0-1', 't-0-2', 't-1-1']));
+  const taskStorageKey = `physics_project_tasks_v1_${userId || 'anon'}`;
+  const [completedTasks, setCompletedTasks] = useState<Set<string>>(() => {
+    try {
+      const raw = localStorage.getItem(`physics_project_tasks_v1_${userId || 'anon'}`);
+      const parsed = raw ? JSON.parse(raw) : [];
+      return new Set(Array.isArray(parsed) ? parsed : []);
+    } catch {
+      return new Set();
+    }
+  });
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(taskStorageKey);
+      const parsed = raw ? JSON.parse(raw) : [];
+      setCompletedTasks(new Set(Array.isArray(parsed) ? parsed : []));
+    } catch {
+      setCompletedTasks(new Set());
+    }
+  }, [taskStorageKey]);
+  useEffect(() => {
+    if (!kanbanOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setKanbanOpen(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [kanbanOpen]);
   const pushToast = useUIStore((s) => s.pushToast);
   const { projects, recruitments } = useProjectStore();
   const { groups, users } = useGroupStore();
   const planets = useMemo(() => buildPlanets(projects, groups, users, userId, role), [projects, groups, users, userId, role]);
-  const projectRecruits = useMemo(() => recruitments.filter((r) => r.projectId === selectedId), [recruitments, selectedId]);
+  const selectedPlanet = planets.find((p) => p.id === selectedId) || planets[0];
+  const projectRecruits = useMemo(
+    () => (selectedPlanet ? recruitments.filter((r) => r.projectId === selectedPlanet.id) : []),
+    [recruitments, selectedPlanet]
+  );
 
   const filteredPlanets = planets
     .filter((p) => {
@@ -141,8 +171,6 @@ export default function ProjectCenter() {
       if (sortBy === 'due') return a.dueInDays - b.dueInDays;
       return b.rewardCoins - a.rewardCoins;
     });
-
-  const selectedPlanet = planets.find((p) => p.id === selectedId) || planets[0];
 
   const selectProject = (id: string) => {
     setSelectedId(id);
@@ -162,8 +190,11 @@ export default function ProjectCenter() {
         next.delete(taskId);
       } else {
         next.add(taskId);
-        pushToast?.('任务已标记完成 +20⚡', 'success');
+        pushToast?.('阶段任务状态已更新', 'info');
       }
+      try {
+        localStorage.setItem(taskStorageKey, JSON.stringify(Array.from(next)));
+      } catch { /* ignore storage quota errors */ }
       return next;
     });
   };
@@ -177,16 +208,36 @@ export default function ProjectCenter() {
   };
   const groupOptions = ['全部小组', ...groups.map((g) => g.name)];
 
-  const kanbanData = selectedPlanet.milestonesData.map((m, i): {
+  const selectedRawProject = useMemo(
+    () => (selectedPlanet ? projects.find((p) => p.id === selectedPlanet.id) : undefined),
+    [projects, selectedPlanet]
+  );
+  const selectedMemberNames = useMemo(() => {
+    if (!selectedRawProject) return [];
+    return users.filter((u) => u.groupId === selectedRawProject.ownerGroupId).map((u) => u.name);
+  }, [users, selectedRawProject]);
+  const dueLabel = useMemo(() => {
+    if (!selectedRawProject?.dueDate) return '待定';
+    const d = selectedRawProject.dueDate instanceof Date ? selectedRawProject.dueDate : new Date(selectedRawProject.dueDate);
+    if (isNaN(d.getTime())) return '待定';
+    return `${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }, [selectedRawProject]);
+
+  const kanbanData = (selectedPlanet?.milestonesData ?? []).map((m, i): {
     milestone: ProjectPlanet['milestonesData'][number];
     tasks: KanbanTask[];
   } => {
+    const pickAssignee = (idx: number) =>
+      selectedMemberNames.length > 0
+        ? selectedMemberNames[(i + idx) % selectedMemberNames.length]
+        : selectedPlanet?.groupName || '本组成员';
+    const stepReward = Math.max(5, Math.round((selectedPlanet?.rewardCoins || 50) / 10));
     const taskPool: KanbanTask[] = [
-      { id: `t-${i}-1`, name: `${m.name} · 需求梳理 & 技术方案评审`, assignee: '张伟', status: 'done', reward: 30, due: '07-12', tag: '文档' },
-      { id: `t-${i}-2`, name: `${m.name} · 器材清点 / 采购申请`, assignee: '李娜', status: 'done', reward: 20, due: '07-13', tag: '采购' },
-      { id: `t-${i}-3`, name: `${m.name} · 实验原型搭建 & 调试`, assignee: '王芳', status: m.status === 'done' ? 'done' : m.status === 'progress' ? 'doing' : 'todo', reward: 60, due: '07-16', tag: '实验' },
-      { id: `t-${i}-4`, name: `${m.name} · 数据采集 & 误差分析`, assignee: '刘洋', status: m.status === 'done' ? 'done' : 'todo', reward: 50, due: '07-18', tag: '理论' },
-      { id: `t-${i}-5`, name: `${m.name} · Arduino 控制逻辑实现`, assignee: '陈杰', status: m.status === 'progress' ? 'doing' : 'todo', reward: 40, due: '07-20', tag: '编程' },
+      { id: `${selectedPlanet?.id || 'p'}-t-${i}-1`, name: `${m.name} · 需求梳理 & 技术方案评审`, assignee: pickAssignee(0), status: m.status === 'done' ? 'done' : 'doing', reward: stepReward, due: dueLabel, tag: '文档' },
+      { id: `${selectedPlanet?.id || 'p'}-t-${i}-2`, name: `${m.name} · 器材清点 / 准备核验`, assignee: pickAssignee(1), status: m.status === 'done' ? 'done' : 'todo', reward: stepReward, due: dueLabel, tag: '采购' },
+      { id: `${selectedPlanet?.id || 'p'}-t-${i}-3`, name: `${m.name} · 实验原型搭建 & 调试`, assignee: pickAssignee(2), status: m.status === 'done' ? 'done' : m.status === 'progress' ? 'doing' : 'todo', reward: stepReward, due: dueLabel, tag: '实验' },
+      { id: `${selectedPlanet?.id || 'p'}-t-${i}-4`, name: `${m.name} · 数据采集 & 误差分析`, assignee: pickAssignee(3), status: m.status === 'done' ? 'done' : 'todo', reward: stepReward, due: dueLabel, tag: '理论' },
+      { id: `${selectedPlanet?.id || 'p'}-t-${i}-5`, name: `${m.name} · 控制逻辑与验证记录`, assignee: pickAssignee(4), status: m.status === 'progress' ? 'doing' : 'todo', reward: stepReward, due: dueLabel, tag: '编程' },
     ];
     return { milestone: m, tasks: taskPool.slice(0, 4 + (i % 2)) };
   });
@@ -342,7 +393,7 @@ export default function ProjectCenter() {
             {filteredPlanets.map((planet, idx) => {
               const cfg = STATUS_CONFIG[planet.status];
               const StatusIcon = STATUS_ICONS[planet.status];
-              const isSelected = selectedId === planet.id;
+              const isSelected = selectedPlanet?.id === planet.id;
               return (
                 <button key={planet.id} type="button" aria-pressed={isSelected}
                   className={cn('project-mission-card', isSelected && 'is-selected')}
@@ -402,6 +453,11 @@ export default function ProjectCenter() {
             </div>
           </div>
 
+          {!selectedPlanet ? (
+            <div className="glass-card p-8 rounded-2xl text-center text-ink-400 text-xs">
+              暂无可查看的项目详情
+            </div>
+          ) : (
           <motion.div
             key={`${selectedPlanet.id}-${missionTab}`}
             initial={{ opacity: 0, y: 12 }}
@@ -662,11 +718,12 @@ export default function ProjectCenter() {
               )}
             </div>
           </motion.div>
+          )}
         </aside>
       </div>
 
       <AnimatePresence>
-        {kanbanOpen && (
+        {kanbanOpen && selectedPlanet && (
           <motion.div
             className="fixed inset-0 z-[150] flex items-center justify-center p-4 md:p-8"
             initial={{ opacity: 0 }}
@@ -681,7 +738,7 @@ export default function ProjectCenter() {
               exit={{ opacity: 0 }}
             />
             <motion.div
-              className="relative z-10 w-full max-w-[1280px] max-h-[88vh] overflow-hidden rounded-[28px] glass-card shadow-[0_30px_80px_-20px_rgba(15,23,42,0.35)]"
+              className="workspace-dialog-panel relative z-10 w-full max-w-[1280px] max-h-[88vh] overflow-hidden rounded-[28px] glass-card shadow-[0_30px_80px_-20px_rgba(15,23,42,0.35)]"
               initial={{ opacity: 0, scale: 0.94, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.96, y: 10 }}
@@ -892,7 +949,7 @@ export default function ProjectCenter() {
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-2 pb-2">
                   <p className="text-[12px] text-ink-500 font-semibold flex items-center gap-2">
                     <Lightbulb size={14} className="text-nova-500" />
-                    小贴士：点击任何任务卡片即可切换完成状态，并触发能量币结算。
+                    小贴士：点击任务卡片可标记本地执行进度；课题能量币将在教师结题验收后统一结算。
                   </p>
                   <div className="flex items-center gap-2 justify-end">
                     <button

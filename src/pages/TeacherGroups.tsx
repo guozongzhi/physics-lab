@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Rocket, Users, Zap, Crown, Pencil, Trash2, Plus, Minus, RefreshCw, AlertTriangle, X, Trophy, Sparkles, GripVertical, CheckCircle2, Coins, UserPlus, Settings, Shield, UserMinus, RotateCcw, ArrowRightLeft } from 'lucide-react';
 import { useGroupStore } from '@/store/groupStore';
 import { useCoinStore } from '@/store/coinStore';
+import { useUIStore } from '@/store/uiStore';
 import { windowState, formatCloseTime } from '@/lib/activityWindow';
 import { adminGroupsApi, classesApi, usersApi } from '@/lib/apiService';
 import { bootstrapFromApi } from '@/lib/bootstrap';
@@ -104,10 +105,17 @@ export default function TeacherGroups() {
   const [dialog, setDialog] = useState<DialogKind>(null);
   const [activeGroupId, setActiveGroupId] = useState<string | null>(null);
   const [globalCoins, setGlobalCoins] = useState(classMeta.initialCoinsPerGroup || 500);
-  // 挑战奖励单价。老师改完点保存才落库，所以本地先存一份草稿。
+  // 挑战奖励单价。老师改完点保存才落库，所以本地先存一份草稿；后端回填后自动同步。
   const [rateEasy, setRateEasy] = useState(classMeta.coinEasy);
   const [rateMedium, setRateMedium] = useState(classMeta.coinMedium);
   const [rateHard, setRateHard] = useState(classMeta.coinHard);
+
+  useEffect(() => {
+    setGlobalCoins(classMeta.initialCoinsPerGroup || 500);
+    setRateEasy(classMeta.coinEasy);
+    setRateMedium(classMeta.coinMedium);
+    setRateHard(classMeta.coinHard);
+  }, [classMeta.initialCoinsPerGroup, classMeta.coinEasy, classMeta.coinMedium, classMeta.coinHard]);
 
   // 开放窗口。控件直接读 classMeta、改动立刻落库，**不做草稿**：
   // 草稿会在后端回填前用 localStorage 的旧值初始化，一按保存就把旧状态写回去
@@ -155,11 +163,11 @@ export default function TeacherGroups() {
   const [memberCoinAmount, setMemberCoinAmount] = useState(20);
   const [memberCoinMode, setMemberCoinMode] = useState<'add' | 'sub'>('add');
   const [memberCoinReason, setMemberCoinReason] = useState('');
-  const [toastMsg, setToastMsg] = useState<string | null>(null);
+  const pushToast = useUIStore((s) => s.pushToast);
 
   const flashToast = (m: string) => {
-    setToastMsg(m);
-    setTimeout(() => setToastMsg(null), 2400);
+    const isErr = /失败|不能|请先|无法/.test(m);
+    pushToast(m, isErr ? 'error' : 'success');
   };
 
   // 删除待分配学生。后端 DELETE /api/students/{id} 已存在（仅教师可用），
@@ -601,9 +609,15 @@ export default function TeacherGroups() {
                           className="bg-mission-50/70 border border-mission-200 rounded-xl px-2.5 py-1.5 text-[12px] font-semibold text-mission-700 focus:outline-none focus:ring-2 focus:ring-mission-400/30 cursor-pointer"
                         >
                           <option value="">分配到…</option>
-                          {groups.map((g) => (
-                            <option key={g.id} value={g.id}>{g.name}</option>
-                          ))}
+                          {(() => {
+                            const sameClassGroups = u.classId
+                              ? groups.filter((g) => g.classId === u.classId)
+                              : groups;
+                            const options = sameClassGroups.length > 0 ? sameClassGroups : groups;
+                            return options.map((g) => (
+                              <option key={g.id} value={g.id}>{g.name}</option>
+                            ));
+                          })()}
                         </select>
                         <button
                           onClick={() => setDeleteStudent({ id: u.id, name: u.name })}
@@ -844,23 +858,6 @@ export default function TeacherGroups() {
           </div>
         )}
       </div>
-
-      <AnimatePresence>
-        {toastMsg && (
-          <motion.div
-            initial={{ opacity: 0, y: 20, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[100] glass-card px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-3"
-            style={{ border: '1px solid rgba(79,124,255,0.25)', boxShadow: '0 18px 40px rgba(15,23,42,0.15)' }}
-          >
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-growth-400 to-growth-600 flex items-center justify-center text-white shrink-0">
-              <CheckCircle2 size={16} />
-            </div>
-            <div className="font-semibold text-[13.5px] text-ink-700 max-w-[380px]">{toastMsg}</div>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       <AnimatePresence>
         {dialog && (

@@ -87,7 +87,8 @@ export default function LearningHub() {
         .slice(0, 4)
         .map((s, i) => {
           const d = s.createdAt instanceof Date ? s.createdAt : new Date(s.createdAt);
-          return { id: i, date: `${d.getMonth() + 1}/${String(d.getDate()).padStart(2, '0')}`, accuracy: s.score, passed: s.passed, reward: 0 };
+          const topicTitle = mockTopics.find((t) => t.id === s.topicId)?.title || '物理专题';
+          return { id: i, date: `${d.getMonth() + 1}/${String(d.getDate()).padStart(2, '0')}`, accuracy: s.score, passed: s.passed, topicTitle };
         }),
     [quizSessions]
   );
@@ -121,6 +122,15 @@ export default function LearningHub() {
       setStartingQuiz(false);
     }
   };
+
+  useEffect(() => {
+    if (!showAnalysis) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setShowAnalysis(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [showAnalysis]);
 
   return (
     <div className="w-full space-y-6">
@@ -524,9 +534,9 @@ export default function LearningHub() {
                       />
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-ink-500 font-medium">奖励</span>
-                      <span className="chip-energy !py-0.5 !text-[11px]">
-                        +{record.reward}⚡
+                      <span className="text-xs text-ink-500 font-medium">测试领域</span>
+                      <span className="chip-mission !py-0.5 !text-[11px]">
+                        {record.topicTitle}
                       </span>
                     </div>
                   </motion.div>
@@ -551,7 +561,7 @@ export default function LearningHub() {
             />
             <div className="absolute inset-0 flex items-center justify-center p-4 md:p-8">
               <motion.div
-                className="relative z-10 w-full max-w-3xl max-h-[85vh] overflow-hidden rounded-[24px] glass-card shadow-[0_30px_80px_-20px_rgba(15,23,42,0.35)]"
+                className="workspace-dialog-panel relative z-10 w-full max-w-3xl max-h-[85vh] overflow-hidden rounded-[24px] glass-card shadow-[0_30px_80px_-20px_rgba(15,23,42,0.35)]"
                 initial={{ opacity: 0, scale: 0.94, y: 20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.96, y: 10 }}

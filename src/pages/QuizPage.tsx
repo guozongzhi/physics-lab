@@ -176,10 +176,8 @@ export default function QuizPage(props: QuizPageProps) {
       try {
         if (mode === 'quiz') {
           if (!sessionId) throw new Error('测验会话不存在');
-          for (const q of questions) {
-            await theoryApi.submitAnswer(sessionId, q.id, answers[q.id]);
-          }
-          const graded = await theoryApi.gradeQuiz(sessionId);
+          const graded = await theoryApi.submitQuiz(sessionId,
+            Object.fromEntries(questions.map((q) => [q.id, answers[q.id]])));
           const results = graded.questions.map((q) => ({
             qid: q.id,
             correct: isAnswerCorrect(q, answers[q.id]),
@@ -200,12 +198,14 @@ export default function QuizPage(props: QuizPageProps) {
           const own = result.submissions.find((s) => s.groupId === groupId);
           if (!own) throw new Error('服务端未返回挑战结果');
           const accuracy = own.accuracy;
+          const results = result.questionResults;
+          const blindSet = new Set(results.filter((q) => !q.correct && q.knowledgePoint).map((q) => q.knowledgePoint));
           setSubmitted({
             score: Math.round(accuracy * 100),
-            correctCount: Math.round(accuracy * questions.length),
+            correctCount: results.filter((q) => q.correct).length,
             passed: accuracy >= meta.passScore / 100,
-            blindPoints: [],
-            questionResults: [],
+            blindPoints: Array.from(blindSet),
+            questionResults: results,
             earnedCoins: own.earned,
           });
           pushToast(`挑战完成，获得 ${own.earned} 能量币`, 'success');
@@ -678,10 +678,7 @@ export default function QuizPage(props: QuizPageProps) {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl mx-auto">
               {!submitted.passed && (
                 <button
-                  onClick={() => {
-                    restart();
-                    navigate('/theory');
-                  }}
+                  onClick={() => navigate('/theory/topics')}
                   className="btn-outline py-3.5"
                 >
                   <BookOpen size={18} />

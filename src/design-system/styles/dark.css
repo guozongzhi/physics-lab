@@ -1,0 +1,52 @@
+/* Loaded after workspace/student styles so both roles share the same dark palette. */
+.dark .mission-stage {
+  --workspace-ink: #e6efff;
+  --workspace-muted: #bacbe6;
+  --pmc-ink: #e6efff;
+  --pmc-muted: #bacbe6;
+  --student-surface: linear-gradient(135deg, #142844f5, #192c4bf5 55%, #12233ef5);
+}
+
+.dark .mission-stage :is(.glass-card, .card-base, .immersive-bento, .mission-page-intro, .mission-hero, .portal-card:not(.portal-card-featured), .portal-overview-link, .admin-portal-card) {
+  background: var(--student-surface);
+  border-color: #91b9f240;
+  box-shadow: inset 0 1px #ffffff0d, 0 12px 32px #00102450;
+  color: var(--workspace-ink);
+}
+.dark .mission-stage .glass-card .glass-card:not(button) {
+  background: #10223ce6;
+  border-color: #91b9f230;
+}
+
+.dark .mission-stage :is(.portal-card-title, .admin-portal-card strong, .portal-overview-link strong) { color: #e6efff; }
+.dark .mission-stage :is(.portal-card-description, .portal-card-foot, .portal-overview-link small, .admin-portal-card small) { color: #bacbe6; }
+
+.dark :is(.mission-stage main, .workspace-dialog-panel) :is(.text-ink-700, .text-ink-800, .text-ink-900, .text-slate-700, .text-slate-800, .text-slate-900, .text-physics-800) { color: #e6efff; }
+.dark :is(.mission-stage main, .workspace-dialog-panel) :is(.text-ink-400, .text-ink-500, .text-ink-600, .text-slate-400, .text-slate-500, .text-slate-600) { color: #bacbe6; }
+.dark :is(.mission-stage main, .workspace-dialog-panel) :is(.text-mission-600, .text-mission-700, .text-physics-600, .text-physics-700) { color: #9ac5ff; }
+
+/* Nested panels use the same foreground/background pair as the surrounding cards. */
+.dark :is(.mission-stage main, .workspace-dialog-panel) :is(.bg-white, [class*='bg-white/'], .bg-ink-50, [class*='bg-ink-50/'], .bg-slate-50, [class*='bg-slate-50/'], .bg-mission-50, [class*='bg-mission-50/'], .bg-physics-50, [class*='bg-physics-50/']) {
+  background-color: #1b3555;
+}
+.dark .mission-stage main .mission-label { color: #c5dfff; background: #1c3a61; border-color: #638fc770; }
+.dark .mission-stage main table { background: #142844; }
+.dark .mission-stage main table th { background: #1b3555; color: #c7daf4; }
+.dark .mission-stage main table td { color: #e6efff; border-color: #91b9f230; }
+
+.dark .workspace-dialog-panel {
+  background: linear-gradient(145deg, #142844, #192c4b 52%, #12233e);
+  border-color: #91b9f240;
+  color: #e6efff;
+}
+.dark :is(.mission-stage, .workspace-dialog-panel) :is(input:not([type='checkbox']):not([type='radio']):not([type='file']), select, textarea) {
+  background-color: #10223c;
+  border-color: #638fc7;
+  color: #e6efff;
+}
+.dark :is(.mission-stage, .workspace-dialog-panel) :is(input, textarea)::placeholder { color: #9fb4d2; }
+.dark .mission-stage .workspace-tabs { background: #142844; border-color: #91b9f240; }
+.dark .mission-stage .workspace-tabs button.glass-card {
+  background: linear-gradient(110deg, #0846ff, #076aff);
+  color: #fff;
+}

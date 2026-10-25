@@ -1,6 +1,6 @@
 import TransferRequests from '@/components/coins/TransferRequests';
 import type { LucideIcon } from 'lucide-react';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/store/authStore';
 import { useGroupStore } from '@/store/groupStore';
@@ -216,15 +216,31 @@ export default function GroupCommunicator() {
   
   const [tab, setTab] = useState<TabKey>('challenges');
   const [activeDialog, setActiveDialog] = useState<'createChallenge' | 'createTransfer' | 'bid' | 'resolve' | null>(null);
-  
+
+  useEffect(() => {
+    if (!activeDialog) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setActiveDialog(null);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [activeDialog]);
+
   const myGroup = getGroupById(groupId || '');
   const myCoins = myGroup?.totalCoins || 0;
   const myGroupProject = projects.find((p) => p.ownerGroupId === groupId);
   const isLeader = role === 'teacher' || role === 'admin' || (groupId ? getGroupUsers(groupId).find((u) => u.id === userId)?.role === 'leader' : false);
   const [recruitOpen, setRecruitOpen] = useState(false);
-  
+
   const openChallenges = useMemo(
-    () => challenges.filter(c => c.status === 'open' && c.creatorGroupId !== groupId),
+    () =>
+      challenges.filter(
+        (c) =>
+          c.status === 'open' &&
+          c.creatorGroupId !== groupId &&
+          new Date(c.deadline).getTime() > Date.now() &&
+          (!groupId || !c.submissions?.some((s) => s.groupId === groupId))
+      ),
     [challenges, groupId]
   );
   
@@ -351,13 +367,20 @@ export default function GroupCommunicator() {
     setBidForm({ recruitmentId: '', message: '' });
   };
   
-  const handleResolve = () => {
-    if (!resolveForm.recruitmentId) return;
-    
-    resolveRecruitment(resolveForm.recruitmentId, resolveForm.result);
-    pushToast('裁决已完成', 'success');
-    setActiveDialog(null);
-    setResolveForm({ recruitmentId: '', result: 'success' });
+  const [resolveBusy, setResolveBusy] = useState(false);
+  const handleResolve = async () => {
+    if (!resolveForm.recruitmentId || resolveBusy) return;
+    setResolveBusy(true);
+    try {
+      await resolveRecruitment(resolveForm.recruitmentId, resolveForm.result);
+      pushToast('裁决已完成', 'success');
+      setActiveDialog(null);
+      setResolveForm({ recruitmentId: '', result: 'success' });
+    } catch (error) {
+      pushToast(error instanceof Error ? error.message : '裁决失败，请重试', 'error');
+    } finally {
+      setResolveBusy(false);
+    }
   };
   
   const otherGroups = useMemo(
@@ -461,7 +484,7 @@ export default function GroupCommunicator() {
                     <ChallengeCard
                       key={c.id}
                       challenge={c}
-                      onView={() => navigate(`/theory/challenge/${c.id}/accept`)}
+                      onView={() => navigate('/theory/challenges?tab=created')}
                     />
                   ))}
                 </div>
@@ -678,7 +701,7 @@ export default function GroupCommunicator() {
       
       {activeDialog === 'createChallenge' && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink-900/40 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-cardLifted w-full max-w-2xl max-h-[90vh] flex flex-col">
+          <div className="workspace-dialog-panel bg-white rounded-2xl shadow-cardLifted w-full max-w-2xl max-h-[90vh] flex flex-col">
             <div className="flex items-center justify-between p-5 border-b border-ink-100">
               <h2 className="font-serif text-xl font-bold text-physics-900">发起新挑战</h2>
               <button onClick={() => setActiveDialog(null)} className="h-9 w-9 rounded-xl hover:bg-ink-100 text-ink-500">
@@ -769,7 +792,7 @@ export default function GroupCommunicator() {
       
       {activeDialog === 'createTransfer' && canTransfer && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink-900/40 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-cardLifted w-full max-w-md">
+          <div className="workspace-dialog-panel bg-white rounded-2xl shadow-cardLifted w-full max-w-md">
             <div className="flex items-center justify-between p-5 border-b border-ink-100">
               <h2 className="font-serif text-xl font-bold text-physics-900">能量币转账</h2>
               <button onClick={() => setActiveDialog(null)} className="h-9 w-9 rounded-xl hover:bg-ink-100 text-ink-500">
@@ -822,7 +845,7 @@ export default function GroupCommunicator() {
       
       {activeDialog === 'bid' && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink-900/40 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-cardLifted w-full max-w-md">
+          <div className="workspace-dialog-panel bg-white rounded-2xl shadow-cardLifted w-full max-w-md">
             <div className="flex items-center justify-between p-5 border-b border-ink-100">
               <h2 className="font-serif text-xl font-bold text-physics-900">投标申请</h2>
               <button onClick={() => setActiveDialog(null)} className="h-9 w-9 rounded-xl hover:bg-ink-100 text-ink-500">
@@ -853,7 +876,7 @@ export default function GroupCommunicator() {
       
       {activeDialog === 'resolve' && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink-900/40 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-cardLifted w-full max-w-md">
+          <div className="workspace-dialog-panel bg-white rounded-2xl shadow-cardLifted w-full max-w-md">
             <div className="flex items-center justify-between p-5 border-b border-ink-100">
               <h2 className="font-serif text-xl font-bold text-physics-900">裁决招募结果</h2>
               <button onClick={() => setActiveDialog(null)} className="h-9 w-9 rounded-xl hover:bg-ink-100 text-ink-500">
@@ -895,7 +918,7 @@ export default function GroupCommunicator() {
             </div>
             <div className="p-5 border-t border-ink-100 flex justify-end gap-3">
               <button onClick={() => setActiveDialog(null)} className="btn-ghost">取消</button>
-              <button onClick={handleResolve} className="btn-primary">确认裁决</button>
+              <button onClick={() => void handleResolve()} disabled={resolveBusy} className="btn-primary">{resolveBusy ? '提交中…' : '确认裁决'}</button>
             </div>
           </div>
         </div>

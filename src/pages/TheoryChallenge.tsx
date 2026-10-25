@@ -1,7 +1,7 @@
 import type { LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useState, useMemo, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Coins, Target, Trophy, Swords, Rocket, Plus, X, Clock, Zap, ChevronDown, Calendar, Sparkles, Users, BookOpenText, AlertCircle, UserCircle2, ArrowRight } from 'lucide-react';
 import { useTheoryStore } from '@/store/theoryStore';
 import { useAuthStore } from '@/store/authStore';
@@ -88,8 +88,24 @@ function QuestionCheckbox({ checked, onChange, label }: { checked: boolean; onCh
 
 export default function TheoryChallenge() {
   const navigate = useNavigate();
-  const [tab, setTab] = useState<TabKey>('open');
+  const [searchParams] = useSearchParams();
+  const initialTab = (searchParams.get('tab') as TabKey) || 'open';
+  const [tab, setTab] = useState<TabKey>(
+    ['open', 'created', 'joined', 'mine'].includes(initialTab) ? initialTab : 'open'
+  );
   const [dialogOpen, setDialogOpen] = useState(false);
+
+  useEffect(() => {
+    if (!dialogOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setDialogOpen(false);
+        setFormErr('');
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [dialogOpen]);
 
   const { topics, questions, challenges, createChallenge, getTopicQuestions } = useTheoryStore();
   const { groupId, userId, role, name } = useAuthStore();
@@ -137,7 +153,14 @@ export default function TheoryChallenge() {
   const myGid = groupId || (role === 'teacher' ? groups[0]?.id : undefined);
 
   const openChallenges = useMemo(
-    () => challenges.filter((c) => c.status === 'open' && c.creatorGroupId !== myGid),
+    () =>
+      challenges.filter(
+        (c) =>
+          c.status === 'open' &&
+          c.creatorGroupId !== myGid &&
+          new Date(c.deadline).getTime() > Date.now() &&
+          (!myGid || !c.submissions.some((s) => s.groupId === myGid))
+      ),
     [challenges, myGid]
   );
   const createdChallenges = useMemo(
@@ -154,12 +177,13 @@ export default function TheoryChallenge() {
   const [formTitle, setFormTitle] = useState('');
   const [formTopicId, setFormTopicId] = useState<string>('');
   const [formDeadline, setFormDeadline] = useState(() => {
-    const d = new Date();
-    d.setDate(d.getDate() + 7);
-    return d.toISOString().slice(0, 16);
+    const d = new Date(Date.now() + 7 * 86400000);
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
   });
   const [formQuestionIds, setFormQuestionIds] = useState<string[]>([]);
   const [formErr, setFormErr] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (dialogOpen && !formTitle) {
@@ -194,6 +218,7 @@ export default function TheoryChallenge() {
   };
 
   const submitCreate = () => {
+    if (submitting) return;
     if (!myGid) { setFormErr('请先登录后发起挑战'); return; }
     if (!windowState(classMeta).challenge) { setFormErr(windowClosedMessage('challenge')); return; }
     if (!formTitle.trim()) { setFormErr('请填写挑战标题'); return; }
@@ -207,6 +232,7 @@ export default function TheoryChallenge() {
       setFormErr(`小组能量币不足，当前 ${group?.totalCoins || 0}，本次奖励需 ${computedReward}`);
       return;
     }
+    setSubmitting(true);
     try {
       createChallenge({
         title: formTitle.trim(),
@@ -219,6 +245,8 @@ export default function TheoryChallenge() {
       setFormTitle(''); setFormTopicId(''); setFormQuestionIds([]); setFormErr('');
     } catch (e: unknown) {
       setFormErr((e instanceof Error ? e.message : undefined) || '创建失败');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -497,7 +525,19 @@ export default function TheoryChallenge() {
                   {(['single', 'multiple', 'judge'] as const).map((t) => (
                     <button
                       key={t}
-                      onClick={() => setQForm({ ...qForm, type: t, options: t === 'judge' ? ['正确', '错误'] : qForm.options, answer: t === 'judge' ? true : (t === 'multiple' ? [] : 0) })}
+                      onClick={() =>
+                        setQForm({
+                          ...qForm,
+                          type: t,
+                          options:
+                            t === 'judge'
+                              ? ['正确', '错误']
+                              : qForm.type === 'judge' || qForm.options.length < 4
+                                ? ['', '', '', '']
+                                : qForm.options,
+                          answer: t === 'judge' ? true : t === 'multiple' ? [] : 0,
+                        })
+                      }
                       className={cn('px-3 py-1.5 rounded-full text-xs font-semibold border transition', qForm.type === t ? 'bg-mission-500 text-white border-transparent' : 'bg-white text-ink-600 border-ink-200 hover:border-mission-300')}
                     >
                       {t === 'single' ? '单选题' : t === 'multiple' ? '多选题' : '判断题'}
@@ -592,7 +632,7 @@ export default function TheoryChallenge() {
 
       {dialogOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink-900/40 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-white rounded-2xl shadow-cardLifted ring-1 ring-physics-100 w-full max-w-3xl max-h-[90vh] flex flex-col">
+          <div className="workspace-dialog-panel bg-white rounded-2xl shadow-cardLifted ring-1 ring-physics-100 w-full max-w-3xl max-h-[90vh] flex flex-col">
             <div className="flex items-center justify-between p-5 border-b border-ink-100 flex-wrap gap-3">
               <div>
                 <h2 className="font-serif text-xl font-bold text-physics-900 flex items-center gap-2">
@@ -732,10 +772,11 @@ export default function TheoryChallenge() {
               </button>
               <button
                 onClick={submitCreate}
-                className="btn-primary !py-2 text-sm"
+                disabled={submitting}
+                className="btn-primary !py-2 text-sm disabled:opacity-50"
               >
                 <Zap size={15} />
-                确认创建并预扣 {computedReward} 能量币
+                {submitting ? '正在发布…' : `确认创建并预扣 ${computedReward} 能量币`}
               </button>
             </div>
           </div>

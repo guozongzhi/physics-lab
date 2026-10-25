@@ -298,7 +298,7 @@ def review_showcase(
 
 @router.post("/showcase/{showcase_id}/love", response_model=ShowcaseOut)
 def toggle_love(showcase_id: str, db: Session = Depends(get_db), current: User = Depends(get_current_user)):
-    item = db.get(ShowcaseItem, showcase_id)
+    item = _visible_showcase(db.query(ShowcaseItem), current).filter(ShowcaseItem.id == showcase_id).first()
     if not item:
         raise HTTPException(status_code=404, detail="展示不存在")
     uid = str(current.id)

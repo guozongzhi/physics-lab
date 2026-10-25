@@ -242,11 +242,13 @@ def test_summary_omits_body_and_detail_enforces_visibility(client, auth):
     assert summary['mediaKind'] == 'html' and summary['category'] == 'html'
     detail = client.get(f'/api/showcase/{sid}', headers=auth('u-1'))
     assert detail.status_code == 200 and detail.json()['htmlContent'] == content
-    assert detail.json()['contentLoaded'] is True
+    assert detail.json()['contentLoaded'] is True and detail.json()['mediaKind'] == 'html'
     assert client.get(f'/api/showcase/{sid}', headers=auth('u-3')).status_code == 404
+    assert client.post(f'/api/showcase/{sid}/love', headers=auth('u-3')).status_code == 404
     assert all(row['id'] != sid for row in client.get('/api/showcase?summary=true', headers=auth('u-3')).json())
     _approve(client, auth, sid)
     assert client.get(f'/api/showcase/{sid}', headers=auth('u-3')).json()['htmlContent'] == content
+    assert client.post(f'/api/showcase/{sid}/love', headers=auth('u-3')).status_code == 200
 
 
 def test_showcase_summary_pagination_and_media_types(client, auth):
