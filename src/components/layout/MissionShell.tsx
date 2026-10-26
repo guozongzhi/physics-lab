@@ -384,7 +384,7 @@ function MissionHeader({ onOpenNav, onOpenSearch, collapsed, onToggleNav }: { on
   );
 }
 
-function NavRail({ open, onClose, collapsed, onToggle }: { open: boolean; onClose: () => void; collapsed: boolean; onToggle: () => void }) {
+function NavRail({ open, onClose, collapsed }: { open: boolean; onClose: () => void; collapsed: boolean }) {
   const { tx } = useLocale();
   const railRef = useRef<HTMLElement>(null);
   const closeRef = useRef(onClose);
@@ -455,12 +455,6 @@ function NavRail({ open, onClose, collapsed, onToggle }: { open: boolean; onClos
       >
         <button tabIndex={mobile && !open ? -1 : undefined} onClick={onClose} aria-label={tx("关闭导航菜单")} className="mission-nav-close flex md:hidden items-center justify-between text-white pb-4 px-3">
           <span>{tx("研究导航")}</span><X size={20} />
-        </button>
-        <button type="button" onClick={onToggle} aria-label={tx(collapsed ? '展开侧边栏' : '收起侧边栏')}
-          aria-expanded={!collapsed} aria-controls="workspace-navigation" title={tx(collapsed ? '展开侧边栏' : '收起侧边栏')}
-          className="mission-nav-fold hidden md:flex items-center gap-3 shrink-0">
-          {collapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
-          <span className="mission-nav-copy">{tx('收起导航')}</span>
         </button>
         <div className="mission-nav-links space-y-1 flex-1 min-h-0 overflow-y-auto pr-1">
           {allItems.map((item) => {
@@ -701,7 +695,7 @@ export default function MissionShell({ children, requireAuth = true }: MissionSh
         </div>
         <a href="#workspace-main" className="workspace-skip-link">{tx("跳到页面内容")}</a>
         <MissionHeader collapsed={navCollapsed} onToggleNav={toggleNav} onOpenNav={() => setNavOpen(true)} onOpenSearch={() => { setQuery(''); setSearchOpen(true); }} />
-        <NavRail collapsed={navCollapsed} onToggle={toggleNav} open={navOpen} onClose={() => setNavOpen(false)} />
+        <NavRail collapsed={navCollapsed} open={navOpen} onClose={() => setNavOpen(false)} />
         <ToastStack />
 
         {/* 桌面端常驻导航预留 220px 边距 */}

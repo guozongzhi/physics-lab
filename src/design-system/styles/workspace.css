@@ -136,16 +136,6 @@
 }
 
 /* A compact icon rail frees horizontal space without hiding navigation. */
-.mission-nav-fold {
-  min-height: 40px;
-  margin-bottom: 10px;
-  padding: 8px 12px 14px;
-  color: #bcd3f4;
-  border-bottom: 1px solid #a5cdff25;
-  font-size: 12px;
-  white-space: nowrap;
-}
-.mission-nav-fold:hover { color: white; }
 .workspace-language-switch {
   display: inline-flex;
   align-items: center;
@@ -164,8 +154,7 @@
   white-space: nowrap;
 }
 .workspace-language-switch:hover { background: #235087; }
-.workspace-language-switch:focus-visible,
-.mission-nav-fold:focus-visible { outline: 2px solid #83e6ff; outline-offset: 3px; }
+.workspace-language-switch:focus-visible { outline: 2px solid #83e6ff; outline-offset: 3px; }
 @media (min-width: 768px) {
   .mission-stage .mission-nav { transition: width 220ms ease, transform 220ms ease; }
   .mission-stage .mission-content { transition: margin-left 220ms ease; }
@@ -174,7 +163,6 @@
   .mission-stage[data-nav-collapsed='true'] .mission-nav-copy,
   .mission-stage[data-nav-collapsed='true'] .mission-nav-active-dot { display: none; }
   .mission-stage[data-nav-collapsed='true'] .mission-nav-item { justify-content: center; min-height: 44px; padding: 12px 0; }
-  .mission-stage[data-nav-collapsed='true'] .mission-nav-fold { justify-content: center; padding-inline: 0; }
   .mission-stage[data-nav-collapsed='true'] .mission-nav-links { padding-right: 0; }
   html[lang='en'] .mission-nav-copy > div { white-space: normal; overflow-wrap: anywhere; line-height: 1.35; }
 }
